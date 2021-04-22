@@ -2,10 +2,10 @@
 GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
-GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
+GO_TEST ?= $(GO_CMD) test -mod=vendor -covermode=atomic -run $(GO_TESTS)
 CGO_ENABLED ?= 0
 LD_FLAGS ?= "-extldflags '-static'"
-GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
+GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -mod=vendor -v -buildmode=exe -ldflags $(LD_FLAGS)
 
 GOLANGCI_LINT_CONFIG_FILE ?= .golangci.yml
 
