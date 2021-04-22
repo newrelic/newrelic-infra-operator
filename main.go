@@ -1,19 +1,20 @@
+// Copyright 2021 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
 	"log"
-	"net/http"
+	"os"
+
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	"github.com/newrelic/nri-k8s-operator/internal/operator"
 )
 
 func main() {
-	log.Printf("Starting")
+	if err := operator.Run(signals.SetupSignalHandler(), operator.Options{}); err != nil {
+		log.Printf("Running operator failed: %v", err)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-
-		if _, err := w.Write([]byte("ok")); err != nil {
-			log.Printf("Writing response: %v", err)
-		}
-	})
-	log.Fatal(http.ListenAndServe(":8443", nil))
+		os.Exit(1)
+	}
 }

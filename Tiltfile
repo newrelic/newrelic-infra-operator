@@ -25,6 +25,7 @@ if settings.get('live_reload'):
   # Building daemon binary locally.
   local_resource('%s-binary' % project_name, 'make build', deps=[
     './main.go',
+    './internal',
   ])
 
   # Use custom Dockerfile for Tilt builds, which only takes locally built daemon binary for live reloading.
