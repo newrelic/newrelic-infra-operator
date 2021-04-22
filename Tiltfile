@@ -3,7 +3,7 @@
 # Settings and defaults.
 settings = {
   'kind_cluster_name': 'kind',
-  'live_reload': False,
+  'live_reload': True,
 }
 
 settings.update(read_json('tilt_option.json', default={}))
