@@ -7,7 +7,6 @@ CGO_ENABLED ?= 0
 LD_FLAGS ?= "-extldflags '-static'"
 GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
 
-
 GOLANGCI_LINT_CONFIG_FILE ?= .golangci.yml
 
 DOCKER_CMD ?= docker
