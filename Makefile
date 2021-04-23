@@ -13,7 +13,7 @@ DOCKER_CMD ?= docker
 IMAGE_REPO ?= newrelic/nri-kubernetes-operator
 
 TILT_CMD ?= tilt
-TILT_KUBECONFIG ?= kubeconfig
+TEST_KUBECONFIG ?= kubeconfig
 
 KIND_CMD ?= kind
 KIND_SCRIPT ?= hack/kind-with-registry.sh
@@ -81,7 +81,7 @@ image-push: image ## Builds and pushes operator Docker image.
 
 .PHONY: kind
 kind: ## Creates local Kind cluster for development.
-	env KUBECONFIG=$(TILT_KUBECONFIG) $(KIND_SCRIPT)
+	env KUBECONFIG=$(TEST_KUBECONFIG) $(KIND_SCRIPT)
 
 .PHONY: update-kind
 update-kind: ## Updates hack/kind-with-registry.sh file.
@@ -94,11 +94,11 @@ kind-down: ## Cleans up local Kind cluster.
 
 .PHONY: tilt-up
 tilt-up: ## Builds project and deploys it to local Kind cluster.
-	env KUBECONFIG=$(TILT_KUBECONFIG) $(TILT_CMD) up
+	env KUBECONFIG=$(TEST_KUBECONFIG) $(TILT_CMD) up
 
 .PHONY: tilt-down
 tilt-down: ## Cleans up resources created by Tilt.
-	env KUBECONFIG=$(TILT_KUBECONFIG) $(TILT_CMD) down
+	env KUBECONFIG=$(TEST_KUBECONFIG) $(TILT_CMD) down
 
 .PHONY: help
 help: ## Prints help message.
