@@ -17,6 +17,7 @@ TEST_KUBECONFIG ?= $(shell realpath kubeconfig)
 
 KIND_CMD ?= kind
 KIND_SCRIPT ?= hack/kind-with-registry.sh
+KIND_IMAGE ?= kindest/node:v1.19.7
 
 .PHONY: build
 build: ## Compiles operator binary.
@@ -86,6 +87,7 @@ kind: ## Creates local Kind cluster for development.
 .PHONY: update-kind
 update-kind: ## Updates hack/kind-with-registry.sh file.
 	wget https://kind.sigs.k8s.io/examples/kind-with-registry.sh -O $(KIND_SCRIPT)
+	sed -i 's|kind create cluster|kind create cluster --image=$(KIND_IMAGE)|g' $(KIND_SCRIPT)
 	chmod +x $(KIND_SCRIPT)
 
 .PHONY: kind-down
