@@ -13,7 +13,7 @@ DOCKER_CMD ?= docker
 IMAGE_REPO ?= newrelic/nri-kubernetes-operator
 
 TILT_CMD ?= tilt
-TEST_KUBECONFIG ?= kubeconfig
+TEST_KUBECONFIG ?= $(shell realpath kubeconfig)
 
 KIND_CMD ?= kind
 KIND_SCRIPT ?= hack/kind-with-registry.sh
