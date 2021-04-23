@@ -22,7 +22,7 @@ project_name = 'nri-kubernetes-operator'
 if settings.get('live_reload'):
   # Building daemon binary locally.
   local_resource(project_name, 'make build', deps=[
-  	'./main.go'
+    './main.go',
   ])
 
   # Use custom Dockerfile for Tilt builds, which only takes locally built daemon binary for live reloading.
@@ -33,7 +33,7 @@ if settings.get('live_reload'):
   ''' % (project_name, project_name)
 
   docker_build_with_restart(project_name, '.',
-  	dockerfile_contents=dockerfile,
+    dockerfile_contents=dockerfile,
     entrypoint=project_name,
     only=project_name,
     live_update=[
