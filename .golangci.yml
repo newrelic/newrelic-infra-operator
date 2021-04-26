@@ -4,6 +4,9 @@ output:
 run:
   modules-download-mode: vendor
   timeout: 5m
+  build-tags:
+    - integration
+    - e2e
   skip-dirs:
     # Skip all Go code in Tilt modules directory if any.
     - tilt_modules

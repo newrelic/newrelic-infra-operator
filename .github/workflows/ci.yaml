@@ -26,6 +26,54 @@ jobs:
       - name: Run CI checks
         run: make ci
 
+  integration:
+    name: Integration and e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.3'
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          path: nri-k8s-operator
+
+      - name: Checkout charts repository for deployments
+        uses: actions/checkout@v2
+        with:
+          repository: kinvolk/helm-charts-1 #newrelic/helm-charts
+          ref: invidian/nri-kubernetes-operator
+          path: helm-charts-newrelic
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Install kind
+        run: go install sigs.k8s.io/kind@v0.10.0
+
+      - name: Create k8s Kind Cluster
+        run: make -C nri-k8s-operator kind
+
+      - name: Run integration tests
+        run: make -C nri-k8s-operator test-integration
+
+      - name: Build Docker image
+        run: make -C nri-k8s-operator image-push IMAGE_REPO=localhost:5000/nri-k8s-operator
+
+      - name: Create Helm release
+        env:
+          KUBECONFIG: ./nri-k8s-operator/kubeconfig
+        run: |
+          helm install nri-k8s-operator ./helm-charts-newrelic/charts/nri-k8s-operator --values ./nri-k8s-operator/values-dev.yaml --set image.repository=localhost:5000/nri-k8s-operator
+
+      - name: Run e2e tests
+        run: make -C nri-k8s-operator ./test-e2e
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

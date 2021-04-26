@@ -25,11 +25,19 @@ build: ## Compiles operator binary.
 
 .PHONY: build-test
 build-test: ## Compiles unit tests.
-	$(GO_TEST) -run=nonexistent $(GO_PACKAGES)
+	$(GO_TEST) -run=nonexistent -tags integration,e2e $(GO_PACKAGES)
 
 .PHONY: test
 test: ## Runs all unit tests.
 	$(GO_TEST) $(GO_PACKAGES)
+
+.PHONY: test-integration
+test-integration: ## Runs all integration tests.
+	KUBECONFIG=$(TEST_KUBECONFIG) USE_EXISTING_CLUSTER=true $(GO_TEST) -tags integration $(GO_PACKAGES)
+
+.PHONY: test-e2e
+test-e2e: ## Runs all e2e tests. Expects operator to be installed on the cluster using Helm chart.
+	KUBECONFIG=$(TEST_KUBECONFIG) $(GO_TEST) -tags e2e $(GO_PACKAGES)
 
 .PHONY: vendor
 vendor: ## Updates vendor directory.
