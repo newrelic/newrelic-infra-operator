@@ -49,8 +49,8 @@ If you want to use existing Kubernetes cluster, create `tilt_option.json` file w
 #### Helm chart location
 
 Current Tilt configuration expects New Relic [helm-charts](https://github.com/newrelic/helm-charts) repository to be
-cloned as a sibling to this repository, to be able to deploy the operator. This repository is an authoritative source
-of the deployment manifests for the operator.
+cloned as a sibling to this repository under a name `helm-charts-newrelic`, to be able to deploy the operator.
+This repository is an authoritative source of the deployment manifests for the operator.
 
 If you have `helm-charts` repository cloned into a different path, you can configure Tilt to use it by adding the
 following key-value pair to your local `tilt_option.json` file:
