@@ -10,4 +10,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[0.1.0]: https://github.com/newrelic/nri-kubernetes-operator/releases/tag/v0.1.0
+[0.1.0]: https://github.com/newrelic/nri-k8s-operator/releases/tag/v0.1.0

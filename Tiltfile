@@ -2,7 +2,7 @@
 
 # Settings and defaults.
 
-project_name = 'nri-kubernetes-operator'
+project_name = 'nri-k8s-operator'
 
 settings = {
   'kind_cluster_name': 'kind',

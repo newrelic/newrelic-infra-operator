@@ -1,10 +1,10 @@
 # Taken from https://github.com/tilt-dev/tilt-helm-demo/blob/d555fabbb1b3110582fb9d4f4e59c7d2ea337d37/values-dev.yaml.
 image:
-  repository: nri-kubernetes-operator
+  repository: nri-k8s-operator
   tag: latest
   pullPolicy: Never
 
 restartPolicy: Never
 
-# Temporary extra values, required by nri-kubernetes-operator chart.
+# Temporary extra values, required by nri-k8s-operator chart.
 cluster: testing
