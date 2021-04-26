@@ -1,9 +1,13 @@
 # -*- mode: Python -*-
 
 # Settings and defaults.
+
+project_name = 'nri-kubernetes-operator'
+
 settings = {
   'kind_cluster_name': 'kind',
   'live_reload': True,
+  'chart_path': '../helm-charts-newrelic/charts/%s/' % project_name,
 }
 
 settings.update(read_json('tilt_option.json', default={}))
@@ -17,11 +21,9 @@ allow_k8s_contexts(settings.get("allowed_contexts", "kind-" + settings.get('kind
 # Building Docker image.
 load('ext://restart_process', 'docker_build_with_restart')
 
-project_name = 'nri-kubernetes-operator'
-
 if settings.get('live_reload'):
   # Building daemon binary locally.
-  local_resource(project_name, 'make build', deps=[
+  local_resource('%s-binary' % project_name, 'make build', deps=[
     './main.go',
   ])
 
@@ -45,7 +47,7 @@ else:
   docker_build(project_name, '.')
 
 # Deploying Kubernetes resources.
-k8s_yaml(helm('../helm-charts-newrelic/charts/nri-metadata-injection/', name=project_name, values='values-dev.yaml'))
+k8s_yaml(helm(settings.get('chart_path'), name=project_name, values='values-dev.yaml'))
 
 # Tracking the deployment.
-k8s_resource('%s-nri-metadata-injection' % project_name)
+k8s_resource(project_name)
