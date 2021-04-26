@@ -6,5 +6,5 @@ image:
 
 restartPolicy: Never
 
-# Temporary extra values, required by nri-metadata-injection chart.
+# Temporary extra values, required by nri-kubernetes-operator chart.
 cluster: testing
