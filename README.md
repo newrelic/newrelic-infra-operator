@@ -39,7 +39,7 @@ EOF
 
 If you want to use existing Kubernetes cluster, create `tilt_option.json` file with content similar to below:
 
-```sh
+```json
 {
   "default_registry": "quay.io/<your username>",
   "allowed_contexts": "<kubeconfig context to use>"
