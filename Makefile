@@ -2,6 +2,8 @@
 GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
+GO_OS ?= linux
+GO_ARCH ?= amd64
 GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
 
 GOOS ?=

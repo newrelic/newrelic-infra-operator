@@ -4,3 +4,4 @@
 # Output binary for non-default GOOS/GOARCH pairs (e.g. newrelic-infra-operator-linux-arm).
 /newrelic-infra-operator-*
 /kubeconfig
+/vendor

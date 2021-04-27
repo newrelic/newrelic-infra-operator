@@ -28,6 +28,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
@@ -62,7 +63,6 @@ func Test_Running_operator(t *testing.T) {
 
 		t.Cleanup(func() {
 			cancel()
-
 			if err := testEnv.Stop(); err != nil {
 				t.Logf("stopping test environment: %v", err)
 			}
@@ -71,6 +71,7 @@ func Test_Running_operator(t *testing.T) {
 		options := operator.Options{
 			RestConfig: cfg,
 			CertDir:    dirWithCerts(t),
+			Logger:     logrus.New(),
 		}
 
 		go func() {
@@ -310,6 +311,7 @@ func Test_Running_operator(t *testing.T) {
 
 			options := operator.Options{
 				CertDir: dirWithCerts(t),
+				Logger:  logrus.New(),
 			}
 
 			if err := operator.Run(ctx, options); err == nil {
