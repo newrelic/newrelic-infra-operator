@@ -46,7 +46,7 @@ jobs:
       - name: Checkout charts repository for deployments
         uses: actions/checkout@v2
         with:
-          repository: kinvolk/helm-charts-1 #newrelic/helm-charts
+          repository: newrelic/helm-charts
           ref: invidian/nri-kubernetes-operator
           path: helm-charts-newrelic
 
