@@ -69,7 +69,7 @@ jobs:
         env:
           KUBECONFIG: ./newrelic-infra-operator/kubeconfig
         run: |
-          helm install newrelic-infra-operator ./helm-charts-newrelic/charts/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml --set image.repository=localhost:5000/newrelic-infra-operator
+          helm install e2e ./helm-charts-newrelic/charts/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml --set image.repository=localhost:5000/newrelic-infra-operator
 
       - name: Run e2e tests
         run: make -C newrelic-infra-operator ./test-e2e
