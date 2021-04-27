@@ -10,16 +10,24 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
@@ -28,8 +36,11 @@ import (
 const (
 	certValidityDuration = 1 * time.Hour
 	tempPrefix           = "newrelic-infra-operator-tests"
+	kubeconfigEnv        = "KUBECONFIG"
+	testHost             = "127.0.0.1"
 )
 
+//nolint:funlen,gocognit,cyclop,gocyclo
 func Test_Running_operator(t *testing.T) {
 	t.Parallel()
 
@@ -38,7 +49,9 @@ func Test_Running_operator(t *testing.T) {
 
 		ch := make(chan error)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		ctxWithDeadline := contextWithDeadline(t)
+
+		ctx, cancel := context.WithTimeout(ctxWithDeadline, 1*time.Second)
 
 		testEnv := &envtest.Environment{}
 
@@ -64,21 +77,236 @@ func Test_Running_operator(t *testing.T) {
 			ch <- operator.Run(ctx, options)
 		}()
 
-		err = <-ch
-		if err != nil {
-			t.Fatalf("Unexpected error from running operator: %v", err)
+		select {
+		case <-ch:
+			if err != nil {
+				t.Fatalf("Unexpected error from running operator: %v", err)
+			}
+		case <-ctxWithDeadline.Done():
+			t.Fatalf("Timed out waiting for operator to shutdown: %v", err)
 		}
 	})
 
-	t.Run("fails_when", func(t *testing.T) {
+	t.Run("listens_on_default_port_for_health_checks", func(t *testing.T) {
 		t.Parallel()
 
+		ctx, _, _ := runOperator(t, func(o *operator.Options) { o.HealthProbeBindAddress = "" })
+
+		url := fmt.Sprintf("http://%s%s/readyz", testHost, operator.DefaultHealthProbeBindAddress)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			t.Fatalf("creating request: %v", err)
+		}
+
+		retryUntilFinished(func() bool {
+			resp, err := http.DefaultClient.Do(req) //nolint:bodyclose
+
+			defer closeResponseBody(t, resp)
+
+			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+					t.Fatalf("test timed out: %v", err)
+				}
+
+				t.Logf("fetching readiness probe: %v", err)
+
+				time.Sleep(1 * time.Second)
+
+				return false
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("got %q response code, expected %q: %v", resp.StatusCode, http.StatusOK, resp)
+			}
+
+			return true
+		})
+	})
+
+	t.Run("responds_to", func(t *testing.T) {
+		ctx, options, ca := runOperator(t, nil)
+
+		t.Run("readiness_probe", func(t *testing.T) {
+			t.Parallel()
+
+			url := fmt.Sprintf("http://%s/readyz", options.HealthProbeBindAddress)
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			if err != nil {
+				t.Fatalf("creating request: %v", err)
+			}
+
+			retryUntilFinished(func() bool {
+				resp, err := http.DefaultClient.Do(req) //nolint:bodyclose
+
+				defer closeResponseBody(t, resp)
+
+				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+						t.Fatalf("test timed out: %v", err)
+					}
+
+					t.Logf("fetching readiness probe: %v", err)
+
+					time.Sleep(1 * time.Second)
+
+					return false
+				}
+
+				if resp.StatusCode != 200 {
+					t.Fatalf("got non 200 response code: %v", resp)
+				}
+
+				return true
+			})
+		})
+
+		t.Run("liveness_probe", func(t *testing.T) {
+			t.Parallel()
+
+			url := fmt.Sprintf("http://%s/healthz", options.HealthProbeBindAddress)
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			if err != nil {
+				t.Fatalf("creating request: %v", err)
+			}
+
+			retryUntilFinished(func() bool {
+				resp, err := http.DefaultClient.Do(req) //nolint:bodyclose
+
+				defer closeResponseBody(t, resp)
+
+				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+						t.Fatalf("test timed out: %v", err)
+					}
+
+					t.Logf("fetching readiness probe: %v", err)
+
+					time.Sleep(1 * time.Second)
+
+					return false
+				}
+
+				if resp.StatusCode != 200 {
+					t.Fatalf("got non 200 response code: %v", resp)
+				}
+
+				return true
+			})
+		})
+
+		t.Run("pod_mutation_request", func(t *testing.T) {
+			t.Parallel()
+
+			admissionReq := admissionv1.AdmissionReview{
+				Request: &admissionv1.AdmissionRequest{
+					Object: runtime.RawExtension{
+						Raw: []byte(`{
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+        "name": "foo",
+        "namespace": "default"
+    },
+    "spec": {
+        "containers": [
+            {
+                "image": "bar:v2",
+                "name": "bar"
+            }
+        ]
+    }
+}`),
+					},
+				},
+			}
+
+			reqBytes, err := json.Marshal(admissionReq)
+			if err != nil {
+				t.Fatalf("encoding admission request as JSON: %v", err)
+			}
+
+			url := fmt.Sprintf("https://%s:%d%s", testHost, options.Port, operator.PodMutateEndpoint)
+
+			req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(reqBytes))
+			if err != nil {
+				t.Fatalf("creating request: %v", err)
+			}
+
+			req.Header = http.Header{"Content-Type": []string{"application/json"}}
+
+			pool := x509.NewCertPool()
+
+			if ok := pool.AppendCertsFromPEM(ca); !ok {
+				t.Fatalf("adding CA certificate to pool")
+			}
+
+			client := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						RootCAs: pool,
+					},
+				},
+			}
+
+			retryUntilFinished(func() bool {
+				resp, err := client.Do(req) //nolint:bodyclose
+
+				defer closeResponseBody(t, resp)
+
+				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+						t.Fatalf("test timed out: %v", err)
+					}
+
+					t.Logf("patching pod: %v", err)
+
+					time.Sleep(1 * time.Second)
+
+					return false
+				}
+
+				if resp.StatusCode != 200 {
+					t.Fatalf("got non 200 response code: %v", resp)
+				}
+
+				bodyBytes, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatalf("reading error response body: %v", err)
+				}
+
+				response := &admissionv1.AdmissionReview{}
+
+				if err := json.Unmarshal(bodyBytes, response); err != nil {
+					t.Fatalf("decoding admission response: %v", err)
+				}
+
+				if result := response.Response.Result; result != nil && result.Code != 200 {
+					t.Fatalf("got bad response with code %d: %v", result.Code, result.Message)
+				}
+
+				return true
+			})
+		})
+	})
+
+	// We may touch environment variables in those tests, which are global, so run serially.
+	//
+	//nolint:paralleltest
+	t.Run("fails_when", func(t *testing.T) {
 		t.Run("there_is_no_kubernetes_credentials_available", func(t *testing.T) {
 			ctx := context.Background()
 
-			if err := os.Setenv("KUBECONFIG", "foo"); err != nil {
+			kubeconfig := os.Getenv(kubeconfigEnv)
+
+			if err := os.Setenv(kubeconfigEnv, "foo"); err != nil {
 				t.Fatalf("setting environment variable: %v", err)
 			}
+
+			t.Cleanup(func() {
+				if err := os.Setenv(kubeconfigEnv, kubeconfig); err != nil {
+					t.Logf("Resetting environment variable: %v", err)
+				}
+			})
 
 			options := operator.Options{
 				CertDir: dirWithCerts(t),
@@ -88,11 +316,140 @@ func Test_Running_operator(t *testing.T) {
 				t.Fatalf("Expected operator to return error")
 			}
 		})
+
+		t.Run("manager_configuration_is_wrong", func(t *testing.T) {
+			testEnv := &envtest.Environment{}
+
+			cfg, err := testEnv.Start()
+			if err != nil {
+				t.Fatalf("starting test environment: %v", err)
+			}
+
+			t.Cleanup(func() {
+				if err := testEnv.Stop(); err != nil {
+					t.Logf("stopping test environment: %v", err)
+				}
+			})
+
+			options := operator.Options{
+				RestConfig:             cfg,
+				CertDir:                dirWithCerts(t),
+				HealthProbeBindAddress: "1111",
+			}
+
+			if err := operator.Run(contextWithDeadline(t), options); err == nil {
+				t.Fatalf("Expected operator to return error")
+			}
+		})
 	})
 }
 
-//nolint:funlen,cyclop
+func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.Context, operator.Options, []byte) {
+	t.Helper()
+
+	ctxWithDeadline := contextWithDeadline(t)
+	ctx, cancel := context.WithCancel(ctxWithDeadline)
+
+	testEnv := &envtest.Environment{}
+
+	cfg, err := testEnv.Start()
+	if err != nil {
+		t.Fatalf("starting test environment: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cancel()
+
+		if err := testEnv.Stop(); err != nil {
+			t.Logf("stopping test environment: %v", err)
+		}
+	})
+
+	certDir, ca := dirWithCertsAndCA(t)
+
+	options := operator.Options{
+		RestConfig:             cfg,
+		CertDir:                certDir,
+		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		Port:                   randomUnprivilegedPort(t),
+	}
+
+	if mutateOptions != nil {
+		mutateOptions(&options)
+	}
+
+	go func() {
+		if err := operator.Run(ctx, options); err != nil {
+			fmt.Printf("running operator: %v\n", err) //nolint:forbidigo
+			t.Fail()
+		}
+	}()
+
+	return ctx, options, ca
+}
+
+func retryUntilFinished(f func() bool) {
+	for {
+		if f() {
+			break
+		}
+	}
+}
+
+func closeResponseBody(t *testing.T, resp *http.Response) {
+	t.Helper()
+
+	if resp == nil || resp.Body == nil {
+		return
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		t.Logf("closing response body: %v", err)
+	}
+}
+
+func randomUnprivilegedPort(t *testing.T) int {
+	t.Helper()
+
+	min := 1024
+	max := 65535
+
+	i, err := rand.Int(rand.Reader, big.NewInt(int64(max-min+1)))
+	if err != nil {
+		t.Fatalf("generating random port: %v", err)
+	}
+
+	return int(i.Int64()) + min
+}
+
+func contextWithDeadline(t *testing.T) context.Context {
+	t.Helper()
+
+	deadline, ok := t.Deadline()
+	if !ok {
+		return context.Background()
+	}
+
+	// Arbitrary amount of time to let tests exit cleanly before main process terminates.
+	timeoutGracePeriod := 10 * time.Second
+
+	ctx, cancel := context.WithDeadline(context.Background(), deadline.Truncate(timeoutGracePeriod))
+
+	t.Cleanup(cancel)
+
+	return ctx
+}
+
 func dirWithCerts(t *testing.T) string {
+	t.Helper()
+
+	dir, _ := dirWithCertsAndCA(t)
+
+	return dir
+}
+
+//nolint:funlen,cyclop
+func dirWithCertsAndCA(t *testing.T) (string, []byte) {
 	t.Helper()
 
 	dir, err := ioutil.TempDir("", tempPrefix)
@@ -131,6 +488,8 @@ func dirWithCerts(t *testing.T) string {
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
+		IsCA:                  true,
+		IPAddresses:           []net.IP{net.ParseIP(testHost)},
 	}
 
 	// Create X.509 certificate in DER format.
@@ -167,5 +526,5 @@ func dirWithCerts(t *testing.T) string {
 		t.Fatalf("writing certificate to %q: %v", path, err)
 	}
 
-	return dir
+	return dir, cert.Bytes()
 }

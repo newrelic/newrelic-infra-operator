@@ -18,20 +18,25 @@ import (
 )
 
 const (
-	defaultHealthProbeBindAddress = ":9440"
+	// PodMutateEndpoint is a URI where admission webhook responds for Pod mutation requests.
+	PodMutateEndpoint = "/mutate-v1-pod"
+
+	// DefaultHealthProbeBindAddress is a default bind address for health probes.
+	DefaultHealthProbeBindAddress = ":9440"
 )
 
 // Options represents configurable options when running operator.
 type Options struct {
 	CertDir                string
 	HealthProbeBindAddress string
+	Port                   int
 	RestConfig             *rest.Config
 }
 
 // Run starts operator main loop. At the moment it only runs TLS webhook server and healthcheck web server.
 func Run(ctx context.Context, options Options) error {
 	if options.RestConfig == nil {
-		// Has no Kubernetes credentials available.
+		// Required for in-cluster client configuration.
 		config, err := config.GetConfig()
 		if err != nil {
 			return fmt.Errorf("getting client configuration: %w", err)
@@ -40,18 +45,15 @@ func Run(ctx context.Context, options Options) error {
 		options.RestConfig = config
 	}
 
-	// Has bad configuration.
 	mgr, err := manager.New(options.RestConfig, options.withDefaults().toManagerOptions())
 	if err != nil {
 		return fmt.Errorf("initializing manager: %w", err)
 	}
 
-	// Serves /readyz request
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
 		return fmt.Errorf("adding readiness check: %w", err)
 	}
 
-	// Serves /healthz request.
 	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
 		return fmt.Errorf("adding health check: %w", err)
 	}
@@ -65,10 +67,8 @@ func Run(ctx context.Context, options Options) error {
 		},
 	}
 
-	// Responds to requests at /mutate-v1-pod.
-	mgr.GetWebhookServer().Register("/mutate-v1-pod", admission)
+	mgr.GetWebhookServer().Register(PodMutateEndpoint, admission)
 
-	// Stops when context is cancelled.
 	if err := mgr.Start(ctx); err != nil {
 		return fmt.Errorf("running manager: %w", err)
 	}
@@ -80,6 +80,7 @@ func (o *Options) toManagerOptions() manager.Options {
 	return manager.Options{
 		CertDir:                o.CertDir,
 		HealthProbeBindAddress: o.HealthProbeBindAddress,
+		Port:                   o.Port,
 	}
 }
 
@@ -89,7 +90,7 @@ func (o *Options) withDefaults() *Options {
 	}
 
 	if o.HealthProbeBindAddress == "" {
-		o.HealthProbeBindAddress = defaultHealthProbeBindAddress
+		o.HealthProbeBindAddress = DefaultHealthProbeBindAddress
 	}
 
 	return o
