@@ -14,7 +14,7 @@ import (
 )
 
 type podMutator interface {
-	Mutate(ctx context.Context, client client.Client, pod *corev1.Pod, ns string) error
+	Mutate(ctx context.Context, pod *corev1.Pod, ns string) error
 }
 
 type podMutatorHandler struct {
@@ -23,6 +23,7 @@ type podMutatorHandler struct {
 	mutators []podMutator
 }
 
+// Handle is in charge of handling the request received involving new pods.
 func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
 
@@ -32,7 +33,7 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	for _, m := range a.mutators {
-		if err := m.Mutate(ctx, a.Client, pod, req.Namespace); err != nil {
+		if err := m.Mutate(ctx, pod, req.Namespace); err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
 	}
@@ -45,6 +46,7 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 
+// InjectDecoder injects the decoder and is useful to respect the DecoderInjector interface.
 func (a *podMutatorHandler) InjectDecoder(d *admission.Decoder) error {
 	a.decoder = d
 

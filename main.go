@@ -6,13 +6,16 @@ import (
 	"log"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
 )
 
 func main() {
-	if err := operator.Run(signals.SetupSignalHandler(), operator.Options{}); err != nil {
+	log.Printf("Test Reload")
+
+	if err := operator.Run(signals.SetupSignalHandler(), operator.Options{Logger: logrus.New()}); err != nil {
 		log.Printf("Running operator failed: %v", err)
 
 		os.Exit(1)

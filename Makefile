@@ -2,10 +2,12 @@
 GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
+GO_OS ?= linux
+GO_ARCH ?= amd64
 GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
 CGO_ENABLED ?= 0
 LD_FLAGS ?= "-extldflags '-static'"
-GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
+GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GO_OS) GOARCH=$(GO_ARCH) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
 
 ifeq (, $(shell which golangci-lint))
 GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
