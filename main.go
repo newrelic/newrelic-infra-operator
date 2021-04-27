@@ -8,7 +8,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/newrelic/nri-k8s-operator/internal/operator"
+	"github.com/newrelic/newrelic-infra-operator/internal/operator"
 )
 
 func main() {

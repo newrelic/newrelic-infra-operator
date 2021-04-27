@@ -10,7 +10,7 @@ GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -mod=vendor -v -buildmode
 GOLANGCI_LINT_CONFIG_FILE ?= .golangci.yml
 
 DOCKER_CMD ?= docker
-IMAGE_REPO ?= newrelic/nri-k8s-operator
+IMAGE_REPO ?= newrelic/newrelic-infra-operator
 
 TILT_CMD ?= tilt
 TEST_KUBECONFIG ?= $(shell realpath kubeconfig)

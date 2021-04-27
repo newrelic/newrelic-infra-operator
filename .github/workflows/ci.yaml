@@ -41,7 +41,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
         with:
-          path: nri-k8s-operator
+          path: newrelic-infra-operator
 
       - name: Checkout charts repository for deployments
         uses: actions/checkout@v2
@@ -57,22 +57,22 @@ jobs:
         run: go install sigs.k8s.io/kind@v0.10.0
 
       - name: Create k8s Kind Cluster
-        run: make -C nri-k8s-operator kind
+        run: make -C newrelic-infra-operator kind
 
       - name: Run integration tests
-        run: make -C nri-k8s-operator test-integration
+        run: make -C newrelic-infra-operator test-integration
 
       - name: Build Docker image
-        run: make -C nri-k8s-operator image-push IMAGE_REPO=localhost:5000/nri-k8s-operator
+        run: make -C newrelic-infra-operator image-push IMAGE_REPO=localhost:5000/newrelic-infra-operator
 
       - name: Create Helm release
         env:
-          KUBECONFIG: ./nri-k8s-operator/kubeconfig
+          KUBECONFIG: ./newrelic-infra-operator/kubeconfig
         run: |
-          helm install nri-k8s-operator ./helm-charts-newrelic/charts/nri-k8s-operator --values ./nri-k8s-operator/values-dev.yaml --set image.repository=localhost:5000/nri-k8s-operator
+          helm install newrelic-infra-operator ./helm-charts-newrelic/charts/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml --set image.repository=localhost:5000/newrelic-infra-operator
 
       - name: Run e2e tests
-        run: make -C nri-k8s-operator ./test-e2e
+        run: make -C newrelic-infra-operator ./test-e2e
 
   lint:
     name: Lint

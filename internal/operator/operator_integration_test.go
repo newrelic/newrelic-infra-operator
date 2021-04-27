@@ -22,12 +22,12 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/newrelic/nri-k8s-operator/internal/operator"
+	"github.com/newrelic/newrelic-infra-operator/internal/operator"
 )
 
 const (
 	certValidityDuration = 1 * time.Hour
-	tempPrefix           = "nri-k8s-operator-tests"
+	tempPrefix           = "newrelic-infra-operator-tests"
 )
 
 func Test_Running_operator(t *testing.T) {

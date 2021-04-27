@@ -2,7 +2,7 @@
 
 # Settings and defaults.
 
-project_name = 'nri-k8s-operator'
+project_name = 'newrelic-infra-operator'
 
 settings = {
   'kind_cluster_name': 'kind',

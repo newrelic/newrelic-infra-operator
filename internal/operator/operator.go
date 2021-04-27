@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/newrelic/nri-k8s-operator/internal/mutator/pod/agent"
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 )
 
 const (

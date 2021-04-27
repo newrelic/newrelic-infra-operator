@@ -56,7 +56,7 @@ If you have `helm-charts` repository cloned into a different path, you can confi
 following key-value pair to your local `tilt_option.json` file:
 
 ```json
-  "chart_path": "../../helm-charts-newrelic/charts/nri-k8s-operator/"
+  "chart_path": "../../helm-charts-newrelic/charts/newrelic-infra-operator/"
 ```
 
 ### Creating kind cluster

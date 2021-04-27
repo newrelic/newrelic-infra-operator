@@ -1,4 +1,4 @@
-module github.com/newrelic/nri-k8s-operator
+module github.com/newrelic/newrelic-infra-operator
 
 go 1.16
 
