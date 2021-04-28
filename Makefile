@@ -7,6 +7,11 @@ CGO_ENABLED ?= 0
 LD_FLAGS ?= "-extldflags '-static'"
 GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -mod=vendor -v -buildmode=exe -ldflags $(LD_FLAGS)
 
+ifeq (, $(shell which golangci-lint))
+GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
+else
+GOLANGCI_LINT ?= golangci-lint
+endif
 GOLANGCI_LINT_CONFIG_FILE ?= .golangci.yml
 
 DOCKER_CMD ?= docker
@@ -68,11 +73,11 @@ update-linters: ## Updates list of enabled golangci-lint linters.
 	# Remove all enabled linters.
 	sed -i '/^  enable:/q0' $(GOLANGCI_LINT_CONFIG_FILE)
 	# Then add all possible linters to config.
-	golangci-lint linters | grep -E '^\S+:' | cut -d: -f1 | sort | sed 's/^/    - /g' | grep -v -E "($$(sed -e '1,/^  disable:$$/d' .golangci.yml  | grep -E '    - \S+$$' | awk '{print $$2}' | tr \\n '|' | sed 's/|$$//g'))" >> $(GOLANGCI_LINT_CONFIG_FILE)
+	$(GOLANGCI_LINT) linters | grep -E '^\S+:' | cut -d: -f1 | sort | sed 's/^/    - /g' | grep -v -E "($$(sed -e '1,/^  disable:$$/d' .golangci.yml  | grep -E '    - \S+$$' | awk '{print $$2}' | tr \\n '|' | sed 's/|$$//g'))" >> $(GOLANGCI_LINT_CONFIG_FILE)
 
 .PHONY: lint
 lint: build build-test ## Runs golangci-lint.
-	golangci-lint run $(GO_PACKAGES)
+	$(GOLANGCI_LINT) run $(GO_PACKAGES)
 
 .PHONY: codespell
 codespell: CODESPELL_BIN := codespell
