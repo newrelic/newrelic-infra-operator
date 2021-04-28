@@ -2,10 +2,10 @@
 GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
-GO_TEST ?= $(GO_CMD) test -mod=vendor -covermode=atomic -run $(GO_TESTS)
+GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
 CGO_ENABLED ?= 0
 LD_FLAGS ?= "-extldflags '-static'"
-GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -mod=vendor -v -buildmode=exe -ldflags $(LD_FLAGS)
+GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
 
 ifeq (, $(shell which golangci-lint))
 GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -44,20 +44,12 @@ test-integration: ## Runs all integration tests.
 test-e2e: ## Runs all e2e tests. Expects operator to be installed on the cluster using Helm chart.
 	KUBECONFIG=$(TEST_KUBECONFIG) $(GO_TEST) -tags e2e $(GO_PACKAGES)
 
-.PHONY: vendor
-vendor: ## Updates vendor directory.
-	$(GO_CMD) mod vendor
-
 .PHONY: ci
-ci: check-vendor check-tidy build test ## Runs checks performed by CI without external dependencies required (e.g. golangci-lint).
+ci: check-tidy build test ## Runs checks performed by CI without external dependencies required (e.g. golangci-lint).
 
 .PHONY: check-working-tree-clean
 check-working-tree-clean: ## Checks if working directory is clean.
 	@test -z "$$(git status --porcelain)" || (echo "Commit all changes before running this target"; exit 1)
-
-.PHONY: check-vendor
-check-vendor: check-working-tree-clean vendor ## Checks if vendor directory is up to date.
-	@test -z "$$(git status --porcelain)" || (echo "Please run 'make vendor' and commit generated changes."; git status; exit 1)
 
 .PHONY: check-tidy
 check-tidy: check-working-tree-clean ## Checks if Go module files are clean.
