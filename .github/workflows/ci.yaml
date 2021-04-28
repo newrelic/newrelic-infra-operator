@@ -97,4 +97,4 @@ jobs:
         with:
           check_filenames: true
           check_hidden: true
-          skip: ./.git,./vendor
+          skip: ./.git
