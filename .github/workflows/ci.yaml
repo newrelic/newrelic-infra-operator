@@ -78,6 +78,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
+      - name: Check linters are up to date
+        run: make check-update-linters
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
