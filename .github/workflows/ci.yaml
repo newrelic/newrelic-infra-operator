@@ -13,11 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16.3'
+          go-version: '1.16'
         id: go
 
       - name: Check out code into the Go module directory
@@ -31,11 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16.3'
+          go-version: '1.16'
         id: go
 
       - name: Check out code into the Go module directory
@@ -77,24 +75,22 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    container: golangci/golangci-lint:v1.39.0
     timeout-minutes: 10
     steps:
-
       - uses: actions/checkout@v2
+      - name: Check linters are up to date
+        run: make check-update-linters
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Run lint
-        run: make lint check-update-linters
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          only-new-issues: true
 
   codespell:
     name: Codespell
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-
       - uses: actions/checkout@v2
       - name: Codespell test
         uses: codespell-project/actions-codespell@master
