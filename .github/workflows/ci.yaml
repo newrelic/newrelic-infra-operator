@@ -12,6 +12,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [ linux ]
+        goarch: [ amd64, arm64, arm ]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -22,7 +27,11 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
+      - name: Build binary
+        run: make build
+
       - name: Run CI checks
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
         run: make ci
 
   integration:
