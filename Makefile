@@ -3,9 +3,21 @@ GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
 GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
+
+GOOS ?=
+GOARCH ?=
 CGO_ENABLED ?= 0
+
+BINARY_NAME ?= newrelic-infra-operator
+ifneq ($(strip $(GOOS)), )
+BINARY_NAME := $(BINARY_NAME)-$(GOOS)
+endif
+ifneq ($(strip $(GOARCH)), )
+BINARY_NAME := $(BINARY_NAME)-$(GOARCH)
+endif
+
 LD_FLAGS ?= "-extldflags '-static'"
-GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
+GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_CMD) build -o $(BINARY_NAME) -v -buildmode=exe -ldflags $(LD_FLAGS)
 
 ifeq (, $(shell which golangci-lint))
 GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
