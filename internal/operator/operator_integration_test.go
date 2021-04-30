@@ -153,7 +153,7 @@ func Test_Running_operator(t *testing.T) {
 					return false
 				}
 
-				if resp.StatusCode != 200 {
+				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
@@ -187,7 +187,7 @@ func Test_Running_operator(t *testing.T) {
 					return false
 				}
 
-				if resp.StatusCode != 200 {
+				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
@@ -200,6 +200,7 @@ func Test_Running_operator(t *testing.T) {
 
 			admissionReq := admissionv1.AdmissionReview{
 				Request: &admissionv1.AdmissionRequest{
+					Namespace: "default",
 					Object: runtime.RawExtension{
 						Raw: []byte(`{
     "apiVersion": "v1",
@@ -266,7 +267,7 @@ func Test_Running_operator(t *testing.T) {
 					return false
 				}
 
-				if resp.StatusCode != 200 {
+				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
@@ -281,8 +282,8 @@ func Test_Running_operator(t *testing.T) {
 					t.Fatalf("decoding admission response: %v", err)
 				}
 
-				if result := response.Response.Result; result != nil && result.Code != 200 {
-					t.Fatalf("got bad response with code %d: %v", result.Code, result.Message)
+				if result := response.Response.Result; result != nil && result.Code != http.StatusInternalServerError {
+					t.Fatalf("expecting an error due to the missing clusterRoleBinding %d: %v", result.Code, result.Message)
 				}
 
 				return true
@@ -334,6 +335,7 @@ func Test_Running_operator(t *testing.T) {
 			})
 
 			options := operator.Options{
+				Logger:                 logrus.New(),
 				RestConfig:             cfg,
 				CertDir:                dirWithCerts(t),
 				HealthProbeBindAddress: "1111",
@@ -370,6 +372,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	certDir, ca := dirWithCertsAndCA(t)
 
 	options := operator.Options{
+		Logger:                 logrus.New(),
 		RestConfig:             cfg,
 		CertDir:                certDir,
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
