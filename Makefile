@@ -9,15 +9,8 @@ GOARCH ?=
 CGO_ENABLED ?= 0
 
 BINARY_NAME ?= newrelic-infra-operator
-ifneq ($(strip $(GOOS)), )
-BINARY_NAME := $(BINARY_NAME)-$(GOOS)
-endif
-ifneq ($(strip $(GOARCH)), )
-BINARY_NAME := $(BINARY_NAME)-$(GOARCH)
-endif
 
 LD_FLAGS ?= "-extldflags '-static'"
-GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_CMD) build -o $(BINARY_NAME) -v -buildmode=exe -ldflags $(LD_FLAGS)
 
 ifeq (, $(shell which golangci-lint))
 GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -37,8 +30,11 @@ KIND_SCRIPT ?= hack/kind-with-registry.sh
 KIND_IMAGE ?= kindest/node:v1.19.7
 
 .PHONY: build
-build: ## Compiles operator binary.
-	$(GO_BUILD) .
+## Compiles operator binary.
+build: BINARY_NAME := $(if $(GOOS),$(BINARY_NAME)-$(GOOS),$(BINARY_NAME))
+build: BINARY_NAME := $(if $(GOARCH),$(BINARY_NAME)-$(GOARCH),$(BINARY_NAME))
+build:
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_CMD) build -o $(BINARY_NAME) -v -buildmode=exe -ldflags $(LD_FLAGS) .
 
 .PHONY: build-test
 build-test: ## Compiles unit tests.

@@ -17,6 +17,9 @@ jobs:
       matrix:
         goos: [ linux ]
         goarch: [ amd64, arm64, arm ]
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
     steps:
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -29,6 +32,12 @@ jobs:
 
       - name: Build binary
         run: make build
+
+      - name: Build docker image
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        env:
+          DOCKER_BUILDKIT: 1 # Required for docker to populate TARGETOS/TARGETARCH
+        run: make image
 
       - name: Run CI checks
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
