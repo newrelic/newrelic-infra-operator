@@ -15,9 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/newrelic/newrelic-infra-operator/internal/controller/rbac"
-	"github.com/newrelic/newrelic-infra-operator/internal/controller/secret"
 )
 
 const (
@@ -40,8 +37,8 @@ const (
 type Injector struct {
 	Config
 
-	secretController *secret.LicenseController
-	rbacController   *rbac.ClusterRoleBindingController
+	secretController *LicenseController
+	rbacController   *ClusterRoleBindingController
 
 	// This is the base container that will be used as base for the injection
 	container corev1.Container
@@ -49,9 +46,9 @@ type Injector struct {
 
 // Config of the Injector used to pass the required data to build it.
 type Config struct {
-	Logger  *logrus.Logger
-	Client  client.Client
-	Sidecar Sidecar
+	Logger      *logrus.Logger
+	Client      client.Client
+	AgentConfig InfraAgentConfig
 }
 
 // New function is the constructor for the injector struct.
@@ -60,9 +57,9 @@ func New(config Config) (*Injector, error) {
 	i.Config = config
 
 	i.container.Env = append(i.container.Env, standardEnvVar()...)
-	i.container.Env = append(i.container.Env, extraEnvVar(config.Sidecar)...)
+	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
-	resources, err := computeResourceRequirements(config.Sidecar)
+	resources, err := computeResourceRequirements(config.AgentConfig)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ResourceRequirements: %w", err)
 	}
@@ -76,39 +73,39 @@ func New(config Config) (*Injector, error) {
 		AllowPrivilegeEscalation: pointer.BoolPtr(false),
 	}
 
-	if config.Sidecar.PodSecurityContext.RunAsUser != 0 {
-		i.container.SecurityContext.RunAsUser = &config.Sidecar.PodSecurityContext.RunAsUser
+	if config.AgentConfig.PodSecurityContext.RunAsUser != 0 {
+		i.container.SecurityContext.RunAsUser = &config.AgentConfig.PodSecurityContext.RunAsUser
 	}
 
-	if config.Sidecar.PodSecurityContext.RunAsGroup != 0 {
-		i.container.SecurityContext.RunAsGroup = &config.Sidecar.PodSecurityContext.RunAsGroup
+	if config.AgentConfig.PodSecurityContext.RunAsGroup != 0 {
+		i.container.SecurityContext.RunAsGroup = &config.AgentConfig.PodSecurityContext.RunAsGroup
 	}
 
 	i.container.VolumeMounts = append(i.container.VolumeMounts, standardVolumes()...)
-	i.container.Image = fmt.Sprintf("%v:%v", config.Sidecar.Image.Repository, config.Sidecar.Image.Tag)
+	i.container.Image = fmt.Sprintf("%v:%v", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag)
 
 	i.container.ImagePullPolicy = corev1.PullIfNotPresent
 	if i.container.ImagePullPolicy != "" {
-		i.container.ImagePullPolicy = corev1.PullPolicy(config.Sidecar.Image.PullPolicy)
+		i.container.ImagePullPolicy = corev1.PullPolicy(config.AgentConfig.Image.PullPolicy)
 	}
 
 	i.container.Name = agentSidecarName
 
 	licenseName := getLicenseSecretName()
 
-	i.secretController = secret.NewLicenseController(
+	i.secretController = NewLicenseController(
 		config.Client,
 		licenseName,
 		agentSidecarLicenseKey,
-		config.Sidecar.LicenseKey,
+		config.AgentConfig.LicenseKey,
 		nil,
 		config.Logger)
-	i.rbacController = rbac.NewClusterRoleBindingController(config.Client, getRBACName(), config.Logger)
+	i.rbacController = NewClusterRoleBindingController(config.Client, getRBACName(), config.Logger)
 
 	return &i, nil
 }
 
-func computeResourceRequirements(s Sidecar) (*corev1.ResourceRequirements, error) {
+func computeResourceRequirements(s InfraAgentConfig) (*corev1.ResourceRequirements, error) {
 	if s.ResourceRequirements == nil {
 		// TODO we should set default values anyway
 		return nil, nil
@@ -152,8 +149,6 @@ func computeResourceRequirements(s Sidecar) (*corev1.ResourceRequirements, error
 
 // Mutate mutates given Pod object by injecting infrastructure-agent container into it with all dependencies.
 func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, namespace string) error {
-	logrus.Infof("Received pod request for %s/%s", namespace, pod.Name)
-
 	containerToInject := i.container
 
 	if !i.shouldInjectContainer(ctx, pod, namespace) {
@@ -191,7 +186,6 @@ func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, namespace string
 	}
 
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
-	logrus.Infof("Injected container in pod %s/%s", namespace, pod.Name)
 
 	return nil
 }
@@ -208,13 +202,13 @@ func (i *Injector) verifyContainerInjectability(
 	ctx context.Context,
 	pod *corev1.Pod,
 	namespace string) error {
-	if _, err := i.secretController.AssureExistence(ctx, namespace); err != nil {
+	if err := i.secretController.AssureExistence(ctx, namespace); err != nil {
 		i.Logger.Warnf("It is not possible to inject the container since we cannot assure the existence of secret")
 
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
-	_, err := i.rbacController.AssureClusterRoleBindingExistence(ctx, pod.Spec.ServiceAccountName, namespace)
+	err := i.rbacController.AssureClusterRoleBindingExistence(ctx, pod.Spec.ServiceAccountName, namespace)
 	if err != nil {
 		i.Logger.Warnf("It is not possible to inject the container since the cannot assure the existence of crb")
 
@@ -305,7 +299,7 @@ func standardEnvVar() []corev1.EnvVar {
 	}
 }
 
-func extraEnvVar(s Sidecar) []corev1.EnvVar {
+func extraEnvVar(s InfraAgentConfig) []corev1.EnvVar {
 	extraEnv := []corev1.EnvVar{}
 	for k, v := range s.ExtraEnvVars {
 		extraEnv = append(extraEnv,

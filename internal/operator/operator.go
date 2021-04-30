@@ -62,12 +62,15 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("adding health check: %w", err)
 	}
 
-	client, _ := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+	client, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
 
 	agentInjector, err := agent.New(agent.Config{
-		Logger:  options.Logger,
-		Client:  client,
-		Sidecar: readConfigStub(),
+		Logger:      options.Logger,
+		Client:      client,
+		AgentConfig: readConfigStub(),
 	})
 	if err != nil {
 		return fmt.Errorf("creating injector: %w", err)
@@ -75,7 +78,6 @@ func Run(ctx context.Context, options Options) error {
 
 	admission := &webhook.Admission{
 		Handler: &podMutatorHandler{
-			Client: client,
 			mutators: []podMutator{
 				agentInjector,
 			},
@@ -111,8 +113,9 @@ func (o *Options) withDefaults() *Options {
 	return o
 }
 
-func readConfigStub() agent.Sidecar {
-	return agent.Sidecar{
+func readConfigStub() agent.InfraAgentConfig {
+	// TODO This should provide as well default values when we will be reading such data
+	return agent.InfraAgentConfig{
 		ExtraEnvVars: map[string]string{
 			"NRIA_VERBOSE": "1",
 		},

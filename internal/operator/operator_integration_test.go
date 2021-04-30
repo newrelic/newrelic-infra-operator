@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
