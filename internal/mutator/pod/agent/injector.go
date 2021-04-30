@@ -23,7 +23,6 @@ const (
 	agentInjectedLabel      = "newrelic/agent-injected"
 	agentInjectedLabelValue = "true"
 	computeTypeServerless   = "serverless"
-	defaultReleaseName      = "newrelic-infra-operators"
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
@@ -56,7 +55,7 @@ func New(config Config) (*Injector, error) {
 	i := Injector{}
 	i.Config = config
 
-	i.container.Env = append(i.container.Env, standardEnvVar()...)
+	i.container.Env = append(i.container.Env, standardEnvVar(config.AgentConfig.ReleaseName)...)
 	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
 	resources, err := computeResourceRequirements(config.AgentConfig)
@@ -91,7 +90,7 @@ func New(config Config) (*Injector, error) {
 
 	i.container.Name = agentSidecarName
 
-	licenseName := getLicenseSecretName()
+	licenseName := getLicenseSecretName(config.AgentConfig.ReleaseName)
 
 	i.secretController = NewLicenseController(
 		config.Client,
@@ -100,7 +99,7 @@ func New(config Config) (*Injector, error) {
 		config.AgentConfig.LicenseKey,
 		nil,
 		config.Logger)
-	i.rbacController = NewClusterRoleBindingController(config.Client, getRBACName(), config.Logger)
+	i.rbacController = NewClusterRoleBindingController(config.Client, getRBACName(config.AgentConfig.ReleaseName), config.Logger)
 
 	return &i, nil
 }
@@ -218,21 +217,11 @@ func (i *Injector) verifyContainerInjectability(
 	return nil
 }
 
-func getRBACName() string {
-	releaseName := os.Getenv("RELEASE_NAME")
-	if releaseName == "" {
-		return defaultReleaseName
-	}
-
+func getRBACName(releaseName string) string {
 	return fmt.Sprintf("%s-infra-agent", releaseName)
 }
 
-func getLicenseSecretName() string {
-	releaseName := os.Getenv("RELEASE_NAME")
-	if releaseName == "" {
-		return defaultReleaseName
-	}
-
+func getLicenseSecretName(releaseName string) string {
 	return fmt.Sprintf("%s-config", releaseName)
 }
 
@@ -257,14 +246,14 @@ func standardVolumes() []corev1.VolumeMount {
 	}
 }
 
-func standardEnvVar() []corev1.EnvVar {
+func standardEnvVar(releaseName string) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
 			Name: envLicenseKey,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: getLicenseSecretName(),
+						Name: getLicenseSecretName(releaseName),
 					},
 					Key: agentSidecarLicenseKey,
 				},

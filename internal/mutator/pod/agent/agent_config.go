@@ -8,6 +8,7 @@ type InfraAgentConfig struct {
 	Image                Image              `yaml:"image"`
 	PodSecurityContext   PodSecurityContext `yaml:"podSecurityContext"`
 	LicenseKey           string
+	ReleaseName          string
 }
 
 // Quantities config used for both Limits and Requests.
