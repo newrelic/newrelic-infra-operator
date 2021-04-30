@@ -90,16 +90,15 @@ func New(config Config) (*Injector, error) {
 
 	i.container.Name = agentSidecarName
 
-	licenseName := getLicenseSecretName(config.AgentConfig.ReleaseName)
-
 	i.secretController = NewLicenseController(
 		config.Client,
-		licenseName,
+		getLicenseSecretName(config.AgentConfig.ReleaseName),
 		agentSidecarLicenseKey,
 		config.AgentConfig.LicenseKey,
 		nil,
 		config.Logger)
-	i.rbacController = NewClusterRoleBindingController(config.Client, getRBACName(config.AgentConfig.ReleaseName), config.Logger)
+	i.rbacController = NewClusterRoleBindingController(config.Client,
+		getRBACName(config.AgentConfig.ReleaseName), config.Logger)
 
 	return &i, nil
 }
