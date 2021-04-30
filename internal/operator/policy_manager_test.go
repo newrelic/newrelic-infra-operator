@@ -55,13 +55,29 @@ func TestPolicy_Match(t *testing.T) {
 				},
 			},
 		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "Pod with negative new relic label",
+				Labels: map[string]string{
+					"newrelic.com/inject": "false",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "Pod with positive new relic label",
+				Labels: map[string]string{
+					"newrelic.com/inject": "true",
+				},
+			},
+		},
 	}
 
 	defaultPolicy := operator.Policy{
 		Fargate: true,
 	}
 	podPolicyTable(t, &defaultPolicy, "defaultPolicy", testPods, []bool{
-		true, false, false, true, false,
+		true, false, false, true, false, false, true,
 	})
 
 	unlabeledButCustom := operator.Policy{
@@ -70,14 +86,14 @@ func TestPolicy_Match(t *testing.T) {
 		Labels:    []string{"customLabel"},
 	}
 	podPolicyTable(t, &unlabeledButCustom, "unlabeledButCustom", testPods, []bool{
-		true, true, false, false, true,
+		true, true, false, false, true, false, true,
 	})
 
 	customNoFargate := operator.Policy{
 		Labels: []string{"customLabel"},
 	}
 	podPolicyTable(t, &customNoFargate, "customNoFargate", testPods, []bool{
-		false, true, false, false, false,
+		false, true, false, false, false, false, true,
 	})
 }
 

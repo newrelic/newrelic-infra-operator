@@ -7,6 +7,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// defaultNewRelicLabel is added by default to the "labels" section of policies.
+const defaultNewRelicLabel = "newrelic.com/inject"
+
 // PodMatcher is anything capable of deciding if a pod matches some criteria.
 type PodMatcher interface {
 	Match(pod *v1.Pod) bool
@@ -35,12 +38,12 @@ func (p *Policy) Match(pod *v1.Pod) bool {
 		return match
 	}
 
-	var effectiveFargateLabels []string
+	extraLabels := []string{defaultNewRelicLabel}
 	if p.Fargate {
-		effectiveFargateLabels = fargateLabels()
+		extraLabels = append(extraLabels, fargateLabels()...)
 	}
 
-	for _, label := range append(p.Labels, effectiveFargateLabels...) {
+	for _, label := range append(p.Labels, extraLabels...) {
 		truthy, falsy := interpretLabel(pod.Labels[label])
 		// We have a positive match, but they're not absolute
 		if truthy {
