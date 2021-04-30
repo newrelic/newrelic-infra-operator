@@ -1,5 +1,4 @@
-// Package rbac implements a simple controller for the clusterRoleBinding needed by the infra agent.
-package rbac
+package agent
 
 import (
 	"context"
@@ -36,18 +35,19 @@ func NewClusterRoleBindingController(
 func (se *ClusterRoleBindingController) AssureClusterRoleBindingExistence(
 	ctx context.Context,
 	serviceAccountName string,
-	serviceAccountNamespace string) (*v1rbac.ClusterRoleBinding, error) {
+	serviceAccountNamespace string) error {
 	crb := &v1rbac.ClusterRoleBinding{}
-
-	err := se.client.Get(ctx, client.ObjectKey{
+	key := client.ObjectKey{
 		Name: se.clusterRoleBindingName,
-	}, crb)
+	}
+
+	err := se.client.Get(ctx, key, crb)
 	if err != nil {
-		return nil, fmt.Errorf("error while getting clusterRoleBindings %q : %w", se.clusterRoleBindingName, err)
+		return fmt.Errorf("getting clusterRoleBindings %q : %w", se.clusterRoleBindingName, err)
 	}
 
 	if hasSubject(crb, serviceAccountName, serviceAccountNamespace) {
-		return crb, nil
+		return nil
 	}
 
 	return se.updateClusterRoleBinding(ctx, crb, serviceAccountName, serviceAccountNamespace)
@@ -67,7 +67,7 @@ func (se *ClusterRoleBindingController) updateClusterRoleBinding(
 	ctx context.Context,
 	crb *v1rbac.ClusterRoleBinding,
 	serviceAccountName string,
-	serviceAccountNamespace string) (*v1rbac.ClusterRoleBinding, error) {
+	serviceAccountNamespace string) error {
 	crb.Subjects = append(crb.Subjects, v1rbac.Subject{
 		Kind:      v1rbac.ServiceAccountKind,
 		Name:      serviceAccountName,
@@ -75,8 +75,8 @@ func (se *ClusterRoleBindingController) updateClusterRoleBinding(
 	})
 
 	if err := se.client.Update(ctx, crb, &client.UpdateOptions{}); err != nil {
-		return nil, fmt.Errorf("updating clusterrolebinding: %w", err)
+		return fmt.Errorf("updating clusterrolebinding: %w", err)
 	}
 
-	return crb, nil
+	return nil
 }

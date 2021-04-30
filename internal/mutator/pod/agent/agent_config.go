@@ -1,7 +1,7 @@
 package agent
 
-// Sidecar holds the user's configuration for the sidecar to be injected.
-type Sidecar struct {
+// InfraAgentConfig holds the user's configuration for the sidecar to be injected.
+type InfraAgentConfig struct {
 	// Here we can map the whole user configuration from helm chart
 	ExtraEnvVars         map[string]string  `yaml:"extraEnvVars"`
 	ResourceRequirements *Resources         `yaml:"resources"`

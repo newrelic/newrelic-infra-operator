@@ -1,5 +1,4 @@
-// Package secret implements a simple controller for the license secret needed by the infra agent.
-package secret
+package agent
 
 import (
 	"bytes"
@@ -47,27 +46,29 @@ func NewLicenseController(
 // existing object or create a new one.
 func (lc *LicenseController) AssureExistence(
 	ctx context.Context,
-	namespace string) (*v1.Secret, error) {
+	namespace string) error {
 	s := &v1.Secret{}
-	err := lc.client.Get(ctx, client.ObjectKey{
+	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      lc.name,
-	}, s)
+	}
+
+	err := lc.client.Get(ctx, key, s)
 
 	if apierrors.IsNotFound(err) {
 		return lc.createSecret(ctx, namespace)
 	} else if err != nil {
-		return nil, fmt.Errorf("error while getting secret in the cluster %q/%q : %w", namespace, lc.name, err)
+		return fmt.Errorf("error while getting secret in the cluster %q/%q : %w", namespace, lc.name, err)
 	}
 
 	if value, ok := s.Data[lc.key]; !ok || !bytes.Equal(value, lc.value) {
 		return lc.updateSecret(ctx, s)
 	}
 
-	return s, nil
+	return nil
 }
 
-func (lc *LicenseController) createSecret(ctx context.Context, namespace string) (*v1.Secret, error) {
+func (lc *LicenseController) createSecret(ctx context.Context, namespace string) error {
 	s := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      lc.name,
@@ -81,18 +82,18 @@ func (lc *LicenseController) createSecret(ctx context.Context, namespace string)
 	}
 
 	if err := lc.client.Create(ctx, s, &client.CreateOptions{}); err != nil {
-		return nil, fmt.Errorf("creating secret %s/%s: %w", s.Namespace, s.Name, err)
+		return fmt.Errorf("creating secret %s/%s: %w", s.Namespace, s.Name, err)
 	}
 
-	return s, nil
+	return nil
 }
 
-func (lc *LicenseController) updateSecret(ctx context.Context, s *v1.Secret) (*v1.Secret, error) {
+func (lc *LicenseController) updateSecret(ctx context.Context, s *v1.Secret) error {
 	s.Data[lc.key] = lc.value
 	// we are currently ignoring possible differences in labels and secretType
 	if err := lc.client.Update(ctx, s, &client.UpdateOptions{}); err != nil {
-		return nil, fmt.Errorf("updating secret: %w", err)
+		return fmt.Errorf("updating secret: %w", err)
 	}
 
-	return s, nil
+	return nil
 }
