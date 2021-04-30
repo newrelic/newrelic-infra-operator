@@ -90,7 +90,10 @@ codespell: ## Runs spell checking.
 	$(CODESPELL_BIN)
 
 .PHONY: image
-image: ## Builds operator Docker image.
+## Builds operator Docker image.
+image: GOOS := $(if $(GOOS),$(GOOS),linux)
+image: GOARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
+image: build
 	$(DOCKER_CMD) build --rm=true -t $(IMAGE_REPO) .
 
 .PHONY: image-push
