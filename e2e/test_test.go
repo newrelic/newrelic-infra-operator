@@ -201,6 +201,8 @@ func Test_injection_Deployment(t *testing.T) {
 	})
 }
 
+// todo test secret and clusterrolebunding
+
 func RandStringRunes(n int) string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz")
 
