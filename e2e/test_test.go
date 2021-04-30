@@ -50,6 +50,83 @@ func Test_Example_test(t *testing.T) {
 	}
 }
 
+//nolint:funlen, cyclop
+func Test_roleBinding_Update(t *testing.T) {
+	t.Parallel()
+
+	t.Run("succeed", func(t *testing.T) {
+		t.Parallel()
+		// use the current context in kubeconfig
+
+		config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+		if err != nil {
+			t.Fatalf("building config from kubeconfig: %v", err)
+		}
+
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			t.Fatalf("preparing clientset: %v", err)
+		}
+
+		// Crating disposable namespace
+		namespaceName := RandStringRunes(8)
+		namespace := v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}}
+		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), &namespace, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("creating namespace: %v", err)
+		}
+		//nolint:errcheck
+		defer clientset.CoreV1().Namespaces().Delete(context.Background(), namespaceName, metav1.DeleteOptions{})
+
+		serviceAccountName := RandStringRunes(8)
+
+		_, err = clientset.CoreV1().ServiceAccounts(namespaceName).Create(context.Background(),
+			&v1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: serviceAccountName}}, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("creating service account: %v", err)
+		}
+
+		// Pod to be created
+		pod := v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-pod",
+				Namespace: namespaceName,
+				Labels: map[string]string{
+					"eks.amazonaws.com/fargate-profile": "testprofile",
+				},
+			},
+			Spec: v1.PodSpec{
+				ServiceAccountName: serviceAccountName,
+				Containers: []v1.Container{
+					{
+						Name:  "test-nginx",
+						Image: "nginx",
+					},
+				},
+			},
+		}
+		_, err = clientset.CoreV1().Pods(namespaceName).Create(context.Background(), &pod, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("creating pod: %v", err)
+		}
+
+		crb, err := clientset.RbacV1().ClusterRoleBindings().
+			Get(context.Background(), "e2e-newrelic-infra-operator-infra-agent", metav1.GetOptions{})
+		if err != nil {
+			t.Fatalf("getting crb: %v", err)
+		}
+		found := false
+		for _, s := range crb.Subjects {
+			if s.Name == serviceAccountName && s.Namespace == namespaceName {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("crb does not contain the pod service account: %v", err)
+		}
+	})
+}
+
 //nolint:funlen
 func Test_injection_pod(t *testing.T) {
 	t.Parallel()
