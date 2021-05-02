@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
+	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
 
 const (
@@ -48,7 +49,7 @@ func Test_Running_operator(t *testing.T) {
 
 		ch := make(chan error)
 
-		ctxWithDeadline := contextWithDeadline(t)
+		ctxWithDeadline := testutil.ContextWithDeadline(t)
 
 		ctx, cancel := context.WithTimeout(ctxWithDeadline, 1*time.Second)
 
@@ -336,7 +337,7 @@ func Test_Running_operator(t *testing.T) {
 				HealthProbeBindAddress: "1111",
 			}
 
-			if err := operator.Run(contextWithDeadline(t), options); err == nil {
+			if err := operator.Run(testutil.ContextWithDeadline(t), options); err == nil {
 				t.Fatalf("Expected operator to return error")
 			}
 		})
@@ -346,7 +347,7 @@ func Test_Running_operator(t *testing.T) {
 func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.Context, operator.Options, []byte) {
 	t.Helper()
 
-	ctxWithDeadline := contextWithDeadline(t)
+	ctxWithDeadline := testutil.ContextWithDeadline(t)
 	ctx, cancel := context.WithCancel(ctxWithDeadline)
 
 	testEnv := &envtest.Environment{}
@@ -419,24 +420,6 @@ func randomUnprivilegedPort(t *testing.T) int {
 	}
 
 	return int(i.Int64()) + min
-}
-
-func contextWithDeadline(t *testing.T) context.Context {
-	t.Helper()
-
-	deadline, ok := t.Deadline()
-	if !ok {
-		return context.Background()
-	}
-
-	// Arbitrary amount of time to let tests exit cleanly before main process terminates.
-	timeoutGracePeriod := 10 * time.Second
-
-	ctx, cancel := context.WithDeadline(context.Background(), deadline.Truncate(timeoutGracePeriod))
-
-	t.Cleanup(cancel)
-
-	return ctx
 }
 
 func dirWithCerts(t *testing.T) string {
