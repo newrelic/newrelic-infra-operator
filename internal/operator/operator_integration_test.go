@@ -35,7 +35,6 @@ import (
 
 const (
 	certValidityDuration = 1 * time.Hour
-	tempPrefix           = "newrelic-infra-operator-tests"
 	kubeconfigEnv        = "KUBECONFIG"
 	testHost             = "127.0.0.1"
 )
@@ -448,20 +447,11 @@ func dirWithCerts(t *testing.T) string {
 	return dir
 }
 
-//nolint:funlen,cyclop
+//nolint:funlen
 func dirWithCertsAndCA(t *testing.T) (string, []byte) {
 	t.Helper()
 
-	dir, err := ioutil.TempDir("", tempPrefix)
-	if err != nil {
-		t.Fatalf("creating temporary directory: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Logf("removing temporary directory %q: %v", dir, err)
-		}
-	})
+	dir := t.TempDir()
 
 	// Generate RSA private key.
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
