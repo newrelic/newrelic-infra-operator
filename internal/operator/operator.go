@@ -68,12 +68,12 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("adding health check: %w", err)
 	}
 
-	client, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+	c, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	agentConfig, err := readAndBuildConfigStub(client, options.Logger)
+	agentConfig, err := readAndBuildConfigStub(c, options.Logger)
 	if err != nil {
 		return fmt.Errorf("partsing agentConfig: %w", err)
 	}
