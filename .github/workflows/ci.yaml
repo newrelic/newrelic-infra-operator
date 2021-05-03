@@ -101,7 +101,7 @@ jobs:
         run: go install sigs.k8s.io/kind@v0.10.0
 
       - name: Create k8s Kind Cluster
-        run: make -C newrelic-infra-operator kind
+        run: make -C newrelic-infra-operator kind-up
 
       - name: Run integration tests
         run: make -C newrelic-infra-operator test-integration
