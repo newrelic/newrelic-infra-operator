@@ -51,7 +51,7 @@ func Test_Example_test(t *testing.T) {
 }
 
 //nolint:funlen,cyclop
-func Test_roleBinding_Update(t *testing.T) {
+func Test_clusterRoleBinding_Update(t *testing.T) {
 	t.Parallel()
 
 	t.Run("succeed", func(t *testing.T) {

@@ -248,7 +248,7 @@ func Test_Running_operator(t *testing.T) {
 				t.Fatalf("adding CA certificate to pool")
 			}
 
-			client := &http.Client{
+			c := &http.Client{
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{
 						RootCAs: pool,
@@ -257,7 +257,7 @@ func Test_Running_operator(t *testing.T) {
 			}
 
 			retryUntilFinished(func() bool {
-				resp, err := client.Do(req) //nolint:bodyclose
+				resp, err := c.Do(req) //nolint:bodyclose
 
 				defer closeResponseBody(t, resp)
 

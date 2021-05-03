@@ -19,10 +19,10 @@ import (
 )
 
 //nolint:funlen
-func Test_RoleBinding(t *testing.T) {
+func Test_clusterRoleBinding(t *testing.T) {
 	t.Parallel()
 
-	t.Run("exits_due_to_missing_role_binging", func(t *testing.T) {
+	t.Run("exits_due_to_missing_cluster_role_binging", func(t *testing.T) {
 		t.Parallel()
 
 		i, err := agent.New(&agent.Config{
