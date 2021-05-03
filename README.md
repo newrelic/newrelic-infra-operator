@@ -64,7 +64,7 @@ following key-value pair to your local `tilt_option.json` file:
 If you want to use local kind cluster for testing, create it with command below:
 
 ```sh
-make kind
+make kind-up
 ```
 
 ### Run
