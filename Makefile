@@ -89,9 +89,12 @@ codespell: ## Runs spell checking.
 ## Builds operator Docker image.
 ## GOOS and GOARCH are manually set so the output BINARY_NAME includes them as suffixes.
 ## Additionally, DOCKER_BUILDKIT is set since it's needed for docker to populate TARGETOS and TARGETARCH ARGs.
+## Here we call $(MAKE) build instead of using a dependency because the latter would, for some reason, prevent
+## the BINARY_NAME conditional from working.
 image: GOOS := $(if $(GOOS),$(GOOS),linux)
 image: GOARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
-image: build
+image:
+	$(MAKE) build GOOS=$(GOOS) GOARCH=$(GOARCH)
 	DOCKER_BUILDKIT=1 $(DOCKER_CMD) build --rm=true -t $(IMAGE_REPO) .
 
 .PHONY: image-push
