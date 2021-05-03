@@ -8,3 +8,4 @@ restartPolicy: Never
 
 # Temporary extra values, required by newrelic-infra-operator chart.
 cluster: testing
+licenseKey: stub
