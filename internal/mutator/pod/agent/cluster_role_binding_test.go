@@ -15,41 +15,53 @@ import (
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 )
 
-func Test_RoleBinding_Controller(t *testing.T) {
+//nolint:funlen
+func Test_RoleBinding(t *testing.T) {
 	t.Parallel()
-
-	logger := logrus.New()
 
 	t.Run("exits_due_to_missing_role_binging", func(t *testing.T) {
 		t.Parallel()
 
-		rbc := agent.NewClusterRoleBindingController(fake.NewClientBuilder().Build(), "", logger)
+		i, err := agent.New(&agent.Config{
+			Logger:                 logrus.New(),
+			Client:                 fake.NewClientBuilder().Build(),
+			ClusterRoleBindingName: agent.GetRBACName("fake-release"),
+		})
+		if err != nil {
+			t.Fatalf("No error expected creating injector : %v", err)
+		}
 
-		err := rbc.EnsureSubject(
+		err = i.EnsureSubject(
 			context.Background(),
 			"not-existing",
 			"not-existing")
 		if err == nil {
-			t.Fatalf("The role does not exist, the call should fail : %v", err)
+			t.Fatalf("The role does not exist, the call should fail")
 		}
 		if !apierrors.IsNotFound(err) {
 			t.Fatalf("The expected error is 'resource not found' : %v", err)
 		}
 	})
-	t.Run("succeed", func(t *testing.T) {
+	t.Run("updates_subjects", func(t *testing.T) {
 		t.Parallel()
 
 		clrb := &v1.ClusterRoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test",
+				Name: agent.GetRBACName("fake-release"),
 			},
 			Subjects: []v1.Subject{},
 			RoleRef:  v1.RoleRef{},
 		}
 		c := fake.NewClientBuilder().WithObjects(clrb).Build()
-		rbc := agent.NewClusterRoleBindingController(c, "test", logger)
-
-		err := rbc.EnsureSubject(
+		i, err := agent.New(&agent.Config{
+			Logger:                 logrus.New(),
+			Client:                 c,
+			ClusterRoleBindingName: agent.GetRBACName("fake-release"),
+		})
+		if err != nil {
+			t.Fatalf("No error expected creating injector : %v", err)
+		}
+		err = i.EnsureSubject(
 			context.Background(),
 			"sa-name",
 			"sa-namespace")
@@ -59,7 +71,7 @@ func Test_RoleBinding_Controller(t *testing.T) {
 
 		crb := &v1.ClusterRoleBinding{}
 		key := client.ObjectKey{
-			Name: "test",
+			Name: agent.GetRBACName("fake-release"),
 		}
 
 		err = c.Get(context.Background(), key, crb)

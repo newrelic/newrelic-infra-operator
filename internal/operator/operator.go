@@ -30,7 +30,8 @@ const (
 	// DefaultHealthProbeBindAddress is a default bind address for health probes.
 	DefaultHealthProbeBindAddress = ":9440"
 
-	defaultResourcePrefix = "newrelic-infra-operators"
+	defaultResourcePrefix   = "newrelic-infra-operators"
+	defaultLicenseSecretKey = "license"
 )
 
 // Options holds the configuration for an operator.
@@ -72,16 +73,12 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	agentAconfig, err := readConfigStub()
+	agentConfig, err := readAndBuildConfigStub(client, options.Logger)
 	if err != nil {
 		return fmt.Errorf("partsing agentConfig: %w", err)
 	}
 
-	agentInjector, err := agent.New(&agent.Config{
-		Logger:      options.Logger,
-		Client:      client,
-		AgentConfig: agentAconfig,
-	})
+	agentInjector, err := agent.New(agentConfig)
 	if err != nil {
 		return fmt.Errorf("creating injector: %w", err)
 	}
@@ -123,11 +120,17 @@ func (o *Options) withDefaults() *Options {
 	return o
 }
 
-func readConfigStub() (*agent.InfraAgentConfig, error) {
+//nolint:funlen
+func readAndBuildConfigStub(c client.Client, logger *logrus.Logger) (*agent.Config, error) {
 	// TODO This should provide as well default values when we will be reading such data
 	resourcePrefix := os.Getenv("RELEASE_NAME")
 	if resourcePrefix == "" {
 		resourcePrefix = defaultResourcePrefix
+	}
+
+	licenseSecretKey := os.Getenv("CUSTOM_LICENSE_KEY")
+	if licenseSecretKey == "" {
+		licenseSecretKey = defaultLicenseSecretKey
 	}
 
 	memoryLimit, err := resource.ParseQuantity("100M")
@@ -150,12 +153,10 @@ func readConfigStub() (*agent.InfraAgentConfig, error) {
 		return nil, fmt.Errorf("parsing CPURequest: %w", err)
 	}
 
-	return &agent.InfraAgentConfig{
+	infraAgentConfig := agent.InfraAgentConfig{
 		ExtraEnvVars: map[string]string{
 			"NRIA_VERBOSE": "1",
 		},
-		ResourcePrefix: resourcePrefix,
-		LicenseKey:     os.Getenv("NRIA_LICENSE_KEY"),
 		ResourceRequirements: &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
 				v1.ResourceCPU:    CPULimit,
@@ -170,5 +171,16 @@ func readConfigStub() (*agent.InfraAgentConfig, error) {
 			Repository: "newrelic/infrastructure-k8s",
 			Tag:        "2.4.0-unprivileged",
 		},
+	}
+
+	return &agent.Config{
+		Logger:                 logger,
+		Client:                 c,
+		AgentConfig:            &infraAgentConfig,
+		ResourcePrefix:         resourcePrefix,
+		LicenseSecretName:      agent.GetLicenseSecretName(resourcePrefix),
+		LicenseSecretKey:       licenseSecretKey,
+		LicenseSecretValue:     []byte(os.Getenv("NRIA_LICENSE_KEY")),
+		ClusterRoleBindingName: agent.GetRBACName(resourcePrefix),
 	}, nil
 }
