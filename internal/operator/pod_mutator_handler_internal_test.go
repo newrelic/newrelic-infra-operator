@@ -9,10 +9,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
+
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
@@ -45,7 +46,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 
 		handler.mutators = []podMutator{
 			&mockMutator{
-				mutateF: func(_ context.Context, _ client.Client, pod *corev1.Pod, _ string) error {
+				mutateF: func(_ context.Context, pod *corev1.Pod, _ agent.RequestOptions) error {
 					pod.Labels = map[string]string{"foo": "bar"}
 
 					return nil
@@ -91,12 +92,12 @@ func Test_Pod_mutator_handle(t *testing.T) {
 
 			handler.mutators = []podMutator{
 				&mockMutator{
-					mutateF: func(_ context.Context, _ client.Client, _ *corev1.Pod, _ string) error {
+					mutateF: func(_ context.Context, _ *corev1.Pod, _ agent.RequestOptions) error {
 						return nil
 					},
 				},
 				&mockMutator{
-					mutateF: func(_ context.Context, _ client.Client, _ *corev1.Pod, _ string) error {
+					mutateF: func(_ context.Context, _ *corev1.Pod, _ agent.RequestOptions) error {
 						return fmt.Errorf("mutation failed")
 					},
 				},
@@ -112,11 +113,12 @@ func Test_Pod_mutator_handle(t *testing.T) {
 }
 
 type mockMutator struct {
-	mutateF func(ctx context.Context, client client.Client, pod *corev1.Pod, ns string) error
+	mutateF func(ctx context.Context, pod *corev1.Pod, reqOptions agent.RequestOptions) error
 }
 
-func (m *mockMutator) Mutate(ctx context.Context, client client.Client, pod *corev1.Pod, ns string) error {
-	return m.mutateF(ctx, client, pod, ns)
+func (m *mockMutator) Mutate(
+	ctx context.Context, pod *corev1.Pod, reqOptions agent.RequestOptions) error {
+	return m.mutateF(ctx, pod, reqOptions)
 }
 
 func testRequest() admission.Request {
