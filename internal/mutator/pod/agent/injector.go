@@ -6,7 +6,7 @@ package agent
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/sha1"
 	"fmt"
 	"os"
 	"strings"
@@ -20,6 +20,8 @@ import (
 )
 
 const (
+	agentSidecarName = "newrelic-infrastructure-sidecar"
+
 	agentInjectedLabel    = "newrelic/agent-injected"
 	computeTypeServerless = "serverless"
 
@@ -101,6 +103,8 @@ func New(config *Config) (*injector, error) {
 	if i.container.ImagePullPolicy != "" {
 		i.container.ImagePullPolicy = corev1.PullPolicy(config.AgentConfig.Image.PullPolicy)
 	}
+
+	i.container.Name = agentSidecarName
 
 	return &i, nil
 }
@@ -275,7 +279,7 @@ func computeHash(o interface{}) (string, error) {
 		return "", fmt.Errorf("computing hash: %w", err)
 	}
 
-	h := sha256.New()
+	h := sha1.New()
 	h.Write(b)
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil

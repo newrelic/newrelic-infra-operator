@@ -89,7 +89,7 @@ func Test_roleBinding_Update(t *testing.T) {
 		// Pod to be created
 		pod := v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-pod",
+				Name:      "testpod",
 				Namespace: namespaceName,
 				Labels: map[string]string{
 					"eks.amazonaws.com/fargate-profile": "testprofile",
@@ -111,7 +111,7 @@ func Test_roleBinding_Update(t *testing.T) {
 		}
 
 		crb, err := clientset.RbacV1().ClusterRoleBindings().
-			Get(context.Background(), "e2e-newrelic-infra-operator-infra-agent", metav1.GetOptions{})
+			Get(context.Background(), "newrelic-infra-operator-infra-agent", metav1.GetOptions{})
 		if err != nil {
 			t.Fatalf("getting crb: %v", err)
 		}
@@ -122,7 +122,7 @@ func Test_roleBinding_Update(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Fatalf("crb does not contain the pod service account: %v", err)
+			t.Fatalf("crb does not contain the pod service account")
 		}
 	})
 }
@@ -158,7 +158,7 @@ func Test_injection_pod(t *testing.T) {
 		// Pod to be created
 		pod := v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-pod",
+				Name:      "testpod",
 				Namespace: namespaceName,
 				Labels: map[string]string{
 					"eks.amazonaws.com/fargate-profile": "testprofile",
@@ -178,7 +178,7 @@ func Test_injection_pod(t *testing.T) {
 			t.Fatalf("creating pod: %v", err)
 		}
 
-		pCreated, err := clientset.CoreV1().Pods(namespaceName).Get(context.TODO(), "test-pod", metav1.GetOptions{})
+		pCreated, err := clientset.CoreV1().Pods(namespaceName).Get(context.TODO(), "testpod", metav1.GetOptions{})
 		if err != nil {
 			t.Fatalf("getting pod: %v", err)
 		}
@@ -188,8 +188,8 @@ func Test_injection_pod(t *testing.T) {
 		if len(pCreated.Spec.Volumes) != 5 {
 			t.Fatalf("expecting 4 volumes: %v", err)
 		}
-		if pCreated.ObjectMeta.Labels["newrelic/agent-injected"] != "true" {
-			t.Fatalf("expecting newrelic/agent-injected label to be injected: %v", err)
+		if _, ok := pCreated.ObjectMeta.Labels["newrelic/agent-injected"]; !ok {
+			t.Fatalf("expecting newrelic/agent-injected label to be injected")
 		}
 	})
 }
@@ -271,14 +271,12 @@ func Test_injection_Deployment(t *testing.T) {
 			if len(p.Spec.Volumes) != 5 {
 				t.Fatalf("expecting 4 volumes: %v", err)
 			}
-			if p.ObjectMeta.Labels["newrelic/agent-injected"] != "true" {
-				t.Fatalf("expecting newrelic/agent-injected label to be injected: %v", err)
+			if _, ok := p.ObjectMeta.Labels["newrelic/agent-injected"]; !ok {
+				t.Fatalf("expecting newrelic/agent-injected label to be injected")
 			}
 		}
 	})
 }
-
-// todo test secret and clusterrolebunding
 
 func RandStringRunes(n int) string {
 	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz")
@@ -291,4 +289,8 @@ func RandStringRunes(n int) string {
 	}
 
 	return string(b)
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
