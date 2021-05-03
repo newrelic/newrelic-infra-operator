@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/golangci/golangci-lint v1.39.0
 	github.com/sirupsen/logrus v1.8.1
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
 	k8s.io/client-go v0.20.2
