@@ -39,7 +39,7 @@ func Test_Compute_Hash(t *testing.T) {
 		t.Fatalf("hash should be different")
 	}
 
-	if h1 != "bfab307e438e91e8cea1f8e5425bda592231ff80b097c907b37da955901cf13b" {
+	if h1 != "564fcc8d2664b622cbbb78817222eca6135ca03c" {
 		t.Fatalf("hash mutated: %s", h1)
 	}
 }
