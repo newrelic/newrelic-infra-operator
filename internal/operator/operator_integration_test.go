@@ -26,6 +26,12 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -282,8 +288,8 @@ func Test_Running_operator(t *testing.T) {
 					t.Fatalf("decoding admission response: %v", err)
 				}
 
-				if result := response.Response.Result; result != nil && result.Code != http.StatusInternalServerError {
-					t.Fatalf("expecting an error due to the missing clusterRoleBinding %d: %v", result.Code, result.Message)
+				if result := response.Response.Result; result != nil && result.Code != http.StatusOK {
+					t.Fatalf("got bad response with code %d: %v", result.Code, result.Message)
 				}
 
 				return true
@@ -383,6 +389,8 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 		mutateOptions(&options)
 	}
 
+	createTestDependencies(t, options)
+
 	go func() {
 		if err := operator.Run(ctx, options); err != nil {
 			fmt.Printf("running operator: %v\n", err) //nolint:forbidigo
@@ -391,6 +399,31 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	}()
 
 	return ctx, options, ca
+}
+
+func createTestDependencies(t *testing.T, options operator.Options) {
+	t.Helper()
+
+	c, err := client.New(options.RestConfig, client.Options{})
+	if err != nil {
+		t.Fatalf("initializing client: %v", err)
+	}
+
+	crb := v1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "newrelic-infra-operators-infra-agent",
+		},
+		RoleRef: v1.RoleRef{
+			// Note that we are not interested into having the real role binded
+			Name: "view",
+			Kind: "ClusterRole",
+		},
+	}
+	// Making sure that clusterRoleBinding exists to run tests
+	err = c.Create(context.Background(), &crb, &client.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		t.Fatalf("assuring existence of rolebinding: %v", err)
+	}
 }
 
 func retryUntilFinished(f func() bool) {
