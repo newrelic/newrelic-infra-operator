@@ -1,5 +1,6 @@
 // Copyright 2021 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	log.Printf("Test Reload")
+	log.Printf("Starting NewRelic infra operator")
 
 	if err := operator.Run(signals.SetupSignalHandler(), operator.Options{Logger: logrus.New()}); err != nil {
 		log.Printf("Running operator failed: %v", err)

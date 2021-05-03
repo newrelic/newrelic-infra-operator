@@ -1,3 +1,6 @@
+// Copyright 2021 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package agent
 
 import v1 "k8s.io/api/core/v1"
