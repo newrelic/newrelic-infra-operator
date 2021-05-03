@@ -33,8 +33,8 @@ const (
 	envLicenseKey             = "NRIA_LICENSE_KEY"
 )
 
-// Injector holds agent injection configuration.
-type Injector struct {
+// injector holds agent injection configuration.
+type injector struct {
 	*Config
 
 	secretController *LicenseController
@@ -57,11 +57,12 @@ type RequestOptions struct {
 }
 
 // New function is the constructor for the injector struct.
-func New(config *Config) (*Injector, error) {
-	i := Injector{}
+// nolint:revive,golint
+func New(config *Config) (*injector, error) {
+	i := injector{}
 	i.Config = config
 
-	i.container.Env = append(i.container.Env, standardEnvVar(config.AgentConfig.ReleaseName)...)
+	i.container.Env = append(i.container.Env, standardEnvVar(config.AgentConfig.ResourcePrefix)...)
 	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
 	if config.AgentConfig.ResourceRequirements != nil {
@@ -93,19 +94,19 @@ func New(config *Config) (*Injector, error) {
 
 	i.secretController = NewLicenseController(
 		config.Client,
-		getLicenseSecretName(config.AgentConfig.ReleaseName),
+		getLicenseSecretName(config.AgentConfig.ResourcePrefix),
 		agentSidecarLicenseKey,
 		config.AgentConfig.LicenseKey,
 		nil,
 		config.Logger)
 	i.rbacController = NewClusterRoleBindingController(config.Client,
-		getRBACName(config.AgentConfig.ReleaseName), config.Logger)
+		getRBACName(config.AgentConfig.ResourcePrefix), config.Logger)
 
 	return &i, nil
 }
 
 // Mutate mutates given Pod object by injecting infrastructure-agent container into it with all dependencies.
-func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions RequestOptions) error {
+func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions RequestOptions) error {
 	containerToInject := i.container
 
 	if !i.shouldInjectContainer(ctx, pod, requestOptions.Namespace) {
@@ -152,7 +153,7 @@ func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions R
 	return nil
 }
 
-func (i *Injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) bool {
+func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) bool {
 	// TODO
 	// We should check the different labels/namespaces
 	// We should check if we want to inject it (es: job, newrelic agent, et)
@@ -160,7 +161,7 @@ func (i *Injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 	return true
 }
 
-func (i *Injector) verifyContainerInjectability(
+func (i *injector) verifyContainerInjectability(
 	ctx context.Context,
 	pod *corev1.Pod,
 	namespace string) error {
@@ -180,12 +181,12 @@ func (i *Injector) verifyContainerInjectability(
 	return nil
 }
 
-func getRBACName(releaseName string) string {
-	return fmt.Sprintf("%s-infra-agent", releaseName)
+func getRBACName(resourcePrefix string) string {
+	return fmt.Sprintf("%s-infra-agent", resourcePrefix)
 }
 
-func getLicenseSecretName(releaseName string) string {
-	return fmt.Sprintf("%s-config", releaseName)
+func getLicenseSecretName(resourcePrefix string) string {
+	return fmt.Sprintf("%s-config", resourcePrefix)
 }
 
 func standardVolumes() []corev1.VolumeMount {
@@ -209,14 +210,14 @@ func standardVolumes() []corev1.VolumeMount {
 	}
 }
 
-func standardEnvVar(releaseName string) []corev1.EnvVar {
+func standardEnvVar(resourcePrefix string) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
 			Name: envLicenseKey,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: getLicenseSecretName(releaseName),
+						Name: getLicenseSecretName(resourcePrefix),
 					},
 					Key: agentSidecarLicenseKey,
 				},

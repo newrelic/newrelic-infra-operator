@@ -10,7 +10,7 @@ type InfraAgentConfig struct {
 	Image                Image                    `yaml:"image"`
 	PodSecurityContext   PodSecurityContext       `yaml:"podSecurityContext"`
 	LicenseKey           string
-	ReleaseName          string
+	ResourcePrefix       string
 }
 
 // Image config.

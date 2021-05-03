@@ -30,7 +30,7 @@ const (
 	// DefaultHealthProbeBindAddress is a default bind address for health probes.
 	DefaultHealthProbeBindAddress = ":9440"
 
-	defaultReleaseName = "newrelic-infra-operators"
+	defaultResourcePrefix = "newrelic-infra-operators"
 )
 
 // Options holds the configuration for an operator.
@@ -125,9 +125,9 @@ func (o *Options) withDefaults() *Options {
 
 func readConfigStub() (*agent.InfraAgentConfig, error) {
 	// TODO This should provide as well default values when we will be reading such data
-	releaseName := os.Getenv("RELEASE_NAME")
-	if releaseName == "" {
-		releaseName = defaultReleaseName
+	resourcePrefix := os.Getenv("RELEASE_NAME")
+	if resourcePrefix == "" {
+		resourcePrefix = defaultResourcePrefix
 	}
 
 	memoryLimit, err := resource.ParseQuantity("100M")
@@ -154,8 +154,8 @@ func readConfigStub() (*agent.InfraAgentConfig, error) {
 		ExtraEnvVars: map[string]string{
 			"NRIA_VERBOSE": "1",
 		},
-		ReleaseName: releaseName,
-		LicenseKey:  os.Getenv("NRIA_LICENSE_KEY"),
+		ResourcePrefix: resourcePrefix,
+		LicenseKey:     os.Getenv("NRIA_LICENSE_KEY"),
 		ResourceRequirements: &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
 				v1.ResourceCPU:    CPULimit,
