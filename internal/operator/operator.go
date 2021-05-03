@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"os"
 
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -69,10 +72,15 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	agentInjector, err := agent.New(agent.Config{
+	agentAconfig, err := readConfigStub()
+	if err != nil {
+		return fmt.Errorf("partsing agentConfig: %w", err)
+	}
+
+	agentInjector, err := agent.New(&agent.Config{
 		Logger:      options.Logger,
 		Client:      client,
-		AgentConfig: readConfigStub(),
+		AgentConfig: agentAconfig,
 	})
 	if err != nil {
 		return fmt.Errorf("creating injector: %w", err)
@@ -115,32 +123,52 @@ func (o *Options) withDefaults() *Options {
 	return o
 }
 
-func readConfigStub() agent.InfraAgentConfig {
+func readConfigStub() (*agent.InfraAgentConfig, error) {
 	// TODO This should provide as well default values when we will be reading such data
 	releaseName := os.Getenv("RELEASE_NAME")
 	if releaseName == "" {
 		releaseName = defaultReleaseName
 	}
 
-	return agent.InfraAgentConfig{
+	memoryLimit, err := resource.ParseQuantity("100M")
+	if err != nil {
+		return nil, fmt.Errorf("parsing memoryLimit: %w", err)
+	}
+
+	memoryRequest, err := resource.ParseQuantity("100M")
+	if err != nil {
+		return nil, fmt.Errorf("parsing memoryRequest: %w", err)
+	}
+
+	CPULimit, err := resource.ParseQuantity("100m")
+	if err != nil {
+		return nil, fmt.Errorf("parsing CPULimit: %w", err)
+	}
+
+	CPURequest, err := resource.ParseQuantity("100m")
+	if err != nil {
+		return nil, fmt.Errorf("parsing CPURequest: %w", err)
+	}
+
+	return &agent.InfraAgentConfig{
 		ExtraEnvVars: map[string]string{
 			"NRIA_VERBOSE": "1",
 		},
 		ReleaseName: releaseName,
 		LicenseKey:  os.Getenv("NRIA_LICENSE_KEY"),
-		ResourceRequirements: &agent.Resources{
-			Requests: agent.Quantities{
-				CPU:    "100m",
-				Memory: "100M",
+		ResourceRequirements: &v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceCPU:    CPULimit,
+				v1.ResourceMemory: memoryLimit,
 			},
-			Limits: agent.Quantities{
-				CPU:    "100m",
-				Memory: "100M",
+			Requests: v1.ResourceList{
+				v1.ResourceCPU:    CPURequest,
+				v1.ResourceMemory: memoryRequest,
 			},
 		},
 		Image: agent.Image{
 			Repository: "newrelic/infrastructure-k8s",
 			Tag:        "2.4.0-unprivileged",
 		},
-	}
+	}, nil
 }

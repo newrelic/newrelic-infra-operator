@@ -50,7 +50,7 @@ func Test_Example_test(t *testing.T) {
 	}
 }
 
-//nolint:funlen, cyclop
+//nolint:funlen,cyclop
 func Test_roleBinding_Update(t *testing.T) {
 	t.Parallel()
 

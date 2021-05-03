@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
+
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 type podMutator interface {
-	Mutate(ctx context.Context, pod *corev1.Pod, ns string) error
+	Mutate(ctx context.Context, pod *corev1.Pod, requestOptions agent.RequestOptions) error
 }
 
 type podMutatorHandler struct {
@@ -30,8 +32,12 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
+	requestOptions := agent.RequestOptions{
+		Namespace: req.Namespace,
+	}
+
 	for _, m := range a.mutators {
-		if err := m.Mutate(ctx, pod, req.Namespace); err != nil {
+		if err := m.Mutate(ctx, pod, requestOptions); err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
 	}

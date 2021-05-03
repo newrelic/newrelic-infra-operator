@@ -30,9 +30,9 @@ func NewClusterRoleBindingController(
 	return ssc
 }
 
-// AssureClusterRoleBindingExistence assures that the clusterRolebinding exists and it is well configured, otherwise
+// EnsureSubject ensures that the clusterRolebinding exists and it is well configured, otherwise
 // patches the existing object.
-func (se *ClusterRoleBindingController) AssureClusterRoleBindingExistence(
+func (se *ClusterRoleBindingController) EnsureSubject(
 	ctx context.Context,
 	serviceAccountName string,
 	serviceAccountNamespace string) error {
@@ -75,7 +75,7 @@ func (se *ClusterRoleBindingController) updateClusterRoleBinding(
 	})
 
 	if err := se.client.Update(ctx, crb, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("updating clusterrolebinding: %w", err)
+		return fmt.Errorf("updating ClusteRroleBinding: %w", err)
 	}
 
 	return nil

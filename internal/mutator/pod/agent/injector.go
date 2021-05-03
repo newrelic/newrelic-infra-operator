@@ -6,23 +6,24 @@ package agent
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	agentSidecarName        = "newrelic-infrastructure-sidecar"
-	agentSidecarLicenseKey  = "license"
-	agentInjectedLabel      = "newrelic/agent-injected"
-	agentInjectedLabelValue = "true"
-	computeTypeServerless   = "serverless"
+	agentSidecarName       = "newrelic-infrastructure-sidecar"
+	agentSidecarLicenseKey = "license"
+	agentInjectedLabel     = "newrelic/agent-injected"
+	computeTypeServerless  = "serverless"
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
@@ -34,12 +35,12 @@ const (
 
 // Injector holds agent injection configuration.
 type Injector struct {
-	Config
+	*Config
 
 	secretController *LicenseController
 	rbacController   *ClusterRoleBindingController
 
-	// This is the base container that will be used as base for the injection
+	// This is the base container that will be used as base for the injection.
 	container corev1.Container
 }
 
@@ -47,24 +48,24 @@ type Injector struct {
 type Config struct {
 	Logger      *logrus.Logger
 	Client      client.Client
-	AgentConfig InfraAgentConfig
+	AgentConfig *InfraAgentConfig
+}
+
+// RequestOptions contains all the configs coming from the request needed by the mutator.
+type RequestOptions struct {
+	Namespace string
 }
 
 // New function is the constructor for the injector struct.
-func New(config Config) (*Injector, error) {
+func New(config *Config) (*Injector, error) {
 	i := Injector{}
 	i.Config = config
 
 	i.container.Env = append(i.container.Env, standardEnvVar(config.AgentConfig.ReleaseName)...)
 	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
-	resources, err := computeResourceRequirements(config.AgentConfig)
-	if err != nil {
-		return nil, fmt.Errorf("parsing ResourceRequirements: %w", err)
-	}
-
-	if resources != nil {
-		i.container.Resources = *resources
+	if config.AgentConfig.ResourceRequirements != nil {
+		i.container.Resources = *config.AgentConfig.ResourceRequirements
 	}
 
 	i.container.SecurityContext = &corev1.SecurityContext{
@@ -103,57 +104,15 @@ func New(config Config) (*Injector, error) {
 	return &i, nil
 }
 
-func computeResourceRequirements(s InfraAgentConfig) (*corev1.ResourceRequirements, error) {
-	if s.ResourceRequirements == nil {
-		// TODO we should set default values anyway
-		return nil, nil
-	}
-
-	resources := corev1.ResourceRequirements{}
-
-	memoryLimit, err := resource.ParseQuantity(s.ResourceRequirements.Limits.Memory)
-	if err != nil {
-		return nil, fmt.Errorf("parsing memoryLimit: %w", err)
-	}
-
-	memoryRequest, err := resource.ParseQuantity(s.ResourceRequirements.Requests.Memory)
-	if err != nil {
-		return nil, fmt.Errorf("parsing memoryRequest: %w", err)
-	}
-
-	CPULimit, err := resource.ParseQuantity(s.ResourceRequirements.Limits.CPU)
-	if err != nil {
-		return nil, fmt.Errorf("parsing CPULimit: %w", err)
-	}
-
-	CPURequest, err := resource.ParseQuantity(s.ResourceRequirements.Requests.CPU)
-	if err != nil {
-		return nil, fmt.Errorf("parsing CPURequest: %w", err)
-	}
-
-	resources = corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: memoryLimit,
-			corev1.ResourceCPU:    CPULimit,
-		},
-		Requests: corev1.ResourceList{
-			corev1.ResourceMemory: memoryRequest,
-			corev1.ResourceCPU:    CPURequest,
-		},
-	}
-
-	return &resources, nil
-}
-
 // Mutate mutates given Pod object by injecting infrastructure-agent container into it with all dependencies.
-func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, namespace string) error {
+func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions RequestOptions) error {
 	containerToInject := i.container
 
-	if !i.shouldInjectContainer(ctx, pod, namespace) {
+	if !i.shouldInjectContainer(ctx, pod, requestOptions.Namespace) {
 		return nil
 	}
 
-	if err := i.verifyContainerInjectability(ctx, pod, namespace); err != nil {
+	if err := i.verifyContainerInjectability(ctx, pod, requestOptions.Namespace); err != nil {
 		return fmt.Errorf("verifying container injectability: %w", err)
 	}
 
@@ -161,7 +120,12 @@ func (i *Injector) Mutate(ctx context.Context, pod *corev1.Pod, namespace string
 		pod.Labels = map[string]string{}
 	}
 
-	pod.Labels[agentInjectedLabel] = agentInjectedLabelValue
+	containerHAsh, err := computeHash(containerToInject)
+	if err != nil {
+		return fmt.Errorf("computing hash to add in the label: %w", err)
+	}
+
+	pod.Labels[agentInjectedLabel] = containerHAsh
 
 	containerToInject.Env = append(containerToInject.Env,
 		corev1.EnvVar{
@@ -206,7 +170,7 @@ func (i *Injector) verifyContainerInjectability(
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
-	err := i.rbacController.AssureClusterRoleBindingExistence(ctx, pod.Spec.ServiceAccountName, namespace)
+	err := i.rbacController.EnsureSubject(ctx, pod.Spec.ServiceAccountName, namespace)
 	if err != nil {
 		i.Logger.Warnf("It is not possible to inject the container since the cannot assure the existence of crb")
 
@@ -287,7 +251,7 @@ func standardEnvVar(releaseName string) []corev1.EnvVar {
 	}
 }
 
-func extraEnvVar(s InfraAgentConfig) []corev1.EnvVar {
+func extraEnvVar(s *InfraAgentConfig) []corev1.EnvVar {
 	extraEnv := []corev1.EnvVar{}
 	for k, v := range s.ExtraEnvVars {
 		extraEnv = append(extraEnv,
@@ -310,4 +274,16 @@ func getAgentPassthroughEnvironment() string {
 	}
 
 	return strings.Join(flags, ",")
+}
+
+func computeHash(o interface{}) (string, error) {
+	b, err := yaml.Marshal(o)
+	if err != nil {
+		return "", fmt.Errorf("computing hash: %w", err)
+	}
+
+	h := sha256.New()
+	h.Write(b)
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

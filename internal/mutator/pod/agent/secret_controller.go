@@ -44,9 +44,7 @@ func NewLicenseController(
 
 // AssureExistence assures that the license secret exists and it is well configured, otherwise patches the
 // existing object or create a new one.
-func (lc *LicenseController) AssureExistence(
-	ctx context.Context,
-	namespace string) error {
+func (lc *LicenseController) AssureExistence(ctx context.Context, namespace string) error {
 	s := &v1.Secret{}
 	key := client.ObjectKey{
 		Namespace: namespace,
@@ -57,8 +55,10 @@ func (lc *LicenseController) AssureExistence(
 
 	if apierrors.IsNotFound(err) {
 		return lc.createSecret(ctx, namespace)
-	} else if err != nil {
-		return fmt.Errorf("error while getting secret in the cluster %q/%q : %w", namespace, lc.name, err)
+	}
+
+	if err != nil {
+		return fmt.Errorf("error while getting secret in the cluster %s/%s : %w", namespace, lc.name, err)
 	}
 
 	if value, ok := s.Data[lc.key]; !ok || !bytes.Equal(value, lc.value) {
@@ -90,7 +90,7 @@ func (lc *LicenseController) createSecret(ctx context.Context, namespace string)
 
 func (lc *LicenseController) updateSecret(ctx context.Context, s *v1.Secret) error {
 	s.Data[lc.key] = lc.value
-	// we are currently ignoring possible differences in labels and secretType
+	// We are currently ignoring possible differences in labels and secretType.
 	if err := lc.client.Update(ctx, s, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("updating secret: %w", err)
 	}

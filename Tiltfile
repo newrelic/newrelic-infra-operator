@@ -24,7 +24,7 @@ load('ext://restart_process', 'docker_build_with_restart')
 
 if settings.get('live_reload'):
   # Building daemon binary locally.
-  local_resource('%s-binary' % project_name, 'make build', deps=[
+  local_resource('%s-binary' % project_name, 'GOOS=linux make build', deps=[
     './main.go',
     './internal',
   ])
