@@ -1,6 +1,6 @@
 /tilt_option.json*
-# Output binary
+# Output binary.
 /newrelic-infra-operator
-# Output binary for non-default GOOS/GOARCH pairs (e.g. newrelic-infra-operator-linux-arm)
+# Output binary for non-default GOOS/GOARCH pairs (e.g. newrelic-infra-operator-linux-arm).
 /newrelic-infra-operator-*
 /kubeconfig
