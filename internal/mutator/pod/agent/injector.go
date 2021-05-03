@@ -20,10 +20,8 @@ import (
 )
 
 const (
-	agentSidecarName       = "newrelic-infrastructure-sidecar"
-	agentSidecarLicenseKey = "license"
-	agentInjectedLabel     = "newrelic/agent-injected"
-	computeTypeServerless  = "serverless"
+	agentInjectedLabel    = "newrelic/agent-injected"
+	computeTypeServerless = "serverless"
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
@@ -37,18 +35,24 @@ const (
 type injector struct {
 	*Config
 
-	secretController *LicenseController
-	rbacController   *ClusterRoleBindingController
-
 	// This is the base container that will be used as base for the injection.
 	container corev1.Container
 }
 
 // Config of the Injector used to pass the required data to build it.
 type Config struct {
-	Logger      *logrus.Logger
-	Client      client.Client
+	Logger *logrus.Logger
+	Client client.Client
+
 	AgentConfig *InfraAgentConfig
+
+	ResourcePrefix string
+
+	LicenseSecretName  string
+	LicenseSecretKey   string
+	LicenseSecretValue []byte
+
+	ClusterRoleBindingName string
 }
 
 // RequestOptions contains all the configs coming from the request needed by the mutator.
@@ -59,10 +63,18 @@ type RequestOptions struct {
 // New function is the constructor for the injector struct.
 // nolint:revive,golint
 func New(config *Config) (*injector, error) {
+	if config == nil {
+		config = &Config{}
+	}
+
+	if config.AgentConfig == nil {
+		config.AgentConfig = &InfraAgentConfig{}
+	}
+
 	i := injector{}
 	i.Config = config
 
-	i.container.Env = append(i.container.Env, standardEnvVar(config.AgentConfig.ResourcePrefix)...)
+	i.container.Env = append(i.container.Env, standardEnvVar(config.ResourcePrefix)...)
 	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
 	if config.AgentConfig.ResourceRequirements != nil {
@@ -89,18 +101,6 @@ func New(config *Config) (*injector, error) {
 	if i.container.ImagePullPolicy != "" {
 		i.container.ImagePullPolicy = corev1.PullPolicy(config.AgentConfig.Image.PullPolicy)
 	}
-
-	i.container.Name = agentSidecarName
-
-	i.secretController = NewLicenseController(
-		config.Client,
-		getLicenseSecretName(config.AgentConfig.ResourcePrefix),
-		agentSidecarLicenseKey,
-		config.AgentConfig.LicenseKey,
-		nil,
-		config.Logger)
-	i.rbacController = NewClusterRoleBindingController(config.Client,
-		getRBACName(config.AgentConfig.ResourcePrefix), config.Logger)
 
 	return &i, nil
 }
@@ -165,13 +165,13 @@ func (i *injector) verifyContainerInjectability(
 	ctx context.Context,
 	pod *corev1.Pod,
 	namespace string) error {
-	if err := i.secretController.AssureExistence(ctx, namespace); err != nil {
+	if err := i.AssureExistence(ctx, namespace); err != nil {
 		i.Logger.Warnf("It is not possible to inject the container since we cannot assure the existence of secret")
 
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
-	err := i.rbacController.EnsureSubject(ctx, pod.Spec.ServiceAccountName, namespace)
+	err := i.EnsureSubject(ctx, pod.Spec.ServiceAccountName, namespace)
 	if err != nil {
 		i.Logger.Warnf("It is not possible to inject the container since the cannot assure the existence of crb")
 
@@ -179,14 +179,6 @@ func (i *injector) verifyContainerInjectability(
 	}
 
 	return nil
-}
-
-func getRBACName(resourcePrefix string) string {
-	return fmt.Sprintf("%s-infra-agent", resourcePrefix)
-}
-
-func getLicenseSecretName(resourcePrefix string) string {
-	return fmt.Sprintf("%s-config", resourcePrefix)
 }
 
 func standardVolumes() []corev1.VolumeMount {
@@ -217,9 +209,9 @@ func standardEnvVar(resourcePrefix string) []corev1.EnvVar {
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: getLicenseSecretName(resourcePrefix),
+						Name: GetLicenseSecretName(resourcePrefix),
 					},
-					Key: agentSidecarLicenseKey,
+					Key: GetRBACName(resourcePrefix),
 				},
 			},
 		},
@@ -287,4 +279,14 @@ func computeHash(o interface{}) (string, error) {
 	h.Write(b)
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// GetRBACName computes clusterRoleBindingName.
+func GetRBACName(resourcePrefix string) string {
+	return fmt.Sprintf("%s-infra-agent", resourcePrefix)
+}
+
+// GetLicenseSecretName computes secret name for license.
+func GetLicenseSecretName(resourcePrefix string) string {
+	return fmt.Sprintf("%s-config", resourcePrefix)
 }
