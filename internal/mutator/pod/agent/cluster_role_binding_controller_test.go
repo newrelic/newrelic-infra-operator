@@ -25,7 +25,7 @@ func Test_RoleBinding_Controller(t *testing.T) {
 
 		rbc := agent.NewClusterRoleBindingController(fake.NewClientBuilder().Build(), "", logger)
 
-		err := rbc.AssureClusterRoleBindingExistence(
+		err := rbc.EnsureSubject(
 			context.Background(),
 			"not-existing",
 			"not-existing")
@@ -49,7 +49,7 @@ func Test_RoleBinding_Controller(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(clrb).Build()
 		rbc := agent.NewClusterRoleBindingController(c, "test", logger)
 
-		err := rbc.AssureClusterRoleBindingExistence(
+		err := rbc.EnsureSubject(
 			context.Background(),
 			"sa-name",
 			"sa-namespace")
