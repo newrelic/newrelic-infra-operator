@@ -291,6 +291,7 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
+//nolint:gochecknoinits
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
