@@ -170,15 +170,11 @@ func (i *injector) verifyContainerInjectability(
 	pod *corev1.Pod,
 	namespace string) error {
 	if err := i.AssureExistence(ctx, namespace); err != nil {
-		i.Logger.Warnf("It is not possible to inject the container since we cannot assure the existence of secret")
-
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
 	err := i.EnsureSubject(ctx, pod.Spec.ServiceAccountName, namespace)
 	if err != nil {
-		i.Logger.Warnf("It is not possible to inject the container since the cannot assure the existence of crb")
-
 		return fmt.Errorf("assuring clusterrolebinding presence: %w", err)
 	}
 
