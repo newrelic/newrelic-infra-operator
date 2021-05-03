@@ -85,8 +85,8 @@ image: ## Builds operator Docker image.
 image-push: image ## Builds and pushes operator Docker image.
 	$(DOCKER_CMD) push $(IMAGE_REPO)
 
-.PHONY: kind
-kind: ## Creates local Kind cluster for development.
+.PHONY: kind-up
+kind-up: ## Creates local Kind cluster for development.
 	env KUBECONFIG=$(TEST_KUBECONFIG) $(KIND_SCRIPT)
 
 .PHONY: update-kind
