@@ -35,8 +35,6 @@ jobs:
 
       - name: Build docker image
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-        env:
-          DOCKER_BUILDKIT: 1 # Required for docker to populate TARGETOS/TARGETARCH
         run: make image
 
       - name: Run CI checks
