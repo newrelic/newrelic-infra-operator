@@ -9,6 +9,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const defaultServiceAccount = "default"
+
 // ClusterRoleBindingController struct holding the configuration.
 type ClusterRoleBindingController struct {
 	clusterRoleBindingName string
@@ -48,6 +50,10 @@ func (se *ClusterRoleBindingController) EnsureSubject(
 
 	if hasSubject(crb, serviceAccountName, serviceAccountNamespace) {
 		return nil
+	}
+
+	if serviceAccountName == "" {
+		serviceAccountName = defaultServiceAccount
 	}
 
 	return se.updateClusterRoleBinding(ctx, crb, serviceAccountName, serviceAccountNamespace)
