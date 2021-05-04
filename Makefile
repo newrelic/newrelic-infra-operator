@@ -3,9 +3,14 @@ GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
 GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
+
+GOOS ?=
+GOARCH ?=
 CGO_ENABLED ?= 0
+
+BINARY_NAME ?= newrelic-infra-operator
+
 LD_FLAGS ?= "-extldflags '-static'"
-GO_BUILD ?= CGO_ENABLED=$(CGO_ENABLED) $(GO_CMD) build -v -buildmode=exe -ldflags $(LD_FLAGS)
 
 ifeq (, $(shell which golangci-lint))
 GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -25,8 +30,10 @@ KIND_SCRIPT ?= hack/kind-with-registry.sh
 KIND_IMAGE ?= kindest/node:v1.19.7
 
 .PHONY: build
+build: BINARY_NAME := $(if $(GOOS),$(BINARY_NAME)-$(GOOS),$(BINARY_NAME))
+build: BINARY_NAME := $(if $(GOARCH),$(BINARY_NAME)-$(GOARCH),$(BINARY_NAME))
 build: ## Compiles operator binary.
-	$(GO_BUILD) .
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_CMD) build -o $(BINARY_NAME) -v -buildmode=exe -ldflags $(LD_FLAGS) .
 
 .PHONY: build-test
 build-test: ## Compiles unit tests.
@@ -78,8 +85,16 @@ codespell: ## Runs spell checking.
 	$(CODESPELL_BIN)
 
 .PHONY: image
+## GOOS and GOARCH are manually set so the output BINARY_NAME includes them as suffixes.
+## Additionally, DOCKER_BUILDKIT is set since it's needed for Docker to populate TARGETOS and TARGETARCH ARGs.
+## Here we call $(MAKE) build instead of using a dependency because the latter would, for some reason, prevent
+## the BINARY_NAME conditional from working.
+image: GOOS := $(if $(GOOS),$(GOOS),linux)
+image: GOARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 image: ## Builds operator Docker image.
-	$(DOCKER_CMD) build --rm=true -t $(IMAGE_REPO) .
+	@if [[ $$GOOS != "linux" ]]; then echo "'make image' must be called with GOOS=linux (or empty), found '$$GOOS'"; exit 1; fi
+	$(MAKE) build GOOS=$(GOOS) GOARCH=$(GOARCH)
+	DOCKER_BUILDKIT=1 $(DOCKER_CMD) build --rm=true -t $(IMAGE_REPO) .
 
 .PHONY: image-push
 image-push: image ## Builds and pushes operator Docker image.
