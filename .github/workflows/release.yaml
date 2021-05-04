@@ -18,14 +18,24 @@ jobs:
         with:
           go-version: '1.16'
 
-      - uses: actions/cache@v2
+      # A cache entry is will be generated for `key`, and attempted to restore.
+      # If `key` is not found, any partial match for `restore-keys` will be attempted.
+      # Regardless of whether `key` was found or not, it will be created at the end of the run.
+      # With this mechanism, we ensure caches are cycled regularly.
+      - name: Go modules cache
+        uses: actions/cache@v2
         with:
-          path: | # Cache go modules and build
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          path: ~/go/pkg/mod
+          key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            gomod-
+      - name: Build cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/go-build
+          key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
+          restore-keys: |
+            gobuild-${{ matrix.goos }}-${{ matrix.goarch }}
 
       - name: Build integration
         env:
