@@ -33,7 +33,7 @@ jobs:
       - name: Build binary
         run: make build
 
-      - name: Build docker image
+      - name: Build Docker image
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
         run: make image
 

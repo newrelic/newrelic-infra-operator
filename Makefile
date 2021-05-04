@@ -86,7 +86,7 @@ codespell: ## Runs spell checking.
 
 .PHONY: image
 ## GOOS and GOARCH are manually set so the output BINARY_NAME includes them as suffixes.
-## Additionally, DOCKER_BUILDKIT is set since it's needed for docker to populate TARGETOS and TARGETARCH ARGs.
+## Additionally, DOCKER_BUILDKIT is set since it's needed for Docker to populate TARGETOS and TARGETARCH ARGs.
 ## Here we call $(MAKE) build instead of using a dependency because the latter would, for some reason, prevent
 ## the BINARY_NAME conditional from working.
 image: GOOS := $(if $(GOOS),$(GOOS),linux)
