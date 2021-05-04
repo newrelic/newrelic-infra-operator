@@ -19,9 +19,9 @@ const (
 	operatorCreatedLabelValue = "true"
 )
 
-// EnsureLicenseSecretExistence assures that the license secret exists and it is well configured, otherwise patches the
+// ensureLicenseSecretExistence assures that the license secret exists and it is well configured, otherwise patches the
 // existing object or create a new one.
-func (i *injector) EnsureLicenseSecretExistence(ctx context.Context, namespace string) error {
+func (i *injector) ensureLicenseSecretExistence(ctx context.Context, namespace string) error {
 	s := &v1.Secret{}
 	key := client.ObjectKey{
 		Namespace: namespace,
