@@ -20,7 +20,9 @@ jobs:
 
       - uses: actions/cache@v2
         with:
-          path: ~/go/pkg/mod
+          path: | # Cache go modules and build
+            ~/go/pkg/mod
+            ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
