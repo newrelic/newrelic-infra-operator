@@ -4,7 +4,6 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -14,10 +13,11 @@ import (
 )
 
 func main() {
-	log.Printf("Starting NewRelic infra operator")
+	logger := logrus.New()
+	logger.Printf("Starting NewRelic infra operator")
 
-	if err := operator.Run(signals.SetupSignalHandler(), operator.Options{Logger: logrus.New()}); err != nil {
-		log.Printf("Running operator failed: %v", err)
+	if err := operator.Run(signals.SetupSignalHandler(), operator.Options{Logger: logger}); err != nil {
+		logger.Printf("Running operator failed: %v", err)
 
 		os.Exit(1)
 	}

@@ -13,9 +13,9 @@ import (
 
 const defaultServiceAccount = "default"
 
-// EnsureSubject ensures that the clusterRolebinding exists and it is well configured, otherwise
+// EnsureClusterRoleBindingSubject ensures that the clusterRolebinding exists and it is well configured, otherwise
 // patches the existing object.
-func (i *injector) EnsureSubject(
+func (i *injector) EnsureClusterRoleBindingSubject(
 	ctx context.Context,
 	serviceAccountName string,
 	serviceAccountNamespace string) error {

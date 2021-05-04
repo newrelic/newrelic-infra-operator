@@ -9,13 +9,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
-
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
 
@@ -116,8 +115,7 @@ type mockMutator struct {
 	mutateF func(ctx context.Context, pod *corev1.Pod, reqOptions agent.RequestOptions) error
 }
 
-func (m *mockMutator) Mutate(
-	ctx context.Context, pod *corev1.Pod, reqOptions agent.RequestOptions) error {
+func (m *mockMutator) Mutate(ctx context.Context, pod *corev1.Pod, reqOptions agent.RequestOptions) error {
 	return m.mutateF(ctx, pod, reqOptions)
 }
 

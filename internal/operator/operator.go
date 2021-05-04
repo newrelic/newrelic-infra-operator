@@ -30,7 +30,7 @@ const (
 	// DefaultHealthProbeBindAddress is a default bind address for health probes.
 	DefaultHealthProbeBindAddress = ":9440"
 
-	defaultResourcePrefix   = "newrelic-infra-operators"
+	defaultResourcePrefix   = "newrelic-infra-operator"
 	defaultLicenseSecretKey = "license"
 )
 
@@ -75,7 +75,7 @@ func Run(ctx context.Context, options Options) error {
 
 	agentConfig, err := readAndBuildConfigStub(c, options.Logger)
 	if err != nil {
-		return fmt.Errorf("partsing agentConfig: %w", err)
+		return fmt.Errorf("parsing agentConfig: %w", err)
 	}
 
 	agentInjector, err := agent.New(agentConfig)

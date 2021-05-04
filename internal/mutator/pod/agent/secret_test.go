@@ -5,19 +5,20 @@ package agent_test
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
+	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
 
-//nolint:funlen,gocognit,cyclop
+const fakeLicense = "fake-license"
+
+//nolint:funlen,cyclop
 func Test_Secret(t *testing.T) {
 	t.Parallel()
 
@@ -32,17 +33,15 @@ func Test_Secret(t *testing.T) {
 			ResourcePrefix:     "fake-release",
 			LicenseSecretName:  agent.GetLicenseSecretName("fake-release"),
 			LicenseSecretKey:   "license",
-			LicenseSecretValue: []byte("fake-license"),
+			LicenseSecretValue: []byte(fakeLicense),
 		})
 		if err != nil {
 			t.Fatalf("No error expected creating injector : %v", err)
 		}
 
-		err = i.AssureExistence(
-			context.Background(),
-			"namespace")
+		err = i.EnsureLicenseSecretExistence(testutil.ContextWithDeadline(t), "namespace")
 		if err != nil {
-			t.Fatalf("The secret is well formatted, and the call should not fail: %s", err.Error())
+			t.Fatalf("The secret is well formatted, and the call should not fail: %v", err.Error())
 		}
 
 		secret := &v1.Secret{}
@@ -50,14 +49,12 @@ func Test_Secret(t *testing.T) {
 			Name:      agent.GetLicenseSecretName("fake-release"),
 			Namespace: "namespace",
 		}
-		err = c.Get(context.Background(), key, secret)
+		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
 		if err != nil {
 			t.Fatalf("Expecting the secret to be retrieved: %s", err.Error())
 		}
-		if secret.Name != agent.GetLicenseSecretName("fake-release") {
-			t.Fatalf("Expecting different secret name, %v", secret.Name)
-		}
-		if !bytes.Equal(secret.Data["license"], []byte("fake-license")) {
+
+		if !bytes.Equal(secret.Data["license"], []byte(fakeLicense)) {
 			t.Fatalf("Expecting different secret data, '%s'!='%s'", secret.Data["license"], []byte("dev"))
 		}
 	})
@@ -72,18 +69,16 @@ func Test_Secret(t *testing.T) {
 			ResourcePrefix:     "fake-release",
 			LicenseSecretName:  agent.GetLicenseSecretName("fake-release"),
 			LicenseSecretKey:   "license",
-			LicenseSecretValue: []byte("fake-license"),
+			LicenseSecretValue: []byte(fakeLicense),
 		})
 		if err != nil {
 			t.Fatalf("No error expected creating injector : %v", err)
 		}
 
 		// Assuring existence of a secret causing its creation
-		err = i.AssureExistence(
-			context.Background(),
-			"namespace")
+		err = i.EnsureLicenseSecretExistence(testutil.ContextWithDeadline(t), "namespace")
 		if err != nil {
-			t.Fatalf("The secret is well formatted, and the call should not fail: %s", err.Error())
+			t.Fatalf("The secret is well formatted, and the call should not fail: %v", err.Error())
 		}
 
 		secret := &v1.Secret{}
@@ -91,51 +86,41 @@ func Test_Secret(t *testing.T) {
 			Name:      agent.GetLicenseSecretName("fake-release"),
 			Namespace: "namespace",
 		}
-		err = c.Get(context.Background(), key, secret)
+		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
 		if err != nil {
 			t.Fatalf("Expecting the secret to be retrieved: %s", err.Error())
 		}
-		if secret.Name != agent.GetLicenseSecretName("fake-release") {
-			t.Fatalf("Expecting different secret name, %v", secret.Name)
-		}
-		if !bytes.Equal(secret.Data["license"], []byte("fake-license")) {
+
+		if !bytes.Equal(secret.Data["license"], []byte(fakeLicense)) {
 			t.Fatalf("Expecting different secret data, '%s'!='%s'", secret.Data["license"], []byte("dev"))
 		}
 
 		// Assuring existence of the secret with different data causing its update
 		i.LicenseSecretValue = []byte("new-value")
-		err = i.AssureExistence(
-			context.Background(),
-			"namespace")
+		err = i.EnsureLicenseSecretExistence(testutil.ContextWithDeadline(t), "namespace")
 		if err != nil {
-			t.Fatalf("The secret is well formatted, and the call should not fail: %s", err.Error())
+			t.Fatalf("The secret is well formatted, and the call should not fail: %v", err.Error())
 		}
-		err = c.Get(context.Background(), key, secret)
+		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
 		if err != nil {
 			t.Fatalf("Expecting the secret to be retrieved: %s", err.Error())
 		}
-		if secret.Name != agent.GetLicenseSecretName("fake-release") {
-			t.Fatalf("Expecting different secret name, %v", secret.Name)
-		}
+
 		if !bytes.Equal(secret.Data["license"], []byte("new-value")) {
 			t.Fatalf("Expecting different secret data, '%s'!='%s'", secret.Data["license"], []byte("dev"))
 		}
 
 		// Assuring existence of the secret with different data causing its update
 		i.LicenseSecretKey = "different-key"
-		err = i.AssureExistence(
-			context.Background(),
-			"namespace")
+		err = i.EnsureLicenseSecretExistence(testutil.ContextWithDeadline(t), "namespace")
 		if err != nil {
-			t.Fatalf("The secret is well formatted, and the call should not fail: %s", err.Error())
+			t.Fatalf("The secret is well formatted, and the call should not fail: %v", err.Error())
 		}
-		err = c.Get(context.Background(), key, secret)
+		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
 		if err != nil {
 			t.Fatalf("Expecting the secret to be retrieved: %s", err.Error())
 		}
-		if secret.Name != agent.GetLicenseSecretName("fake-release") {
-			t.Fatalf("Expecting different secret name, %v", secret.Name)
-		}
+
 		if !bytes.Equal(secret.Data["different-key"], []byte("new-value")) {
 			t.Fatalf("Expecting different secret data, '%s'!='%s'", secret.Data["license"], []byte("dev"))
 		}
