@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	operatorCreatedLabel      = "newrelic/infra-operator-created"
-	operatorCreatedLabelValue = "true"
+	// OperatorCreatedLabel is the name of the label injected to the secrets created by the operator.
+	OperatorCreatedLabel = "newrelic/infra-operator-created"
+	// OperatorCreatedLabelValue is the value of the label injected to the secrets created by the operator.
+	OperatorCreatedLabelValue = "true"
 )
 
 // ensureLicenseSecretExistence assures that the license secret exists and it is well configured, otherwise patches the
@@ -51,7 +53,7 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 			Name:      i.LicenseSecretName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				operatorCreatedLabel: operatorCreatedLabelValue,
+				OperatorCreatedLabel: OperatorCreatedLabelValue,
 			},
 		},
 		Data: map[string][]byte{
@@ -60,7 +62,7 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 		Type: v1.SecretTypeOpaque,
 	}
 
-	if err := i.Client.Create(ctx, s, &client.CreateOptions{}); err != nil {
+	if err := i.Client.Create(ctx, s, &client.CreateOptions{}); err != nil && apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("creating secret %s/%s: %w", s.Namespace, s.Name, err)
 	}
 

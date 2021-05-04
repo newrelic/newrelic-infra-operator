@@ -29,12 +29,12 @@ func (i *injector) ensureClusterRoleBindingSubject(
 		return fmt.Errorf("getting clusterRoleBindings %q : %w", i.ClusterRoleBindingName, err)
 	}
 
-	if hasSubject(crb, serviceAccountName, serviceAccountNamespace) {
-		return nil
-	}
-
 	if serviceAccountName == "" {
 		serviceAccountName = defaultServiceAccount
+	}
+
+	if hasSubject(crb, serviceAccountName, serviceAccountNamespace) {
+		return nil
 	}
 
 	return i.updateClusterRoleBinding(ctx, crb, serviceAccountName, serviceAccountNamespace)
@@ -58,7 +58,7 @@ func (i *injector) updateClusterRoleBinding(
 	return nil
 }
 
-func hasSubject(crb *v1rbac.ClusterRoleBinding, namespace string, serviceAccountName string) bool {
+func hasSubject(crb *v1rbac.ClusterRoleBinding, serviceAccountName string, namespace string) bool {
 	for _, s := range crb.Subjects {
 		if s.Name == serviceAccountName && s.Namespace == namespace && s.Kind == v1rbac.ServiceAccountKind {
 			return true
