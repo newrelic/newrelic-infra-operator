@@ -165,11 +165,11 @@ func (i *injector) verifyContainerInjectability(
 	ctx context.Context,
 	pod *corev1.Pod,
 	namespace string) error {
-	if err := i.EnsureLicenseSecretExistence(ctx, namespace); err != nil {
+	if err := i.ensureLicenseSecretExistence(ctx, namespace); err != nil {
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
-	err := i.EnsureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, namespace)
+	err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, namespace)
 	if err != nil {
 		return fmt.Errorf("assuring clusterrolebinding presence: %w", err)
 	}
