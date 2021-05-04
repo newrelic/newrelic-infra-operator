@@ -30,10 +30,9 @@ KIND_SCRIPT ?= hack/kind-with-registry.sh
 KIND_IMAGE ?= kindest/node:v1.19.7
 
 .PHONY: build
-## Compiles operator binary.
 build: BINARY_NAME := $(if $(GOOS),$(BINARY_NAME)-$(GOOS),$(BINARY_NAME))
 build: BINARY_NAME := $(if $(GOARCH),$(BINARY_NAME)-$(GOARCH),$(BINARY_NAME))
-build:
+build: ## Compiles operator binary.
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_CMD) build -o $(BINARY_NAME) -v -buildmode=exe -ldflags $(LD_FLAGS) .
 
 .PHONY: build-test
@@ -86,14 +85,13 @@ codespell: ## Runs spell checking.
 	$(CODESPELL_BIN)
 
 .PHONY: image
-## Builds operator Docker image.
 ## GOOS and GOARCH are manually set so the output BINARY_NAME includes them as suffixes.
 ## Additionally, DOCKER_BUILDKIT is set since it's needed for docker to populate TARGETOS and TARGETARCH ARGs.
 ## Here we call $(MAKE) build instead of using a dependency because the latter would, for some reason, prevent
 ## the BINARY_NAME conditional from working.
 image: GOOS := $(if $(GOOS),$(GOOS),linux)
 image: GOARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
-image:
+image: ## Builds operator Docker image.
 	@if [[ $$GOOS != "linux" ]]; then echo "'make image' must be called with GOOS=linux (or empty), found '$$GOOS'"; exit 1; fi
 	$(MAKE) build GOOS=$(GOOS) GOARCH=$(GOARCH)
 	DOCKER_BUILDKIT=1 $(DOCKER_CMD) build --rm=true -t $(IMAGE_REPO) .
