@@ -26,15 +26,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/sirupsen/logrus"
-	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
@@ -302,7 +300,7 @@ func Test_Running_operator(t *testing.T) {
 	//nolint:paralleltest
 	t.Run("fails_when", func(t *testing.T) {
 		t.Run("there_is_no_kubernetes_credentials_available", func(t *testing.T) {
-			ctx := context.Background()
+			ctx := testutil.ContextWithDeadline(t)
 
 			kubeconfig := os.Getenv(kubeconfigEnv)
 
@@ -389,7 +387,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 		mutateOptions(&options)
 	}
 
-	createTestDependencies(t, options)
+	createClusterRoleBinding(t, options)
 
 	go func() {
 		if err := operator.Run(ctx, options); err != nil {
@@ -401,7 +399,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	return ctx, options, ca
 }
 
-func createTestDependencies(t *testing.T, options operator.Options) {
+func createClusterRoleBinding(t *testing.T, options operator.Options) {
 	t.Helper()
 
 	c, err := client.New(options.RestConfig, client.Options{})
@@ -414,15 +412,15 @@ func createTestDependencies(t *testing.T, options operator.Options) {
 			Name: "newrelic-infra-operators-infra-agent",
 		},
 		RoleRef: v1.RoleRef{
-			// Note that we are not interested into having the real role binded
+			// Note that we are not interested into having the real role bound.
 			Name: "view",
 			Kind: "ClusterRole",
 		},
 	}
-	// Making sure that clusterRoleBinding exists to run tests
-	err = c.Create(context.Background(), &crb, &client.CreateOptions{})
+	// Making sure that clusterRoleBinding exists to run tests.
+	err = c.Create(testutil.ContextWithDeadline(t), &crb, &client.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatalf("assuring existence of rolebinding: %v", err)
+		t.Fatalf("assuring existence of clusterRoleBinding: %v", err)
 	}
 }
 

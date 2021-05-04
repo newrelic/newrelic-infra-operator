@@ -11,12 +11,11 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -125,12 +124,12 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions R
 		pod.Labels = map[string]string{}
 	}
 
-	containerHAsh, err := computeHash(containerToInject)
+	containerHash, err := computeHash(containerToInject)
 	if err != nil {
 		return fmt.Errorf("computing hash to add in the label: %w", err)
 	}
 
-	pod.Labels[agentInjectedLabel] = containerHAsh
+	pod.Labels[agentInjectedLabel] = containerHash
 
 	containerToInject.Env = append(containerToInject.Env,
 		corev1.EnvVar{
@@ -169,11 +168,11 @@ func (i *injector) verifyContainerInjectability(
 	ctx context.Context,
 	pod *corev1.Pod,
 	namespace string) error {
-	if err := i.AssureExistence(ctx, namespace); err != nil {
+	if err := i.EnsureLicenseSecretExistence(ctx, namespace); err != nil {
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
-	err := i.EnsureSubject(ctx, pod.Spec.ServiceAccountName, namespace)
+	err := i.EnsureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, namespace)
 	if err != nil {
 		return fmt.Errorf("assuring clusterrolebinding presence: %w", err)
 	}
@@ -269,8 +268,8 @@ func getAgentPassthroughEnvironment() string {
 	return strings.Join(flags, ",")
 }
 
-func computeHash(o interface{}) (string, error) {
-	b, err := yaml.Marshal(o)
+func computeHash(c corev1.Container) (string, error) {
+	b, err := yaml.Marshal(c)
 	if err != nil {
 		return "", fmt.Errorf("computing hash: %w", err)
 	}

@@ -18,6 +18,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
+
+	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
 
 // This test should cover the following functionality:
@@ -71,16 +73,16 @@ func Test_clusterRoleBinding_Update(t *testing.T) {
 		// Crating disposable namespace
 		namespaceName := RandStringRunes(8)
 		namespace := v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}}
-		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), &namespace, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Namespaces().Create(testutil.ContextWithDeadline(t), &namespace, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating namespace: %v", err)
 		}
 		//nolint:errcheck
-		defer clientset.CoreV1().Namespaces().Delete(context.Background(), namespaceName, metav1.DeleteOptions{})
+		defer clientset.CoreV1().Namespaces().Delete(testutil.ContextWithDeadline(t), namespaceName, metav1.DeleteOptions{})
 
 		serviceAccountName := RandStringRunes(8)
 
-		_, err = clientset.CoreV1().ServiceAccounts(namespaceName).Create(context.Background(),
+		_, err = clientset.CoreV1().ServiceAccounts(namespaceName).Create(testutil.ContextWithDeadline(t),
 			&v1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: serviceAccountName}}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating service account: %v", err)
@@ -105,13 +107,13 @@ func Test_clusterRoleBinding_Update(t *testing.T) {
 				},
 			},
 		}
-		_, err = clientset.CoreV1().Pods(namespaceName).Create(context.Background(), &pod, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Pods(namespaceName).Create(testutil.ContextWithDeadline(t), &pod, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating pod: %v", err)
 		}
 
 		crb, err := clientset.RbacV1().ClusterRoleBindings().
-			Get(context.Background(), "newrelic-infra-operator-infra-agent", metav1.GetOptions{})
+			Get(testutil.ContextWithDeadline(t), "newrelic-infra-operator-infra-agent", metav1.GetOptions{})
 		if err != nil {
 			t.Fatalf("getting crb: %v", err)
 		}
@@ -148,12 +150,12 @@ func Test_injection_pod(t *testing.T) {
 		// Crating disposable namespace
 		namespaceName := RandStringRunes(8)
 		namespace := v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}}
-		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), &namespace, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Namespaces().Create(testutil.ContextWithDeadline(t), &namespace, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating namespace: %v", err)
 		}
 		//nolint:errcheck
-		defer clientset.CoreV1().Namespaces().Delete(context.Background(), namespaceName, metav1.DeleteOptions{})
+		defer clientset.CoreV1().Namespaces().Delete(testutil.ContextWithDeadline(t), namespaceName, metav1.DeleteOptions{})
 
 		// Pod to be created
 		pod := v1.Pod{
@@ -173,7 +175,7 @@ func Test_injection_pod(t *testing.T) {
 				},
 			},
 		}
-		_, err = clientset.CoreV1().Pods(namespaceName).Create(context.Background(), &pod, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Pods(namespaceName).Create(testutil.ContextWithDeadline(t), &pod, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating pod: %v", err)
 		}
@@ -215,12 +217,12 @@ func Test_injection_Deployment(t *testing.T) {
 		// Crating disposable namespace
 		namespaceName := RandStringRunes(8)
 		namespace := v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}}
-		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), &namespace, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Namespaces().Create(testutil.ContextWithDeadline(t), &namespace, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating namespace: %v", err)
 		}
 		//nolint:errcheck
-		defer clientset.CoreV1().Namespaces().Delete(context.Background(), namespaceName, metav1.DeleteOptions{})
+		defer clientset.CoreV1().Namespaces().Delete(testutil.ContextWithDeadline(t), namespaceName, metav1.DeleteOptions{})
 
 		// Deploy to be created
 		deploy := appv1.Deployment{
@@ -255,12 +257,14 @@ func Test_injection_Deployment(t *testing.T) {
 				},
 			},
 		}
-		_, err = clientset.AppsV1().Deployments(namespaceName).Create(context.Background(), &deploy, metav1.CreateOptions{})
+
+		_, err = clientset.AppsV1().Deployments(namespaceName).
+			Create(testutil.ContextWithDeadline(t), &deploy, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("creating deployment: %v", err)
 		}
 
-		pList, err := clientset.CoreV1().Pods(namespaceName).List(context.Background(), metav1.ListOptions{})
+		pList, err := clientset.CoreV1().Pods(namespaceName).List(testutil.ContextWithDeadline(t), metav1.ListOptions{})
 		if err != nil {
 			t.Fatalf("getting list of pods: %v", err)
 		}

@@ -4,18 +4,17 @@
 package agent_test
 
 import (
-	"context"
 	"testing"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
+	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
 
 //nolint:funlen
@@ -34,10 +33,7 @@ func Test_clusterRoleBinding(t *testing.T) {
 			t.Fatalf("No error expected creating injector : %v", err)
 		}
 
-		err = i.EnsureSubject(
-			context.Background(),
-			"not-existing",
-			"not-existing")
+		err = i.EnsureClusterRoleBindingSubject(testutil.ContextWithDeadline(t), "not-existing", "not-existing")
 		if err == nil {
 			t.Fatalf("The role does not exist, the call should fail")
 		}
@@ -45,6 +41,7 @@ func Test_clusterRoleBinding(t *testing.T) {
 			t.Fatalf("The expected error is 'resource not found' : %v", err)
 		}
 	})
+
 	t.Run("updates_subjects", func(t *testing.T) {
 		t.Parallel()
 
@@ -64,8 +61,8 @@ func Test_clusterRoleBinding(t *testing.T) {
 		if err != nil {
 			t.Fatalf("No error expected creating injector : %v", err)
 		}
-		err = i.EnsureSubject(
-			context.Background(),
+		err = i.EnsureClusterRoleBindingSubject(
+			testutil.ContextWithDeadline(t),
 			"sa-name",
 			"sa-namespace")
 		if err != nil {
@@ -77,7 +74,7 @@ func Test_clusterRoleBinding(t *testing.T) {
 			Name: agent.GetRBACName("fake-release"),
 		}
 
-		err = c.Get(context.Background(), key, crb)
+		err = c.Get(testutil.ContextWithDeadline(t), key, crb)
 		if err != nil {
 			t.Fatalf("Expecting the secret to be retrieved: %s", err.Error())
 		}
