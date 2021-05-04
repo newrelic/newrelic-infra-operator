@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
-
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/webhook"
 )
 
 type podMutator interface {

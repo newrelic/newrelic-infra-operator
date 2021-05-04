@@ -17,13 +17,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/webhook"
 )
 
 const (
 	agentSidecarName = "newrelic-infrastructure-sidecar"
 
-	agentInjectedLabel    = "newrelic/agent-injected"
+	// AgentInjectedLabel is the name of the label injected in pod.
+	AgentInjectedLabel    = "newrelic/agent-injected"
 	computeTypeServerless = "serverless"
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
@@ -126,7 +127,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		return fmt.Errorf("computing hash to add in the label: %w", err)
 	}
 
-	pod.Labels[agentInjectedLabel] = containerHash
+	pod.Labels[AgentInjectedLabel] = containerHash
 
 	containerToInject.Env = append(containerToInject.Env,
 		corev1.EnvVar{
@@ -161,16 +162,12 @@ func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 	return true
 }
 
-func (i *injector) verifyContainerInjectability(
-	ctx context.Context,
-	pod *corev1.Pod,
-	namespace string) error {
+func (i *injector) verifyContainerInjectability(ctx context.Context, pod *corev1.Pod, namespace string) error {
 	if err := i.ensureLicenseSecretExistence(ctx, namespace); err != nil {
 		return fmt.Errorf("assuring secret presence: %w", err)
 	}
 
-	err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, namespace)
-	if err != nil {
+	if err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, namespace); err != nil {
 		return fmt.Errorf("assuring clusterrolebinding presence: %w", err)
 	}
 
