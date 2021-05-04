@@ -23,7 +23,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           make build
-      - name: Upload artifact for docker build step
+      - name: Upload artifact for Docker build step
         uses: actions/upload-artifact@v2
         with:
           retention-days: 1
@@ -31,7 +31,7 @@ jobs:
           path: newrelic-infra-operator-${{ matrix.goos }}-${{ matrix.goarch }}
 
   release:
-    name: Release docker images and config
+    name: Release Docker images and config
     needs: [ build ]
     runs-on: ubuntu-latest
     env:
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Generate docker image version from git tag
+      - name: Generate Docker image version from git tag
         run: |
           echo "${{ github.event.release.tag_name }}" | grep -E '^v[0-9.]*[0-9]$'
           DOCKER_IMAGE_TAG=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
@@ -63,7 +63,7 @@ jobs:
           username: ${{ secrets.FSI_DOCKERHUB_USERNAME }}
           password: ${{ secrets.FSI_DOCKERHUB_TOKEN }}
 
-      - name: Build and push docker image
+      - name: Build and push Docker image
         run: |
           docker buildx build --push --platform=$DOCKER_PLATFORMS \
             -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG \

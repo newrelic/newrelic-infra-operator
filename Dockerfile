@@ -1,6 +1,6 @@
 FROM alpine:3.13
 
-# Set by Docker automatically
+# Set by Docker automatically.
 # If building with `docker build` directly, make sure to set GOOS/GOARCH explicitly when calling make:
 # `make build GOOS=linux GOARCH=amd64`
 # Otherwise, make will not add suffixes to the binary name and docker will not be able to find it.
