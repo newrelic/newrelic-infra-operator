@@ -31,7 +31,7 @@ jobs:
           path: newrelic-infra-operator-${{ matrix.goos }}-${{ matrix.goarch }}
 
   release:
-    name: Release Docker images and config
+    name: Release Docker images
     needs: [ build ]
     runs-on: ubuntu-latest
     env:
