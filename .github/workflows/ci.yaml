@@ -83,10 +83,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/go-build
-          key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
+          key: gobuild-linux-amd64-${{ github.sha }}
           restore-keys: |
-            gobuild-${{ matrix.goos }}-${{ matrix.goarch }}
-
+            gobuild-linux-amd64
 
       - name: Checkout charts repository for deployments
         uses: actions/checkout@v2
