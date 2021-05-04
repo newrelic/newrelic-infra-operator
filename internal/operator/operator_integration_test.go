@@ -409,7 +409,7 @@ func createClusterRoleBinding(t *testing.T, options operator.Options) {
 
 	crb := v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "newrelic-infra-operators-infra-agent",
+			Name: "newrelic-infra-operator-infra-agent",
 		},
 		RoleRef: v1.RoleRef{
 			// Note that we are not interested into having the real role bound.

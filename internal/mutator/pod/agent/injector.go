@@ -16,6 +16,8 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
 const (
@@ -54,11 +56,6 @@ type Config struct {
 	LicenseSecretValue []byte
 
 	ClusterRoleBindingName string
-}
-
-// RequestOptions contains all the configs coming from the request needed by the mutator.
-type RequestOptions struct {
-	Namespace string
 }
 
 // New function is the constructor for the injector struct.
@@ -109,7 +106,7 @@ func New(config *Config) (*injector, error) {
 }
 
 // Mutate mutates given Pod object by injecting infrastructure-agent container into it with all dependencies.
-func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions RequestOptions) error {
+func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error {
 	containerToInject := i.container
 
 	if !i.shouldInjectContainer(ctx, pod, requestOptions.Namespace) {
