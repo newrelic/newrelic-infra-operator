@@ -14,6 +14,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	operatorCreatedLabel      = "newrelic/infra-operator-created"
+	operatorCreatedLabelValue = "true"
+)
+
 // EnsureLicenseSecretExistence assures that the license secret exists and it is well configured, otherwise patches the
 // existing object or create a new one.
 func (i *injector) EnsureLicenseSecretExistence(ctx context.Context, namespace string) error {
@@ -45,6 +50,9 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      i.LicenseSecretName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				operatorCreatedLabel: operatorCreatedLabelValue,
+			},
 		},
 		Data: map[string][]byte{
 			i.LicenseSecretKey: i.LicenseSecretValue,
@@ -60,6 +68,8 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 }
 
 func (i *injector) updateSecret(ctx context.Context, s *v1.Secret) error {
+	// When we update we should not add the label since likely the user or a different newrelic installation created
+	// such secret.
 	s.Data[i.LicenseSecretKey] = i.LicenseSecretValue
 	if err := i.Client.Update(ctx, s, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("updating secret: %w", err)

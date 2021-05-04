@@ -41,6 +41,8 @@ type Options struct {
 	Port                   int
 	RestConfig             *rest.Config
 	Logger                 *logrus.Logger
+
+	AgentWebHookConfig *agent.Config
 }
 
 // Run starts operator main loop. At the moment it only runs TLS webhook server and healthcheck web server.
@@ -120,7 +122,6 @@ func (o *Options) withDefaults() *Options {
 	return o
 }
 
-//nolint:funlen
 func readAndBuildConfigStub(c client.Client, logger *logrus.Logger) (*agent.Config, error) {
 	// TODO This should provide as well default values when we will be reading such data
 	resourcePrefix := os.Getenv("RELEASE_NAME")
@@ -128,10 +129,7 @@ func readAndBuildConfigStub(c client.Client, logger *logrus.Logger) (*agent.Conf
 		resourcePrefix = defaultResourcePrefix
 	}
 
-	licenseSecretKey := os.Getenv("CUSTOM_LICENSE_KEY")
-	if licenseSecretKey == "" {
-		licenseSecretKey = defaultLicenseSecretKey
-	}
+	licenseSecretKey := defaultLicenseSecretKey
 
 	memoryLimit, err := resource.ParseQuantity("100M")
 	if err != nil {
