@@ -61,6 +61,7 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("label not injected %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])
 		}
 	})
+
 	t.Run("created_in_non_default_namespace", func(t *testing.T) {
 		t.Parallel()
 
@@ -98,6 +99,7 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("payloads are different: %s!=%s", secret.Data["license"], []byte("license"))
 		}
 	})
+
 	t.Run("untouched", func(t *testing.T) {
 		t.Parallel()
 
@@ -134,6 +136,7 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("label is not expected: %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])
 		}
 	})
+
 	t.Run("updated_data", func(t *testing.T) {
 		t.Parallel()
 
@@ -172,6 +175,7 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("label is not expected: %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])
 		}
 	})
+
 	t.Run("updated_license_key", func(t *testing.T) {
 		t.Parallel()
 

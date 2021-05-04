@@ -45,6 +45,7 @@ func Test_injector(t *testing.T) {
 			t.Fatalf("crb not created, should fail : %v", err)
 		}
 	})
+
 	t.Run("succeed", func(t *testing.T) {
 		t.Parallel()
 
@@ -71,6 +72,7 @@ func Test_injector(t *testing.T) {
 			t.Fatalf("missing injected label")
 		}
 	})
+
 	t.Run("succeed_with_extra_env", func(t *testing.T) {
 		t.Parallel()
 
@@ -162,6 +164,7 @@ func Test_hash(t *testing.T) {
 				p2.ObjectMeta.Labels[agent.AgentInjectedLabel])
 		}
 	})
+
 	t.Run("do_not_depend_on_pod", func(t *testing.T) {
 		t.Parallel()
 
