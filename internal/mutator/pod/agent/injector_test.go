@@ -1,13 +1,12 @@
 // Copyright 2021 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// agent_test collects tests for the agent package.
 package agent_test
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -15,36 +14,61 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
-	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
+)
+
+const (
+	testNamespace = "default"
 )
 
 //nolint:funlen,gocognit,cyclop
-func Test_injector(t *testing.T) {
+func Test_Mutate(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.ContextWithDeadline(t)
 
 	req := webhook.RequestOptions{
-		Namespace: "default",
+		Namespace: testNamespace,
 	}
 
-	t.Run("fail_missing_crb", func(t *testing.T) {
+	t.Run("when_succeeds", func(t *testing.T) {
+		t.Run("adds_infrastructure_agent_sidecar_container_to_given_pod", func(t *testing.T) { t.Parallel() })
+
+		t.Run("adds_pods_ServiceAccount_to_infrastructure_agent_ClusterRoleBinding", func(t *testing.T) { t.Parallel() })
+
+		t.Run("adds_sidecar_configuration_hash_as_pod_label", func(t *testing.T) { t.Parallel() })
+
+		t.Run("creates_license_secret_for_pod_when_it_does_not_exist", func(t *testing.T) { t.Parallel() })
+
+		t.Run("labels_license_secret_with_owner_label", func(t *testing.T) { t.Parallel() })
+	})
+
+	t.Run("is_idempotent", func(t *testing.T) { t.Parallel() })
+
+	t.Run("retains_other_subjects_in_ClusterRoleBinding", func(t *testing.T) { t.Parallel() })
+
+	t.Run("does_not_add_the_same_subject_to_ClusterRoleBinding_twice", func(t *testing.T) { t.Parallel() })
+
+	t.Run("changes_configuration_hash_label_when_configuration_changes", func(t *testing.T) { t.Parallel() })
+
+	t.Run("updates_license_secret_when_license_key_changes", func(t *testing.T) { t.Parallel() })
+
+	t.Run("fails_when_infrastructure_agent_ClusterRoleBinding_do_not_exist", func(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().Build()
 		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := config.New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(ctx, p, req)
 		if err == nil || !apierrors.IsNotFound(err) {
-			t.Fatalf("crb not created, should fail : %v", err)
+			t.Fatalf("crb not created, should fail: %v", err)
 		}
 	})
 
@@ -54,20 +78,19 @@ func Test_injector(t *testing.T) {
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
 		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := config.New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("crb created, should not fail : %v", err)
+			t.Fatalf("crb created, should not fail: %v", err)
 		}
 
 		if len(p.Spec.Containers) != 1 {
-			t.Fatalf("missing injected container : %v", err)
+			t.Fatalf("missing injected container: %v", err)
 		}
 
 		if _, ok := p.ObjectMeta.Labels[agent.AgentInjectedLabel]; !ok {
@@ -81,21 +104,20 @@ func Test_injector(t *testing.T) {
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
 		config := getConfig()
-		config.Client = c
 		config.AgentConfig.ExtraEnvVars = map[string]string{"new-key": "new-val"}
 
-		i, err := agent.New(config)
+		i, err := config.New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("crb created, should not fail : %v", err)
+			t.Fatalf("crb created, should not fail: %v", err)
 		}
 
 		if len(p.Spec.Containers) != 1 {
-			t.Fatalf("missing injected container : %v", err)
+			t.Fatalf("missing injected container: %v", err)
 		}
 
 		found := false
@@ -105,20 +127,24 @@ func Test_injector(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Fatalf("extra var not injected : %v", p.Spec.Containers[0].Env)
+			t.Fatalf("extra var not injected: %v", p.Spec.Containers[0].Env)
 		}
 	})
 }
 
 //nolint:funlen,gocognit,cyclop
-func Test_hash(t *testing.T) {
+func Test_Mutation_hash(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.ContextWithDeadline(t)
 
 	req := webhook.RequestOptions{
-		Namespace: "default",
+		Namespace: testNamespace,
 	}
+
+	t.Run("changes_when_injector_configuration_changes", func(t *testing.T) { t.Parallel() })
+
+	t.Run("does_not_change_when_pod_definition_changes", func(t *testing.T) { t.Parallel() })
 
 	t.Run("injected_and_different", func(t *testing.T) {
 		t.Parallel()
@@ -126,16 +152,15 @@ func Test_hash(t *testing.T) {
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
 		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := config.New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("crb created, should not fail : %v", err)
+			t.Fatalf("crb created, should not fail: %v", err)
 		}
 
 		if _, ok := p.ObjectMeta.Labels[agent.AgentInjectedLabel]; !ok {
@@ -143,19 +168,17 @@ func Test_hash(t *testing.T) {
 		}
 
 		p2 := getEmptyPod()
-		c2 := fake.NewClientBuilder().WithObjects(getCRB()).Build()
 		config2 := getConfig()
-		config2.Client = c2
 		config2.AgentConfig.Image.Repository = "different-repo"
 
-		i2, err := agent.New(config2)
+		i2, err := config2.New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating second injector : %v", err)
+			t.Fatalf("creating second injector: %v", err)
 		}
 
 		err = i2.Mutate(ctx, p2, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("crb created, should not fail : %v", err)
+			t.Fatalf("crb created, should not fail: %v", err)
 		}
 
 		if _, ok := p2.ObjectMeta.Labels[agent.AgentInjectedLabel]; !ok {
@@ -175,15 +198,14 @@ func Test_hash(t *testing.T) {
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
 		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := config.New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("crb created, should not fail : %v", err)
+			t.Fatalf("crb created, should not fail: %v", err)
 		}
 		if _, ok := p.ObjectMeta.Labels[agent.AgentInjectedLabel]; !ok {
 			t.Fatalf("missing injected label")
@@ -195,7 +217,7 @@ func Test_hash(t *testing.T) {
 
 		err = i.Mutate(ctx, p2, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("crb created, should not fail : %v", err)
+			t.Fatalf("crb created, should not fail: %v", err)
 		}
 
 		if _, ok := p2.ObjectMeta.Labels[agent.AgentInjectedLabel]; !ok {
@@ -210,10 +232,18 @@ func Test_hash(t *testing.T) {
 	})
 }
 
+func clusterRoleBindingName() string {
+	return fmt.Sprintf("%s%s", agent.DefaultResourcePrefix, agent.ClusterRoleBindingSuffix)
+}
+
+func secretName() string {
+	return fmt.Sprintf("%s%s", agent.DefaultResourcePrefix, agent.LicenseSecretSuffix)
+}
+
 func getCRB() *v1.ClusterRoleBinding {
 	return &v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "crb-name",
+			Name: clusterRoleBindingName(),
 		},
 		Subjects: []v1.Subject{},
 		RoleRef:  v1.RoleRef{},
@@ -223,8 +253,8 @@ func getCRB() *v1.ClusterRoleBinding {
 func getSecret() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "newrelic-secret",
-			Namespace: "default",
+			Name:      secretName(),
+			Namespace: testNamespace,
 		},
 		Data: map[string][]byte{
 			"license": []byte("license"),
@@ -232,15 +262,10 @@ func getSecret() *corev1.Secret {
 	}
 }
 
-func getConfig() *agent.Config {
-	return &agent.Config{
-		Logger:                 logrus.New(),
-		AgentConfig:            &agent.InfraAgentConfig{},
-		ResourcePrefix:         "newrelic",
-		LicenseSecretName:      "newrelic-secret",
-		LicenseSecretKey:       "license",
-		LicenseSecretValue:     []byte("license"),
-		ClusterRoleBindingName: "crb-name",
+func getConfig() *agent.InjectorConfig {
+	return &agent.InjectorConfig{
+		AgentConfig: &agent.InfraAgentConfig{},
+		License:     "license",
 	}
 }
 
@@ -248,7 +273,7 @@ func getEmptyPod() *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
-			Namespace: "default",
+			Namespace: testNamespace,
 		},
 		Spec:   corev1.PodSpec{},
 		Status: corev1.PodStatus{},

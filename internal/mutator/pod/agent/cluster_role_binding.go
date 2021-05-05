@@ -11,7 +11,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const defaultServiceAccount = "default"
+const (
+	defaultServiceAccount = "default"
+)
 
 // ensureClusterRoleBindingSubject ensures that the clusterRolebinding exists and it is well configured, otherwise
 // patches the existing object.
@@ -21,12 +23,12 @@ func (i *injector) ensureClusterRoleBindingSubject(
 	serviceAccountNamespace string) error {
 	crb := &rbacv1.ClusterRoleBinding{}
 	key := client.ObjectKey{
-		Name: i.ClusterRoleBindingName,
+		Name: i.clusterRoleBindingName,
 	}
 
-	err := i.Client.Get(ctx, key, crb)
+	err := i.client.Get(ctx, key, crb)
 	if err != nil {
-		return fmt.Errorf("getting clusterRoleBindings %q : %w", i.ClusterRoleBindingName, err)
+		return fmt.Errorf("getting ClusterRoleBinding %q: %w", i.clusterRoleBindingName, err)
 	}
 
 	if serviceAccountName == "" {
@@ -51,7 +53,7 @@ func (i *injector) updateClusterRoleBinding(
 		Namespace: serviceAccountNamespace,
 	})
 
-	if err := i.Client.Update(ctx, crb, &client.UpdateOptions{}); err != nil {
+	if err := i.client.Update(ctx, crb, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("updating ClusteRroleBinding: %w", err)
 	}
 

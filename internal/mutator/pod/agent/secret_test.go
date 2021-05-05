@@ -13,8 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
-	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
 //nolint:funlen,gocognit,cyclop
@@ -22,36 +22,34 @@ func Test_secrets(t *testing.T) {
 	t.Parallel()
 
 	req := webhook.RequestOptions{
-		Namespace: "default",
+		Namespace: testNamespace,
 	}
 
-	t.Run("created_no_namespace_dpecified", func(t *testing.T) {
+	t.Run("created_no_namespace_specified", func(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
-			Namespace: "default",
-			Name:      "newrelic-secret",
+			Namespace: testNamespace,
+			Name:      secretName(),
 		}
 
 		secret := &corev1.Secret{}
 		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
 		if err != nil {
-			t.Fatalf("secret not found : %v", err)
+			t.Fatalf("secret not found: %v", err)
 		}
 
 		if !bytes.Equal(secret.Data["license"], []byte("license")) {
@@ -67,12 +65,10 @@ func Test_secrets(t *testing.T) {
 
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		reqDifferentNamespace := webhook.RequestOptions{
@@ -81,18 +77,18 @@ func Test_secrets(t *testing.T) {
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), p, reqDifferentNamespace)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
 			Namespace: "not-default",
-			Name:      "newrelic-secret",
+			Name:      secretName(),
 		}
 
 		secret := &corev1.Secret{}
 		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
 		if err != nil {
-			t.Fatalf("secret not found : %v", err)
+			t.Fatalf("secret not found: %v", err)
 		}
 
 		if !bytes.Equal(secret.Data["license"], []byte("license")) {
@@ -105,22 +101,20 @@ func Test_secrets(t *testing.T) {
 
 		p := getEmptyPod()
 		c := fake.NewClientBuilder().WithObjects(getCRB(), getSecret()).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
-			Namespace: "default",
-			Name:      "newrelic-secret",
+			Namespace: testNamespace,
+			Name:      secretName(),
 		}
 
 		secret := &corev1.Secret{}
@@ -144,22 +138,20 @@ func Test_secrets(t *testing.T) {
 		s := getSecret()
 		s.Data["license"] = []byte("old_data")
 		c := fake.NewClientBuilder().WithObjects(getCRB(), s).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
-			Namespace: "default",
-			Name:      "newrelic-secret",
+			Namespace: testNamespace,
+			Name:      secretName(),
 		}
 
 		secret := &corev1.Secret{}
@@ -170,44 +162,6 @@ func Test_secrets(t *testing.T) {
 
 		if !bytes.Equal(secret.Data["license"], []byte("license")) {
 			t.Fatalf("payloads are different: %s!=%s", secret.Data["license"], []byte("license"))
-		}
-		if _, ok := secret.ObjectMeta.Labels[agent.OperatorCreatedLabel]; ok {
-			t.Fatalf("label is not expected: %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])
-		}
-	})
-
-	t.Run("updated_license_key", func(t *testing.T) {
-		t.Parallel()
-
-		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(), getSecret()).Build()
-		config := getConfig()
-		config.Client = c
-		config.LicenseSecretKey = "different-license-key"
-
-		i, err := agent.New(config)
-		if err != nil {
-			t.Fatalf("creating injector : %v", err)
-		}
-
-		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
-		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
-		}
-
-		key := client.ObjectKey{
-			Namespace: "default",
-			Name:      "newrelic-secret",
-		}
-
-		secret := &corev1.Secret{}
-		err = c.Get(testutil.ContextWithDeadline(t), key, secret)
-		if err != nil {
-			t.Fatalf("secret not found: %v", err)
-		}
-
-		if !bytes.Equal(secret.Data["different-license-key"], []byte("license")) {
-			t.Fatalf("payloads are different: %s!=%s", secret.Data["different-license-key"], []byte("license"))
 		}
 		if _, ok := secret.ObjectMeta.Labels[agent.OperatorCreatedLabel]; ok {
 			t.Fatalf("label is not expected: %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])

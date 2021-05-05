@@ -7,10 +7,6 @@ package operator
 import (
 	"context"
 	"fmt"
-	"os"
-
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
@@ -29,9 +25,6 @@ const (
 
 	// DefaultHealthProbeBindAddress is a default bind address for health probes.
 	DefaultHealthProbeBindAddress = ":9440"
-
-	defaultResourcePrefix   = "newrelic-infra-operator"
-	defaultLicenseSecretKey = "license"
 )
 
 // Options holds the configuration for an operator.
@@ -42,7 +35,7 @@ type Options struct {
 	RestConfig             *rest.Config
 	Logger                 *logrus.Logger
 
-	AgentWebHookConfig *agent.Config
+	InfraAgentInjection agent.InjectorConfig
 }
 
 // Run starts operator main loop. At the moment it only runs TLS webhook server and healthcheck web server.
@@ -70,17 +63,17 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("adding health check: %w", err)
 	}
 
-	c, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+	clientOptions := client.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+	}
+
+	noCacheClient, err := client.New(mgr.GetConfig(), clientOptions)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	agentConfig, err := readAndBuildConfigStub(c, options.Logger)
-	if err != nil {
-		return fmt.Errorf("parsing agentConfig: %w", err)
-	}
-
-	agentInjector, err := agent.New(agentConfig)
+	agentInjector, err := options.InfraAgentInjection.New(mgr.GetClient(), noCacheClient, options.Logger)
 	if err != nil {
 		return fmt.Errorf("creating injector: %w", err)
 	}
@@ -120,65 +113,4 @@ func (o *Options) withDefaults() *Options {
 	}
 
 	return o
-}
-
-func readAndBuildConfigStub(c client.Client, logger *logrus.Logger) (*agent.Config, error) {
-	// TODO This should provide as well default values when we will be reading such data
-	resourcePrefix := os.Getenv("RELEASE_NAME")
-	if resourcePrefix == "" {
-		resourcePrefix = defaultResourcePrefix
-	}
-
-	licenseSecretKey := defaultLicenseSecretKey
-
-	memoryLimit, err := resource.ParseQuantity("100M")
-	if err != nil {
-		return nil, fmt.Errorf("parsing memoryLimit: %w", err)
-	}
-
-	memoryRequest, err := resource.ParseQuantity("100M")
-	if err != nil {
-		return nil, fmt.Errorf("parsing memoryRequest: %w", err)
-	}
-
-	CPULimit, err := resource.ParseQuantity("100m")
-	if err != nil {
-		return nil, fmt.Errorf("parsing CPULimit: %w", err)
-	}
-
-	CPURequest, err := resource.ParseQuantity("100m")
-	if err != nil {
-		return nil, fmt.Errorf("parsing CPURequest: %w", err)
-	}
-
-	infraAgentConfig := agent.InfraAgentConfig{
-		ExtraEnvVars: map[string]string{
-			"NRIA_VERBOSE": "1",
-		},
-		ResourceRequirements: &v1.ResourceRequirements{
-			Limits: v1.ResourceList{
-				v1.ResourceCPU:    CPULimit,
-				v1.ResourceMemory: memoryLimit,
-			},
-			Requests: v1.ResourceList{
-				v1.ResourceCPU:    CPURequest,
-				v1.ResourceMemory: memoryRequest,
-			},
-		},
-		Image: agent.Image{
-			Repository: "newrelic/infrastructure-k8s",
-			Tag:        "2.4.0-unprivileged",
-		},
-	}
-
-	return &agent.Config{
-		Logger:                 logger,
-		Client:                 c,
-		AgentConfig:            &infraAgentConfig,
-		ResourcePrefix:         resourcePrefix,
-		LicenseSecretName:      agent.GetLicenseSecretName(resourcePrefix),
-		LicenseSecretKey:       licenseSecretKey,
-		LicenseSecretValue:     []byte(os.Getenv("NRIA_LICENSE_KEY")),
-		ClusterRoleBindingName: agent.GetRBACName(resourcePrefix),
-	}, nil
 }

@@ -11,9 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
-	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
 //nolint:funlen,gocognit,cyclop
@@ -21,55 +20,35 @@ func Test_CRB(t *testing.T) {
 	t.Parallel()
 
 	req := webhook.RequestOptions{
-		Namespace: "default",
+		Namespace: testNamespace,
 	}
-
-	t.Run("fail_missing_crb", func(t *testing.T) {
-		t.Parallel()
-
-		c := fake.NewClientBuilder().Build()
-		config := getConfig()
-		config.Client = c
-
-		i, err := agent.New(config)
-		if err != nil {
-			t.Fatalf("creating injector : %v", err)
-		}
-
-		err = i.Mutate(testutil.ContextWithDeadline(t), getEmptyPod(), req)
-		if err == nil || !apierrors.IsNotFound(err) {
-			t.Fatalf("crb not created, should fail : %v", err)
-		}
-	})
 
 	t.Run("updated_with_service_account_default", func(t *testing.T) {
 		t.Parallel()
 
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), getEmptyPod(), req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
-			Name: "crb-name",
+			Name: clusterRoleBindingName(),
 		}
 
 		crb := &v1.ClusterRoleBinding{}
 		err = c.Get(testutil.ContextWithDeadline(t), key, crb)
 		if err != nil {
-			t.Fatalf("crb not found : %v", err)
+			t.Fatalf("crb not found: %v", err)
 		}
 
-		if crb.Subjects[0].Name != "default" || crb.Subjects[0].Namespace != "default" {
+		if crb.Subjects[0].Name != "default" || crb.Subjects[0].Namespace != testNamespace {
 			t.Fatalf("crb not including expecting sa: %v, %v", crb.Subjects[0].Name, crb.Subjects[0].Namespace)
 		}
 	})
@@ -78,32 +57,30 @@ func Test_CRB(t *testing.T) {
 		t.Parallel()
 
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), getEmptyPod(), req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), getEmptyPod(), req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
-			Name: "crb-name",
+			Name: clusterRoleBindingName(),
 		}
 
 		crb := &v1.ClusterRoleBinding{}
 		err = c.Get(testutil.ContextWithDeadline(t), key, crb)
 		if err != nil {
-			t.Fatalf("crb not found : %v", err)
+			t.Fatalf("crb not found: %v", err)
 		}
 
 		if len(crb.Subjects) != 1 {
@@ -115,17 +92,15 @@ func Test_CRB(t *testing.T) {
 		t.Parallel()
 
 		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
-		config := getConfig()
-		config.Client = c
 
-		i, err := agent.New(config)
+		i, err := getConfig().New(c, c, nil)
 		if err != nil {
-			t.Fatalf("creating injector : %v", err)
+			t.Fatalf("creating injector: %v", err)
 		}
 
 		err = i.Mutate(testutil.ContextWithDeadline(t), getEmptyPod(), req)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		req2 := webhook.RequestOptions{
@@ -133,17 +108,17 @@ func Test_CRB(t *testing.T) {
 		}
 		err = i.Mutate(testutil.ContextWithDeadline(t), getEmptyPod(), req2)
 		if err != nil || apierrors.IsNotFound(err) {
-			t.Fatalf("should not fail : %v", err)
+			t.Fatalf("should not fail: %v", err)
 		}
 
 		key := client.ObjectKey{
-			Name: "crb-name",
+			Name: clusterRoleBindingName(),
 		}
 
 		crb := &v1.ClusterRoleBinding{}
 		err = c.Get(testutil.ContextWithDeadline(t), key, crb)
 		if err != nil {
-			t.Fatalf("crb not found : %v", err)
+			t.Fatalf("crb not found: %v", err)
 		}
 
 		if len(crb.Subjects) != 2 {

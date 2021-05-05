@@ -27,20 +27,20 @@ func (i *injector) ensureLicenseSecretExistence(ctx context.Context, namespace s
 	s := &v1.Secret{}
 	key := client.ObjectKey{
 		Namespace: namespace,
-		Name:      i.LicenseSecretName,
+		Name:      i.licenseSecretName,
 	}
 
-	err := i.Client.Get(ctx, key, s)
+	err := i.noCacheClient.Get(ctx, key, s)
 
 	if apierrors.IsNotFound(err) {
 		return i.createSecret(ctx, namespace)
 	}
 
 	if err != nil {
-		return fmt.Errorf("getting secret in the cluster %s/%s : %w", namespace, i.LicenseSecretName, err)
+		return fmt.Errorf("getting secret in the cluster %s/%s: %w", namespace, i.licenseSecretName, err)
 	}
 
-	if value, ok := s.Data[i.LicenseSecretKey]; !ok || !bytes.Equal(value, i.LicenseSecretValue) {
+	if value, ok := s.Data[licenseSecretKey]; !ok || !bytes.Equal(value, i.license) {
 		return i.updateSecret(ctx, s)
 	}
 
@@ -50,19 +50,19 @@ func (i *injector) ensureLicenseSecretExistence(ctx context.Context, namespace s
 func (i *injector) createSecret(ctx context.Context, namespace string) error {
 	s := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      i.LicenseSecretName,
+			Name:      i.licenseSecretName,
 			Namespace: namespace,
 			Labels: map[string]string{
 				OperatorCreatedLabel: OperatorCreatedLabelValue,
 			},
 		},
 		Data: map[string][]byte{
-			i.LicenseSecretKey: i.LicenseSecretValue,
+			licenseSecretKey: i.license,
 		},
 		Type: v1.SecretTypeOpaque,
 	}
 
-	if err := i.Client.Create(ctx, s, &client.CreateOptions{}); err != nil && apierrors.IsAlreadyExists(err) {
+	if err := i.noCacheClient.Create(ctx, s, &client.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("creating secret %s/%s: %w", s.Namespace, s.Name, err)
 	}
 
@@ -72,8 +72,8 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 func (i *injector) updateSecret(ctx context.Context, s *v1.Secret) error {
 	// When we update we should not add the label since likely the user or a different newrelic installation created
 	// such secret.
-	s.Data[i.LicenseSecretKey] = i.LicenseSecretValue
-	if err := i.Client.Update(ctx, s, &client.UpdateOptions{}); err != nil {
+	s.Data[licenseSecretKey] = i.license
+	if err := i.noCacheClient.Update(ctx, s, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("updating secret: %w", err)
 	}
 

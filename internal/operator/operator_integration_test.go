@@ -420,7 +420,7 @@ func createClusterRoleBinding(t *testing.T, options operator.Options) {
 	// Making sure that clusterRoleBinding exists to run tests.
 	err = c.Create(testutil.ContextWithDeadline(t), &crb, &client.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatalf("assuring existence of clusterRoleBinding: %v", err)
+		t.Fatalf("creating ClusterRoleBinding: %v", err)
 	}
 }
 
