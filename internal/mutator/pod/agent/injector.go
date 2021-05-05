@@ -48,7 +48,7 @@ const (
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
-	envNodeNAme               = "NRK8S_NODE_NAME"
+	envNodeName               = "NRK8S_NODE_NAME"
 	envClusterName            = "CLUSTER_NAME"
 	envDisplayName            = "NRIA_DISPLAY_NAME"
 	envLicenseKey             = "NRIA_LICENSE_KEY"
@@ -104,7 +104,7 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 		noCacheClient:          noCacheClient,
 	}
 
-	i.container.Env = append(i.container.Env, standardEnvVar(config.ResourcePrefix)...)
+	i.container.Env = append(i.container.Env, standardEnvVar(i.licenseSecretName)...)
 	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
 	if config.AgentConfig.ResourceRequirements != nil {
@@ -180,11 +180,13 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 }
 
 func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) bool {
+	_, ok := pod.Labels[AgentInjectedLabel]
+
 	// TODO
 	// We should check the different labels/namespaces
 	// We should check if we want to inject it (es: job, newrelic agent, et)
 	// We should check if it is already injected
-	return true
+	return !ok
 }
 
 func (i *injector) verifyContainerInjectability(ctx context.Context, pod *corev1.Pod, namespace string) error {
@@ -220,21 +222,21 @@ func standardVolumes() []corev1.VolumeMount {
 	}
 }
 
-func standardEnvVar(resourcePrefix string) []corev1.EnvVar {
+func standardEnvVar(secretName string) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
 			Name: envLicenseKey,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fmt.Sprintf("%s-config", resourcePrefix),
+						Name: secretName,
 					},
 					Key: licenseSecretKey,
 				},
 			},
 		},
 		{
-			Name: envNodeNAme,
+			Name: envNodeName,
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
 					APIVersion: "v1",

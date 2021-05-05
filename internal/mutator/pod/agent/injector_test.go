@@ -10,9 +10,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
@@ -44,7 +46,32 @@ func Test_Mutate(t *testing.T) {
 		t.Run("labels_license_secret_with_owner_label", func(t *testing.T) { t.Parallel() })
 	})
 
-	t.Run("is_idempotent", func(t *testing.T) { t.Parallel() })
+	t.Run("is_idempotent", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		config := getConfig()
+
+		i, err := config.New(c, c, nil)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		mutatedPod := p.DeepCopy()
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		if diff := cmp.Diff(mutatedPod, p); diff != "" {
+			t.Fatalf("unexpected Pod diff\n: %v", diff)
+		}
+	})
 
 	t.Run("retains_other_subjects_in_ClusterRoleBinding", func(t *testing.T) { t.Parallel() })
 
@@ -66,9 +93,8 @@ func Test_Mutate(t *testing.T) {
 			t.Fatalf("creating injector: %v", err)
 		}
 
-		err = i.Mutate(ctx, p, req)
-		if err == nil || !apierrors.IsNotFound(err) {
-			t.Fatalf("crb not created, should fail: %v", err)
+		if err := i.Mutate(ctx, p, req); err == nil {
+			t.Fatalf("expected mutation to fail")
 		}
 	})
 
@@ -142,9 +168,93 @@ func Test_Mutation_hash(t *testing.T) {
 		Namespace: testNamespace,
 	}
 
-	t.Run("changes_when_injector_configuration_changes", func(t *testing.T) { t.Parallel() })
-
 	t.Run("does_not_change_when_pod_definition_changes", func(t *testing.T) { t.Parallel() })
+
+	t.Run("changes_when", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		config := getConfig()
+
+		i, err := config.New(c, c, nil)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		baseHash, ok := p.ObjectMeta.Labels[agent.AgentInjectedLabel]
+		if !ok {
+			t.Fatalf("missing injected label")
+		}
+
+		cases := map[string]func(*agent.InjectorConfig){
+			"resource_prefix": func(c *agent.InjectorConfig) {
+				c.ResourcePrefix = "bar"
+			},
+			"extra_environment_variables": func(c *agent.InjectorConfig) {
+				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "bar"}
+			},
+			"resources": func(c *agent.InjectorConfig) {
+				cpuLimit, err := resource.ParseQuantity("100m")
+				if err != nil {
+					t.Fatalf("parsing quantity: %v", err)
+				}
+
+				c.AgentConfig.ResourceRequirements = &corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU: cpuLimit,
+					},
+				}
+			},
+			"image_repository": func(c *agent.InjectorConfig) {
+				c.AgentConfig.Image.Repository = "foo"
+			},
+			"image_tag":          func(c *agent.InjectorConfig) {},
+			"image_pull_policy":  func(c *agent.InjectorConfig) {},
+			"image_pull_secrets": func(c *agent.InjectorConfig) {},
+			"runnable_user": func(c *agent.InjectorConfig) {
+				c.AgentConfig.PodSecurityContext.RunAsUser = 1000
+			},
+			"runnable_group": func(c *agent.InjectorConfig) {
+				c.AgentConfig.PodSecurityContext.RunAsGroup = 1000
+			},
+		}
+
+		for testCaseName, mutateConfigF := range cases {
+			t.Run(fmt.Sprintf("%s_changes", testCaseName), func(t *testing.T) {
+				t.Parallel()
+
+				p := getEmptyPod()
+				c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+				config := getConfig()
+
+				mutateConfigF(config)
+
+				i, err := config.New(c, c, nil)
+				if err != nil {
+					t.Fatalf("creating injector: %v", err)
+				}
+
+				if err := i.Mutate(ctx, p, req); err != nil {
+					t.Fatalf("mutating Pod: %v", err)
+				}
+
+				newHash, ok := p.ObjectMeta.Labels[agent.AgentInjectedLabel]
+				if !ok {
+					t.Fatalf("missing injected label")
+				}
+
+				t.Logf("old hash %q new hash %q", baseHash, newHash)
+				if baseHash == newHash {
+					t.Fatalf("no hash change detected")
+				}
+			})
+		}
+	})
 
 	t.Run("injected_and_different", func(t *testing.T) {
 		t.Parallel()
