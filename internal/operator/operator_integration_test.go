@@ -29,12 +29,12 @@ import (
 	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/rbac/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
@@ -43,6 +43,7 @@ const (
 	certValidityDuration = 1 * time.Hour
 	kubeconfigEnv        = "KUBECONFIG"
 	testHost             = "127.0.0.1"
+	testPrefix           = "newrelic-infra-operator-test"
 )
 
 //nolint:funlen,gocognit,cyclop,gocyclo
@@ -381,13 +382,16 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 		CertDir:                certDir,
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
 		Port:                   randomUnprivilegedPort(t),
+		InfraAgentInjection: agent.InjectorConfig{
+			ResourcePrefix: testPrefix,
+		},
 	}
 
 	if mutateOptions != nil {
 		mutateOptions(&options)
 	}
 
-	createClusterRoleBinding(t, options)
+	createClusterRoleBinding(ctx, t, options)
 
 	go func() {
 		if err := operator.Run(ctx, options); err != nil {
@@ -399,7 +403,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	return ctx, options, ca
 }
 
-func createClusterRoleBinding(t *testing.T, options operator.Options) {
+func createClusterRoleBinding(ctx context.Context, t *testing.T, options operator.Options) {
 	t.Helper()
 
 	c, err := client.New(options.RestConfig, client.Options{})
@@ -409,7 +413,7 @@ func createClusterRoleBinding(t *testing.T, options operator.Options) {
 
 	crb := v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "newrelic-infra-operator-infra-agent",
+			Name: fmt.Sprintf("%s%s", testPrefix, agent.ClusterRoleBindingSuffix),
 		},
 		RoleRef: v1.RoleRef{
 			// Note that we are not interested into having the real role bound.
@@ -417,11 +421,17 @@ func createClusterRoleBinding(t *testing.T, options operator.Options) {
 			Kind: "ClusterRole",
 		},
 	}
+
 	// Making sure that clusterRoleBinding exists to run tests.
-	err = c.Create(testutil.ContextWithDeadline(t), &crb, &client.CreateOptions{})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
+	if err := c.Create(ctx, &crb, &client.CreateOptions{}); err != nil {
 		t.Fatalf("creating ClusterRoleBinding: %v", err)
 	}
+
+	t.Cleanup(func() {
+		if err := c.Delete(ctx, &crb, &client.DeleteOptions{}); err != nil {
+			t.Logf("removing ClusterRoleBinding: %v", err)
+		}
+	})
 }
 
 func retryUntilFinished(f func() bool) {
