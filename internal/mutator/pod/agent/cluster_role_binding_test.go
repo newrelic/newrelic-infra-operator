@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
@@ -26,7 +27,7 @@ func Test_CRB(t *testing.T) {
 	t.Run("updated_with_service_account_default", func(t *testing.T) {
 		t.Parallel()
 
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
@@ -39,7 +40,7 @@ func Test_CRB(t *testing.T) {
 		}
 
 		key := client.ObjectKey{
-			Name: clusterRoleBindingName(),
+			Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
 		}
 
 		crb := &v1.ClusterRoleBinding{}
@@ -56,7 +57,7 @@ func Test_CRB(t *testing.T) {
 	t.Run("does_not_add_same_subject_twice", func(t *testing.T) {
 		t.Parallel()
 
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
@@ -74,7 +75,7 @@ func Test_CRB(t *testing.T) {
 		}
 
 		key := client.ObjectKey{
-			Name: clusterRoleBindingName(),
+			Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
 		}
 
 		crb := &v1.ClusterRoleBinding{}
@@ -91,7 +92,7 @@ func Test_CRB(t *testing.T) {
 	t.Run("adds_multiple_subjects", func(t *testing.T) {
 		t.Parallel()
 
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
@@ -112,7 +113,7 @@ func Test_CRB(t *testing.T) {
 		}
 
 		key := client.ObjectKey{
-			Name: clusterRoleBindingName(),
+			Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
 		}
 
 		crb := &v1.ClusterRoleBinding{}

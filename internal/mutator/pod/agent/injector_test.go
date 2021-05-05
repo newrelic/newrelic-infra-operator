@@ -12,6 +12,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/google/go-cmp/cmp"
@@ -50,7 +51,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c, nil)
@@ -102,7 +103,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c, nil)
@@ -128,7 +129,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 		config.AgentConfig.ExtraEnvVars = map[string]string{"new-key": "new-val"}
 
@@ -173,8 +174,8 @@ func Test_Mutation_hash(t *testing.T) {
 	t.Run("changes_when", func(t *testing.T) {
 		t.Parallel()
 
-		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		basePod := getEmptyPod()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c, nil)
@@ -182,18 +183,22 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("creating injector: %v", err)
 		}
 
-		if err := i.Mutate(ctx, p, req); err != nil {
+		if err := i.Mutate(ctx, basePod, req); err != nil {
 			t.Fatalf("mutating Pod: %v", err)
 		}
 
-		baseHash, ok := p.ObjectMeta.Labels[agent.AgentInjectedLabel]
+		baseHash, ok := basePod.ObjectMeta.Labels[agent.AgentInjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}
 
 		cases := map[string]func(*agent.InjectorConfig){
-			"resource_prefix": func(c *agent.InjectorConfig) {
-				c.ResourcePrefix = "bar"
+			"resource_prefix": func(config *agent.InjectorConfig) {
+				config.ResourcePrefix = "bar"
+
+				if err := c.Create(ctx, getCRB(config.ResourcePrefix), &client.CreateOptions{}); err != nil {
+					t.Fatalf("creating ClusterRoleBinding with custom prefix: %v", err)
+				}
 			},
 			"extra_environment_variables": func(c *agent.InjectorConfig) {
 				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "bar"}
@@ -213,8 +218,12 @@ func Test_Mutation_hash(t *testing.T) {
 			"image_repository": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.Repository = "foo"
 			},
-			"image_tag":          func(c *agent.InjectorConfig) {},
-			"image_pull_policy":  func(c *agent.InjectorConfig) {},
+			"image_tag": func(c *agent.InjectorConfig) {
+				c.AgentConfig.Image.Tag = "bar"
+			},
+			"image_pull_policy": func(c *agent.InjectorConfig) {
+				c.AgentConfig.Image.PullPolicy = corev1.PullAlways
+			},
 			"image_pull_secrets": func(c *agent.InjectorConfig) {},
 			"runnable_user": func(c *agent.InjectorConfig) {
 				c.AgentConfig.PodSecurityContext.RunAsUser = 1000
@@ -225,11 +234,12 @@ func Test_Mutation_hash(t *testing.T) {
 		}
 
 		for testCaseName, mutateConfigF := range cases {
+			mutateConfigF := mutateConfigF
+
 			t.Run(fmt.Sprintf("%s_changes", testCaseName), func(t *testing.T) {
 				t.Parallel()
 
 				p := getEmptyPod()
-				c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
 				config := getConfig()
 
 				mutateConfigF(config)
@@ -248,7 +258,8 @@ func Test_Mutation_hash(t *testing.T) {
 					t.Fatalf("missing injected label")
 				}
 
-				t.Logf("old hash %q new hash %q", baseHash, newHash)
+				//t.Logf("old hash %q new hash %q", baseHash, newHash)
+				//t.Log(cmp.Diff(basePod, p))
 				if baseHash == newHash {
 					t.Fatalf("no hash change detected")
 				}
@@ -260,7 +271,7 @@ func Test_Mutation_hash(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c, nil)
@@ -306,7 +317,7 @@ func Test_Mutation_hash(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c, nil)
@@ -342,18 +353,18 @@ func Test_Mutation_hash(t *testing.T) {
 	})
 }
 
-func clusterRoleBindingName() string {
-	return fmt.Sprintf("%s%s", agent.DefaultResourcePrefix, agent.ClusterRoleBindingSuffix)
+func clusterRoleBindingName(prefix string) string {
+	return fmt.Sprintf("%s%s", prefix, agent.ClusterRoleBindingSuffix)
 }
 
 func secretName() string {
 	return fmt.Sprintf("%s%s", agent.DefaultResourcePrefix, agent.LicenseSecretSuffix)
 }
 
-func getCRB() *v1.ClusterRoleBinding {
+func getCRB(prefix string) *v1.ClusterRoleBinding {
 	return &v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterRoleBindingName(),
+			Name: clusterRoleBindingName(prefix),
 		},
 		Subjects: []v1.Subject{},
 		RoleRef:  v1.RoleRef{},

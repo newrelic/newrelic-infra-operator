@@ -29,7 +29,7 @@ func Test_secrets(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
@@ -64,7 +64,7 @@ func Test_secrets(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
@@ -100,7 +100,7 @@ func Test_secrets(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(), getSecret()).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix), getSecret()).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
@@ -137,7 +137,7 @@ func Test_secrets(t *testing.T) {
 		p := getEmptyPod()
 		s := getSecret()
 		s.Data["license"] = []byte("old_data")
-		c := fake.NewClientBuilder().WithObjects(getCRB(), s).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix), s).Build()
 
 		i, err := getConfig().New(c, c, nil)
 		if err != nil {
