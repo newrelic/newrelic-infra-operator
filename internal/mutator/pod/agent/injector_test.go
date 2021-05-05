@@ -23,6 +23,8 @@ import (
 func Test_injector(t *testing.T) {
 	t.Parallel()
 
+	ctx := testutil.ContextWithDeadline(t)
+
 	req := webhook.RequestOptions{
 		Namespace: "default",
 	}
@@ -40,7 +42,7 @@ func Test_injector(t *testing.T) {
 			t.Fatalf("creating injector : %v", err)
 		}
 
-		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
+		err = i.Mutate(ctx, p, req)
 		if err == nil || !apierrors.IsNotFound(err) {
 			t.Fatalf("crb not created, should fail : %v", err)
 		}
@@ -59,7 +61,7 @@ func Test_injector(t *testing.T) {
 			t.Fatalf("creating injector : %v", err)
 		}
 
-		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
+		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
 			t.Fatalf("crb created, should not fail : %v", err)
 		}
@@ -87,7 +89,7 @@ func Test_injector(t *testing.T) {
 			t.Fatalf("creating injector : %v", err)
 		}
 
-		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
+		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
 			t.Fatalf("crb created, should not fail : %v", err)
 		}
@@ -112,6 +114,8 @@ func Test_injector(t *testing.T) {
 func Test_hash(t *testing.T) {
 	t.Parallel()
 
+	ctx := testutil.ContextWithDeadline(t)
+
 	req := webhook.RequestOptions{
 		Namespace: "default",
 	}
@@ -129,7 +133,7 @@ func Test_hash(t *testing.T) {
 			t.Fatalf("creating injector : %v", err)
 		}
 
-		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
+		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
 			t.Fatalf("crb created, should not fail : %v", err)
 		}
@@ -149,7 +153,7 @@ func Test_hash(t *testing.T) {
 			t.Fatalf("creating second injector : %v", err)
 		}
 
-		err = i2.Mutate(testutil.ContextWithDeadline(t), p2, req)
+		err = i2.Mutate(ctx, p2, req)
 		if err != nil || apierrors.IsNotFound(err) {
 			t.Fatalf("crb created, should not fail : %v", err)
 		}
@@ -177,7 +181,7 @@ func Test_hash(t *testing.T) {
 		if err != nil {
 			t.Fatalf("creating injector : %v", err)
 		}
-		err = i.Mutate(testutil.ContextWithDeadline(t), p, req)
+		err = i.Mutate(ctx, p, req)
 		if err != nil || apierrors.IsNotFound(err) {
 			t.Fatalf("crb created, should not fail : %v", err)
 		}
@@ -189,7 +193,7 @@ func Test_hash(t *testing.T) {
 		p2.Labels = map[string]string{"newLabel": "newValue"}
 		p2.Spec.Containers = append(p2.Spec.Containers, corev1.Container{Name: "test-container"})
 
-		err = i.Mutate(testutil.ContextWithDeadline(t), p2, req)
+		err = i.Mutate(ctx, p2, req)
 		if err != nil || apierrors.IsNotFound(err) {
 			t.Fatalf("crb created, should not fail : %v", err)
 		}
