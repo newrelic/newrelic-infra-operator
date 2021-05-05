@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/newrelic/newrelic-infra-operator/internal/mutator/webhook"
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
 type podMutator interface {

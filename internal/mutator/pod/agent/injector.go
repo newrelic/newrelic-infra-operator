@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/newrelic/newrelic-infra-operator/internal/mutator/webhook"
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
 const (

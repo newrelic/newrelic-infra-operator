@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
-	"github.com/newrelic/newrelic-infra-operator/internal/mutator/webhook"
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
 
