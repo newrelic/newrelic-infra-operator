@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	// AgentInjectedLabel is the name of the label injected in pod.
-	AgentInjectedLabel = "newrelic/agent-injected"
+	// InjectedLabel is the name of the label injected in pod.
+	InjectedLabel = "newrelic/agent-injected"
 
 	// DefaultImageRepository is the default repository from where infrastructure-agent will be pulled from.
 	DefaultImageRepository = "newrelic/infrastructure-k8s"
@@ -42,6 +42,9 @@ const (
 	// configured resource prefix.
 	LicenseSecretSuffix = "-config"
 
+	// LicenseSecretKey is the key which under the license key is placed in license Secret object.
+	LicenseSecretKey = "license"
+
 	agentSidecarName = "newrelic-infrastructure-sidecar"
 
 	computeTypeServerless = "serverless"
@@ -52,7 +55,6 @@ const (
 	envClusterName            = "CLUSTER_NAME"
 	envDisplayName            = "NRIA_DISPLAY_NAME"
 	envLicenseKey             = "NRIA_LICENSE_KEY"
-	licenseSecretKey          = "license"
 )
 
 // injector holds agent injection configuration.
@@ -95,6 +97,10 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 		config.AgentConfig = &InfraAgentConfig{}
 	}
 
+	if config.License == "" {
+		return nil, fmt.Errorf("license key is empty")
+	}
+
 	i := injector{
 		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
 		licenseSecretName:      fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix),
@@ -127,6 +133,7 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 	i.container.VolumeMounts = append(i.container.VolumeMounts, standardVolumes()...)
 	i.container.Image = fmt.Sprintf("%v:%v", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag)
 	i.container.Name = agentSidecarName
+	i.container.ImagePullPolicy = config.AgentConfig.Image.PullPolicy
 
 	return &i, nil
 }
@@ -135,7 +142,7 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error {
 	containerToInject := i.container
 
-	if !i.shouldInjectContainer(ctx, pod, requestOptions.Namespace) {
+	if !i.shouldInjectContainer(pod) {
 		return nil
 	}
 
@@ -152,7 +159,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		return fmt.Errorf("computing hash to add in the label: %w", err)
 	}
 
-	pod.Labels[AgentInjectedLabel] = containerHash
+	pod.Labels[InjectedLabel] = containerHash
 
 	containerToInject.Env = append(containerToInject.Env,
 		corev1.EnvVar{
@@ -179,8 +186,8 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	return nil
 }
 
-func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) bool {
-	_, ok := pod.Labels[AgentInjectedLabel]
+func (i *injector) shouldInjectContainer(pod *corev1.Pod) bool {
+	_, ok := pod.Labels[InjectedLabel]
 
 	// TODO
 	// We should check the different labels/namespaces
@@ -231,7 +238,7 @@ func standardEnvVar(secretName string) []corev1.EnvVar {
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: secretName,
 					},
-					Key: licenseSecretKey,
+					Key: LicenseSecretKey,
 				},
 			},
 		},

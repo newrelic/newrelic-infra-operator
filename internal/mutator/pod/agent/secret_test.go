@@ -52,8 +52,8 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("secret not found: %v", err)
 		}
 
-		if !bytes.Equal(secret.Data["license"], []byte("license")) {
-			t.Fatalf("payloads are different: %s!=%s", secret.Data["license"], []byte("license"))
+		if !bytes.Equal(secret.Data[agent.LicenseSecretKey], []byte(testLicense)) {
+			t.Fatalf("payloads are different: %s!=%s", secret.Data[agent.LicenseSecretKey], []byte(testLicense))
 		}
 		if secret.ObjectMeta.Labels[agent.OperatorCreatedLabel] != "true" {
 			t.Fatalf("label not injected %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])
@@ -91,8 +91,8 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("secret not found: %v", err)
 		}
 
-		if !bytes.Equal(secret.Data["license"], []byte("license")) {
-			t.Fatalf("payloads are different: %s!=%s", secret.Data["license"], []byte("license"))
+		if !bytes.Equal(secret.Data[agent.LicenseSecretKey], []byte(testLicense)) {
+			t.Fatalf("payloads are different: %s!=%s", secret.Data[agent.LicenseSecretKey], []byte(testLicense))
 		}
 	})
 
@@ -123,8 +123,8 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("secret not found: %v", err)
 		}
 
-		if !bytes.Equal(secret.Data["license"], []byte("license")) {
-			t.Fatalf("payloads are different: %s!=%s", secret.Data["license"], []byte("license"))
+		if !bytes.Equal(secret.Data[agent.LicenseSecretKey], []byte(testLicense)) {
+			t.Fatalf("payloads are different: %s!=%s", secret.Data[agent.LicenseSecretKey], []byte(testLicense))
 		}
 		if _, ok := secret.ObjectMeta.Labels[agent.OperatorCreatedLabel]; ok {
 			t.Fatalf("label is not expected: %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])
@@ -136,7 +136,7 @@ func Test_secrets(t *testing.T) {
 
 		p := getEmptyPod()
 		s := getSecret()
-		s.Data["license"] = []byte("old_data")
+		s.Data[agent.LicenseSecretKey] = []byte("old_data")
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix), s).Build()
 
 		i, err := getConfig().New(c, c, nil)
@@ -160,8 +160,8 @@ func Test_secrets(t *testing.T) {
 			t.Fatalf("secret not found: %v", err)
 		}
 
-		if !bytes.Equal(secret.Data["license"], []byte("license")) {
-			t.Fatalf("payloads are different: %s!=%s", secret.Data["license"], []byte("license"))
+		if !bytes.Equal(secret.Data[agent.LicenseSecretKey], []byte(testLicense)) {
+			t.Fatalf("payloads are different: %s!=%s", secret.Data[agent.LicenseSecretKey], []byte(testLicense))
 		}
 		if _, ok := secret.ObjectMeta.Labels[agent.OperatorCreatedLabel]; ok {
 			t.Fatalf("label is not expected: %v", secret.ObjectMeta.Labels[agent.OperatorCreatedLabel])

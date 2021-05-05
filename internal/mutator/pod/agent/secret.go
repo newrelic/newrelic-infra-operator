@@ -40,7 +40,7 @@ func (i *injector) ensureLicenseSecretExistence(ctx context.Context, namespace s
 		return fmt.Errorf("getting secret in the cluster %s/%s: %w", namespace, i.licenseSecretName, err)
 	}
 
-	if value, ok := s.Data[licenseSecretKey]; !ok || !bytes.Equal(value, i.license) {
+	if value, ok := s.Data[LicenseSecretKey]; !ok || !bytes.Equal(value, i.license) {
 		return i.updateSecret(ctx, s)
 	}
 
@@ -57,7 +57,7 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 			},
 		},
 		Data: map[string][]byte{
-			licenseSecretKey: i.license,
+			LicenseSecretKey: i.license,
 		},
 		Type: v1.SecretTypeOpaque,
 	}
@@ -72,7 +72,7 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 func (i *injector) updateSecret(ctx context.Context, s *v1.Secret) error {
 	// When we update we should not add the label since likely the user or a different newrelic installation created
 	// such secret.
-	s.Data[licenseSecretKey] = i.license
+	s.Data[LicenseSecretKey] = i.license
 	if err := i.noCacheClient.Update(ctx, s, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("updating secret: %w", err)
 	}
