@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	v1rbac "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -19,7 +19,7 @@ func (i *injector) ensureClusterRoleBindingSubject(
 	ctx context.Context,
 	serviceAccountName string,
 	serviceAccountNamespace string) error {
-	crb := &v1rbac.ClusterRoleBinding{}
+	crb := &rbacv1.ClusterRoleBinding{}
 	key := client.ObjectKey{
 		Name: i.ClusterRoleBindingName,
 	}
@@ -42,11 +42,11 @@ func (i *injector) ensureClusterRoleBindingSubject(
 
 func (i *injector) updateClusterRoleBinding(
 	ctx context.Context,
-	crb *v1rbac.ClusterRoleBinding,
+	crb *rbacv1.ClusterRoleBinding,
 	serviceAccountName string,
 	serviceAccountNamespace string) error {
-	crb.Subjects = append(crb.Subjects, v1rbac.Subject{
-		Kind:      v1rbac.ServiceAccountKind,
+	crb.Subjects = append(crb.Subjects, rbacv1.Subject{
+		Kind:      rbacv1.ServiceAccountKind,
 		Name:      serviceAccountName,
 		Namespace: serviceAccountNamespace,
 	})
@@ -58,9 +58,9 @@ func (i *injector) updateClusterRoleBinding(
 	return nil
 }
 
-func hasSubject(crb *v1rbac.ClusterRoleBinding, serviceAccountName string, namespace string) bool {
+func hasSubject(crb *rbacv1.ClusterRoleBinding, serviceAccountName string, namespace string) bool {
 	for _, s := range crb.Subjects {
-		if s.Name == serviceAccountName && s.Namespace == namespace && s.Kind == v1rbac.ServiceAccountKind {
+		if s.Name == serviceAccountName && s.Namespace == namespace && s.Kind == rbacv1.ServiceAccountKind {
 			return true
 		}
 	}
