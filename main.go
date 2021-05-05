@@ -47,12 +47,12 @@ func stubOptions() (*operator.Options, error) {
 		return nil, fmt.Errorf("parsing memoryRequest: %w", err)
 	}
 
-	CPULimit, err := resource.ParseQuantity("100m")
+	cpuLimit, err := resource.ParseQuantity("100m")
 	if err != nil {
 		return nil, fmt.Errorf("parsing CPULimit: %w", err)
 	}
 
-	CPURequest, err := resource.ParseQuantity("100m")
+	cpuRequest, err := resource.ParseQuantity("100m")
 	if err != nil {
 		return nil, fmt.Errorf("parsing CPURequest: %w", err)
 	}
@@ -63,11 +63,11 @@ func stubOptions() (*operator.Options, error) {
 		},
 		ResourceRequirements: &corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    CPULimit,
+				corev1.ResourceCPU:    cpuLimit,
 				corev1.ResourceMemory: memoryLimit,
 			},
 			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    CPURequest,
+				corev1.ResourceCPU:    cpuRequest,
 				corev1.ResourceMemory: memoryRequest,
 			},
 		},
