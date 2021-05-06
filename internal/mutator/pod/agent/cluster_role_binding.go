@@ -54,7 +54,7 @@ func (i *injector) updateClusterRoleBinding(
 	})
 
 	if err := i.client.Update(ctx, crb, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("updating ClusteRroleBinding: %w", err)
+		return fmt.Errorf("updating ClusterRoleBinding: %w", err)
 	}
 
 	return nil
