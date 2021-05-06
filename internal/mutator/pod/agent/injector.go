@@ -11,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -88,7 +87,7 @@ type Injector interface {
 }
 
 // New function is the constructor for the injector struct.
-func (config InjectorConfig) New(client, noCacheClient client.Client, logger *logrus.Logger) (Injector, error) {
+func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector, error) {
 	if config.ResourcePrefix == "" {
 		config.ResourcePrefix = DefaultResourcePrefix
 	}

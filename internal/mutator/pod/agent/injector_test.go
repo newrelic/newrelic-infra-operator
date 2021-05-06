@@ -33,7 +33,7 @@ func Test_Creating_injector_fails_when_license_is_empty(t *testing.T) {
 
 	c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
-	i, err := config.New(c, c, nil)
+	i, err := config.New(c, c)
 	if err == nil {
 		t.Errorf("expected error from creating injector")
 	}
@@ -65,7 +65,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, nil)
+		i, err := config.New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -162,7 +162,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, nil)
+		i, err := config.New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -196,7 +196,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(crb).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, nil)
+		i, err := config.New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -235,7 +235,7 @@ func Test_Mutate(t *testing.T) {
 		crb := getCRB(agent.DefaultResourcePrefix)
 		c := fake.NewClientBuilder().WithObjects(crb).Build()
 
-		i, err := getConfig().New(c, c, nil)
+		i, err := getConfig().New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -263,10 +263,63 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("changes_configuration_hash_label_when_configuration_changes", func(t *testing.T) { t.Parallel() })
-
 	t.Run("updates_license_secret_when_license_key_changes", func(t *testing.T) {
 		t.Parallel()
+
+		p := getEmptyPod()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		secret := &corev1.Secret{}
+		if err := c.Get(ctx, secretKey, secret); err != nil {
+			t.Fatalf("getting secret: %v", err)
+		}
+
+		license, ok := secret.Data[agent.LicenseSecretKey]
+		if !ok {
+			t.Fatalf("license key %q not found in created secret", license)
+		}
+
+		if string(license) != testLicense {
+			t.Fatalf("expected license %q, got %q", testLicense, license)
+		}
+
+		newLicense := "bar"
+		config.License = newLicense
+
+		i, err = config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		p = getEmptyPod()
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		secret = &corev1.Secret{}
+		if err := c.Get(ctx, secretKey, secret); err != nil {
+			t.Fatalf("getting secret: %v", err)
+		}
+
+		license, ok = secret.Data[agent.LicenseSecretKey]
+		if !ok {
+			t.Fatalf("license key %q not found in created secret", license)
+		}
+
+		if string(license) != newLicense {
+			t.Fatalf("expected license %q, got %q", newLicense, license)
+		}
 	})
 
 	t.Run("fails_when_infrastructure_agent_ClusterRoleBinding_do_not_exist", func(t *testing.T) {
@@ -276,7 +329,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, nil)
+		i, err := config.New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -306,7 +359,7 @@ func Test_Mutation_hash(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, nil)
+		i, err := config.New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -329,7 +382,7 @@ func Test_Mutation_hash(t *testing.T) {
 				}
 			},
 			"extra_environment_variables": func(c *agent.InjectorConfig) {
-				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "bar"}
+				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "baz"}
 			},
 			"resources": func(c *agent.InjectorConfig) {
 				cpuLimit, err := resource.ParseQuantity("100m")
@@ -347,7 +400,7 @@ func Test_Mutation_hash(t *testing.T) {
 				c.AgentConfig.Image.Repository = "foo"
 			},
 			"image_tag": func(c *agent.InjectorConfig) {
-				c.AgentConfig.Image.Tag = "bar"
+				c.AgentConfig.Image.Tag = "baz"
 			},
 			"image_pull_policy": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.PullPolicy = corev1.PullAlways
@@ -379,7 +432,7 @@ func Test_Mutation_hash(t *testing.T) {
 
 				mutateConfigF(config)
 
-				i, err := config.New(c, c, nil)
+				i, err := config.New(c, c)
 				if err != nil {
 					t.Fatalf("creating injector: %v", err)
 				}
@@ -407,7 +460,7 @@ func Test_Mutation_hash(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, nil)
+		i, err := config.New(c, c)
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -452,18 +505,6 @@ func getCRB(prefix string) *v1.ClusterRoleBinding {
 	return &v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterRoleBindingName(prefix),
-		},
-	}
-}
-
-func getSecret() *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName(),
-			Namespace: testNamespace,
-		},
-		Data: map[string][]byte{
-			"license": []byte(testLicense),
 		},
 	}
 }

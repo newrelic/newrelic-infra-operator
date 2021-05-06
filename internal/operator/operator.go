@@ -73,7 +73,7 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	agentInjector, err := options.InfraAgentInjection.New(mgr.GetClient(), noCacheClient, options.Logger)
+	agentInjector, err := options.InfraAgentInjection.New(mgr.GetClient(), noCacheClient)
 	if err != nil {
 		return fmt.Errorf("creating injector: %w", err)
 	}
