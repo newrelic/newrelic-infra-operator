@@ -44,6 +44,7 @@ const (
 	kubeconfigEnv        = "KUBECONFIG"
 	testHost             = "127.0.0.1"
 	testPrefix           = "newrelic-infra-operator-test"
+	testLicense          = "test-license"
 )
 
 //nolint:funlen,gocognit,cyclop,gocyclo
@@ -77,6 +78,9 @@ func Test_Running_operator(t *testing.T) {
 			RestConfig: cfg,
 			CertDir:    dirWithCerts(t),
 			Logger:     logrus.New(),
+			InfraAgentInjection: agent.InjectorConfig{
+				License: testLicense,
+			},
 		}
 
 		go func() {
@@ -131,6 +135,8 @@ func Test_Running_operator(t *testing.T) {
 
 	t.Run("responds_to", func(t *testing.T) {
 		ctx, options, ca := runOperator(t, nil)
+
+		createClusterRoleBinding(ctx, t, options)
 
 		t.Run("readiness_probe", func(t *testing.T) {
 			t.Parallel()
@@ -384,14 +390,13 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 		Port:                   randomUnprivilegedPort(t),
 		InfraAgentInjection: agent.InjectorConfig{
 			ResourcePrefix: testPrefix,
+			License:        testLicense,
 		},
 	}
 
 	if mutateOptions != nil {
 		mutateOptions(&options)
 	}
-
-	createClusterRoleBinding(ctx, t, options)
 
 	go func() {
 		if err := operator.Run(ctx, options); err != nil {
