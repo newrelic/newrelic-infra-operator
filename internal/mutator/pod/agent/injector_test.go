@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,22 +25,39 @@ const (
 	testLicense   = "test-license"
 )
 
-func Test_Creating_injector_fails_when_license_is_empty(t *testing.T) {
+func Test_Creating_injector(t *testing.T) {
 	t.Parallel()
 
-	config := getConfig()
-	config.License = ""
+	t.Run("fails_when_license_is_empty", func(t *testing.T) {
+		t.Parallel()
 
-	c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+		config.License = ""
 
-	i, err := config.New(c, c)
-	if err == nil {
-		t.Errorf("expected error from creating injector")
-	}
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
-	if i != nil {
-		t.Errorf("expected to not get injector instance when creation error occurs")
-	}
+		i, err := config.New(c, c)
+		if err == nil {
+			t.Errorf("expected error from creating injector")
+		}
+
+		if i != nil {
+			t.Errorf("expected to not get injector instance when creation error occurs")
+		}
+	})
+
+	t.Run("succeeds_when_only_required_config_options_are_set", func(t *testing.T) {
+		t.Parallel()
+
+		config := getConfig()
+		config.AgentConfig = nil
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+
+		if _, err := config.New(c, c); err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+	})
 }
 
 //nolint:funlen,gocognit,cyclop,gocyclo
@@ -89,7 +106,7 @@ func Test_Mutate(t *testing.T) {
 				Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
 			}
 
-			crb := &v1.ClusterRoleBinding{}
+			crb := &rbacv1.ClusterRoleBinding{}
 
 			if err := c.Get(ctx, key, crb); err != nil {
 				t.Fatalf("getting ClusterRoleBinding: %v", err)
@@ -187,9 +204,21 @@ func Test_Mutate(t *testing.T) {
 
 		p := getEmptyPod()
 		crb := getCRB(agent.DefaultResourcePrefix)
-		crb.Subjects = []v1.Subject{
+		crb.Subjects = []rbacv1.Subject{
 			{
-				Name: "test",
+				Name:      "default",
+				Namespace: testNamespace,
+				Kind:      rbacv1.GroupKind,
+			},
+			{
+				Name:      "nondefault",
+				Namespace: testNamespace,
+				Kind:      rbacv1.ServiceAccountKind,
+			},
+			{
+				Name:      "default",
+				Namespace: "default",
+				Kind:      rbacv1.ServiceAccountKind,
 			},
 		}
 
@@ -209,11 +238,11 @@ func Test_Mutate(t *testing.T) {
 			Name: crb.Name,
 		}
 
+		expectedSubjects := len(crb.Subjects) + 1
+
 		if err := c.Get(ctx, key, crb); err != nil {
 			t.Fatalf("getting updated ClusterRoleBinding: %v", err)
 		}
-
-		expectedSubjects := 2
 
 		if subjects := len(crb.Subjects); subjects != expectedSubjects {
 			t.Fatalf("expected %d subjects, got %d: %v", expectedSubjects, subjects, crb.Subjects)
@@ -405,14 +434,6 @@ func Test_Mutation_hash(t *testing.T) {
 			"image_pull_policy": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.PullPolicy = corev1.PullAlways
 			},
-			/*
-				"image_pull_secrets": func(c *agent.InjectorConfig) {
-					c.AgentConfig.Image.PullSecrets = []corev1.LocalObjectReference{
-						{
-							Name: "foo",
-						},
-					}
-				},*/
 			"runnable_user": func(c *agent.InjectorConfig) {
 				c.AgentConfig.PodSecurityContext.RunAsUser = 1000
 			},
@@ -501,8 +522,8 @@ func secretName() string {
 	return fmt.Sprintf("%s%s", agent.DefaultResourcePrefix, agent.LicenseSecretSuffix)
 }
 
-func getCRB(prefix string) *v1.ClusterRoleBinding {
-	return &v1.ClusterRoleBinding{
+func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterRoleBindingName(prefix),
 		},

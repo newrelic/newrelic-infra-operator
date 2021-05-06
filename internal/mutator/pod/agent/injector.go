@@ -58,8 +58,6 @@ const (
 
 // injector holds agent injection configuration.
 type injector struct {
-	*InjectorConfig
-
 	// This is the base container that will be used as base for the injection.
 	container corev1.Container
 
@@ -103,7 +101,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 	i := injector{
 		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
 		licenseSecretName:      fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix),
-		InjectorConfig:         &config,
 		license:                []byte(config.License),
 		client:                 client,
 		noCacheClient:          noCacheClient,

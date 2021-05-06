@@ -18,10 +18,9 @@ type InfraAgentConfig struct {
 
 // Image config.
 type Image struct {
-	Repository  string                        `yaml:"repository"`
-	Tag         string                        `yaml:"tag"`
-	PullPolicy  corev1.PullPolicy             `yaml:"pullPolicy"`
-	PullSecrets []corev1.LocalObjectReference `yaml:"pullSecrets"`
+	Repository string            `yaml:"repository"`
+	Tag        string            `yaml:"tag"`
+	PullPolicy corev1.PullPolicy `yaml:"pullPolicy"`
 }
 
 // PodSecurityContext config.
