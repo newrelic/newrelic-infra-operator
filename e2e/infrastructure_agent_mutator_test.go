@@ -17,6 +17,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
@@ -76,7 +77,7 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 		},
 	}
 
-	podClient := clientset.CoreV1().Pods(testNamespace(ctx, t, clientset))
+	podClient := clientset.CoreV1().Pods(withTestNamespace(ctx, t, clientset))
 
 	pod, err := podClient.Create(ctx, &podTemplate, metav1.CreateOptions{})
 	if err != nil {
@@ -146,7 +147,18 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 func testClientset(t *testing.T) *kubernetes.Clientset {
 	t.Helper()
 
-	testEnv := &envtest.Environment{}
+	testEnv := &envtest.Environment{
+		// For e2e tests, we use envtest.Environment for consistency with integration tests,
+		// but we force them to use existing cluster instead of creating local controlplane,
+		// as cluster we test on must have created resources defined in the operator Helm chart.
+		//
+		// This also allows us to test if the Helm chart configuration is correct (e.g. RBAC rules).
+		//
+		// With that approach, e2e tests can also be executed against cluster with 'make tilt-up' running.
+		//
+		// In the future, we may support also optionally creating Helm chart release on behalf of the user.
+		UseExistingCluster: pointer.BoolPtr(true),
+	}
 
 	cfg, err := testEnv.Start()
 	if err != nil {
@@ -167,7 +179,7 @@ func testClientset(t *testing.T) *kubernetes.Clientset {
 	return clientSet
 }
 
-func testNamespace(ctx context.Context, t *testing.T, clientset *kubernetes.Clientset) string {
+func withTestNamespace(ctx context.Context, t *testing.T, clientset *kubernetes.Clientset) string {
 	t.Helper()
 
 	namespaceTemplate := v1.Namespace{

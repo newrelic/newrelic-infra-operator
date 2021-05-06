@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -363,8 +364,13 @@ func Test_Mutate(t *testing.T) {
 			t.Fatalf("creating injector: %v", err)
 		}
 
-		if err := i.Mutate(ctx, p, req); err == nil {
+		err = i.Mutate(ctx, p, req)
+		if err == nil {
 			t.Fatalf("expected mutation to fail")
+		}
+
+		if !errors.IsNotFound(err) {
+			t.Fatalf("expected not found error, got: %v", err)
 		}
 	})
 }
