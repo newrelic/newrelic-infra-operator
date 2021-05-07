@@ -84,7 +84,8 @@ func stubOptions() (*operator.Options, error) {
 					DefaultValue: "serverless",
 				},
 				{
-					Name:         "fargateProfile",
+					Name: "fargateProfile",
+					// To allow inclusion on non-fargate clusters for testing.
 					DefaultValue: "unknown",
 					FromLabel:    "eks.amazonaws.com/fargate-profile",
 				},
