@@ -5,6 +5,7 @@ package agent_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,26 +26,72 @@ const (
 	testNamespace   = "test-namespace"
 	testLicense     = "test-license"
 	testClusterName = "test-cluster"
+
+	customAttributeFromLabelName    = "fromLabel"
+	customAttributeFromLabel        = "custom-attribute-from-label"
+	customAttributeFromLabelValue   = "test-value"
+	customAttributeDefaultValueName = "withDefaultValue"
+	customAttributeDefaultValue     = "defaultValue"
 )
 
+//nolint:funlen
 func Test_Creating_injector(t *testing.T) {
 	t.Parallel()
 
-	t.Run("fails_when_license_is_empty", func(t *testing.T) {
+	t.Run("fails_when", func(t *testing.T) {
 		t.Parallel()
 
-		config := getConfig()
-		config.License = ""
-
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-
-		i, err := config.New(c, c)
-		if err == nil {
-			t.Errorf("expected error from creating injector")
+		cases := map[string]func(*agent.InjectorConfig){
+			"license_is_empty": func(c *agent.InjectorConfig) {
+				c.License = ""
+			},
+			"cluster_name_is_empty": func(c *agent.InjectorConfig) {
+				c.ClusterName = ""
+			},
+			"clusterName_custom_attribute_is_defined": func(c *agent.InjectorConfig) {
+				c.CustomAttributes = []agent.CustomAttribute{
+					{
+						Name:         "clusterName",
+						DefaultValue: "foo",
+					},
+				}
+			},
+			"custom_attribute_has_no_name_set": func(c *agent.InjectorConfig) {
+				c.CustomAttributes = []agent.CustomAttribute{
+					{
+						DefaultValue: "test-value",
+					},
+				}
+			},
+			"custom_attribute_has_no_default_value_or_fromLabel_source_set": func(c *agent.InjectorConfig) {
+				c.CustomAttributes = []agent.CustomAttribute{
+					{
+						Name: "attributeWithoutValue",
+					},
+				}
+			},
 		}
 
-		if i != nil {
-			t.Errorf("expected to not get injector instance when creation error occurs")
+		for testCaseName, mutateF := range cases {
+			mutateF := mutateF
+
+			t.Run(testCaseName, func(t *testing.T) {
+				t.Parallel()
+
+				config := getConfig()
+				mutateF(config)
+
+				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+
+				i, err := config.New(c, c)
+				if err == nil {
+					t.Errorf("expected error from creating injector")
+				}
+
+				if i != nil {
+					t.Errorf("expected to not get injector instance when creation error occurs")
+				}
+			})
 		}
 	})
 
@@ -98,6 +145,50 @@ func Test_Mutate(t *testing.T) {
 
 			if len(p.Spec.Containers) != 2 {
 				t.Fatalf("expected extra container to be added, got %v", cmp.Diff(getEmptyPod(), p))
+			}
+		})
+
+		t.Run("includes_custom_attribute_with", func(t *testing.T) {
+			t.Parallel()
+
+			cases := map[string]struct {
+				key   string
+				value string
+			}{
+				"cluster_name": {
+					key:   testClusterName,
+					value: "clusterName",
+				},
+				"value_from_label": {
+					key:   customAttributeFromLabelName,
+					value: customAttributeFromLabelValue,
+				},
+				"default_value": {
+					key:   customAttributeDefaultValueName,
+					value: customAttributeDefaultValue,
+				},
+			}
+
+			for testCaseName, c := range cases {
+				c := c
+
+				t.Run(testCaseName, func(t *testing.T) {
+					t.Parallel()
+
+					found := false
+
+					for _, container := range p.Spec.Containers {
+						for _, envVar := range container.Env {
+							if strings.Contains(envVar.Value, c.key) && strings.Contains(envVar.Value, c.value) {
+								found = true
+							}
+						}
+					}
+
+					if !found {
+						t.Fatalf("cluster name custom attribute not found in pod\n%s", cmp.Diff(&corev1.Pod{}, p))
+					}
+				})
 			}
 		})
 
@@ -172,6 +263,26 @@ func Test_Mutate(t *testing.T) {
 				t.Fatalf("expected label %q to be set, got: %v", agent.OperatorCreatedLabel, secret.Labels)
 			}
 		})
+	})
+
+	t.Run("handles_pods_without_labels", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		p.Labels = nil
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+		config.CustomAttributes = nil
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
 	})
 
 	t.Run("is_idempotent", func(t *testing.T) {
@@ -353,26 +464,49 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("fails_when_infrastructure_agent_ClusterRoleBinding_do_not_exist", func(t *testing.T) {
+	t.Run("fails_when", func(t *testing.T) {
 		t.Parallel()
 
-		p := getEmptyPod()
-		c := fake.NewClientBuilder().Build()
-		config := getConfig()
+		t.Run("infrastructure_agent_ClusterRoleBinding_do_not_exist", func(t *testing.T) {
+			t.Parallel()
 
-		i, err := config.New(c, c)
-		if err != nil {
-			t.Fatalf("creating injector: %v", err)
-		}
+			p := getEmptyPod()
+			c := fake.NewClientBuilder().Build()
+			config := getConfig()
 
-		err = i.Mutate(ctx, p, req)
-		if err == nil {
-			t.Fatalf("expected mutation to fail")
-		}
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
 
-		if !errors.IsNotFound(err) {
-			t.Fatalf("expected not found error, got: %v", err)
-		}
+			err = i.Mutate(ctx, p, req)
+			if err == nil {
+				t.Fatalf("expected mutation to fail")
+			}
+
+			if !errors.IsNotFound(err) {
+				t.Fatalf("expected not found error, got: %v", err)
+			}
+		})
+
+		t.Run("value_for_custom_attribute_from_label_is_empty_and_there_is_no_default_value", func(t *testing.T) {
+			t.Parallel()
+
+			p := getEmptyPod()
+			p.Labels[customAttributeFromLabel] = ""
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			config := getConfig()
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err == nil {
+				t.Fatalf("expected mutation to fail")
+			}
+		})
 	})
 }
 
@@ -503,7 +637,7 @@ func Test_Mutation_hash(t *testing.T) {
 		}
 
 		p2 := getEmptyPod()
-		p2.Labels = map[string]string{"newLabel": "newValue"}
+		p2.Labels["newLabel"] = "newValue"
 		p2.Spec.Containers = append(p2.Spec.Containers, corev1.Container{Name: "test-container"})
 
 		if err := i.Mutate(ctx, p2, req); err != nil {
@@ -542,6 +676,16 @@ func getConfig() *agent.InjectorConfig {
 		AgentConfig: &agent.InfraAgentConfig{},
 		License:     testLicense,
 		ClusterName: testClusterName,
+		CustomAttributes: []agent.CustomAttribute{
+			{
+				Name:      customAttributeFromLabelName,
+				FromLabel: customAttributeFromLabel,
+			},
+			{
+				Name:         customAttributeDefaultValueName,
+				DefaultValue: customAttributeDefaultValue,
+			},
+		},
 	}
 }
 
@@ -550,6 +694,9 @@ func getEmptyPod() *corev1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: testNamespace,
+			Labels: map[string]string{
+				customAttributeFromLabel: customAttributeFromLabelValue,
+			},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
