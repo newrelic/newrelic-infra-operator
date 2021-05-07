@@ -89,7 +89,7 @@ func Test_Running_operator(t *testing.T) {
 		}()
 
 		select {
-		case <-ch:
+		case err = <-ch:
 			if err != nil {
 				t.Fatalf("Unexpected error from running operator: %v", err)
 			}
