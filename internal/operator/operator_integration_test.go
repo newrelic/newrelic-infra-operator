@@ -218,16 +218,19 @@ func Test_Running_operator(t *testing.T) {
     "kind": "Pod",
     "metadata": {
         "name": "foo",
-        "namespace": "default"
+        "namespace": "default",
+        "creationTimestamp": "2021-04-29T11:15:14Z"
     },
     "spec": {
         "containers": [
             {
                 "image": "bar:v2",
-                "name": "bar"
+                "name": "bar",
+                "resources": {}
             }
         ]
-    }
+    },
+    "status": {}
 }`),
 					},
 				},
