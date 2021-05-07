@@ -98,24 +98,39 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("license key is empty")
 	}
 
+	if config.AgentConfig.Image.Repository == "" {
+		config.AgentConfig.Image.Repository = DefaultImageRepository
+	}
+
+	if config.AgentConfig.Image.Tag == "" {
+		config.AgentConfig.Image.Tag = DefaultImageTag
+	}
+
+	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
+
 	i := injector{
 		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
-		licenseSecretName:      fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix),
+		licenseSecretName:      licenseSecretName,
 		license:                []byte(config.License),
 		client:                 client,
 		noCacheClient:          noCacheClient,
+		container: corev1.Container{
+			Image:           fmt.Sprintf("%s:%s", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag),
+			Name:            agentSidecarName,
+			ImagePullPolicy: config.AgentConfig.Image.PullPolicy,
+			Env:             standardEnvVar(licenseSecretName),
+			VolumeMounts:    standardVolumes(),
+			SecurityContext: &corev1.SecurityContext{
+				ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+				AllowPrivilegeEscalation: pointer.BoolPtr(false),
+			},
+		},
 	}
 
-	i.container.Env = append(i.container.Env, standardEnvVar(i.licenseSecretName)...)
 	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
 
 	if config.AgentConfig.ResourceRequirements != nil {
 		i.container.Resources = *config.AgentConfig.ResourceRequirements
-	}
-
-	i.container.SecurityContext = &corev1.SecurityContext{
-		ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-		AllowPrivilegeEscalation: pointer.BoolPtr(false),
 	}
 
 	if config.AgentConfig.PodSecurityContext.RunAsUser != 0 {
@@ -125,11 +140,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 	if config.AgentConfig.PodSecurityContext.RunAsGroup != 0 {
 		i.container.SecurityContext.RunAsGroup = &config.AgentConfig.PodSecurityContext.RunAsGroup
 	}
-
-	i.container.VolumeMounts = append(i.container.VolumeMounts, standardVolumes()...)
-	i.container.Image = fmt.Sprintf("%v:%v", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag)
-	i.container.Name = agentSidecarName
-	i.container.ImagePullPolicy = config.AgentConfig.Image.PullPolicy
 
 	return &i, nil
 }
