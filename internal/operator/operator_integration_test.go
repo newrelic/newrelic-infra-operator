@@ -391,6 +391,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 		RestConfig:             cfg,
 		CertDir:                certDir,
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		MetricsBindAddress:     fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
 		Port:                   randomUnprivilegedPort(t),
 		InfraAgentInjection: agent.InjectorConfig{
 			ResourcePrefix: testPrefix,

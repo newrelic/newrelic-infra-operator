@@ -31,6 +31,7 @@ const (
 type Options struct {
 	CertDir                string
 	HealthProbeBindAddress string
+	MetricsBindAddress     string
 	Port                   int
 	RestConfig             *rest.Config
 	Logger                 *logrus.Logger
@@ -100,6 +101,7 @@ func (o *Options) toManagerOptions() manager.Options {
 		CertDir:                o.CertDir,
 		HealthProbeBindAddress: o.HealthProbeBindAddress,
 		Port:                   o.Port,
+		MetricsBindAddress:     o.MetricsBindAddress,
 	}
 }
 
