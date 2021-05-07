@@ -16,6 +16,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -34,7 +35,7 @@ const (
 // - Pod without exclude mark get agent sidecar container injected. This verifies:
 //   - Operator has ability to grant required permission to pods.
 //
-//nolint:funlen,cyclop
+//nolint:funlen,cyclop,gocognit
 func Test_Infra_agent_injection_webhook(t *testing.T) {
 	t.Parallel()
 
@@ -93,7 +94,7 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 		for {
 			pod, err := podClient.Get(ctx, podName, metav1.GetOptions{})
 			if err != nil {
-				t.Fatalf("getting pod %q: %v", podName, err)
+				t.Fatalf("getting Pod %q: %v", podName, err)
 			}
 
 			if len(pod.Status.InitContainerStatuses) == 0 {
@@ -140,6 +141,32 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 
 		if !found {
 			t.Fatalf("no container with name including %q found in injected pod", expectedName)
+		}
+
+		deadline, ok := t.Deadline()
+		if !ok {
+			deadline = time.Now().Add(time.Duration(1<<63 - 1))
+		}
+
+		if err := wait.PollImmediate(1*time.Second, time.Until(deadline), func() (done bool, err error) {
+			pod, err := podClient.Get(ctx, podName, metav1.GetOptions{})
+			if err != nil {
+				t.Fatalf("getting Pod %q: %v", podName, err)
+			}
+
+			if len(pod.Status.ContainerStatuses) == 0 {
+				return false, nil
+			}
+
+			for _, cs := range pod.Status.ContainerStatuses {
+				if !cs.Ready {
+					return false, nil
+				}
+			}
+
+			return true, nil
+		}); err != nil {
+			t.Fatalf("waiting for Pod to converge: %v", err)
 		}
 	})
 }
