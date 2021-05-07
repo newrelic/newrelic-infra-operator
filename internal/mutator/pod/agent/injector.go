@@ -66,6 +66,7 @@ type injector struct {
 	clusterRoleBindingName string
 	licenseSecretName      string
 	license                []byte
+	containerHash          string
 	client                 client.Client
 
 	// We do not have permissions to list and watch secrets, so we must use uncached
@@ -144,6 +145,13 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 
 	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
 
+	containerToInject := config.container(licenseSecretName)
+
+	containerHash, err := hashContainer(containerToInject)
+	if err != nil {
+		return nil, fmt.Errorf("computing hash to add in the label: %w", err)
+	}
+
 	return &injector{
 		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
 		licenseSecretName:      licenseSecretName,
@@ -151,6 +159,7 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		client:                 client,
 		noCacheClient:          noCacheClient,
 		container:              config.container(licenseSecretName),
+		containerHash:          containerHash,
 		config:                 &config,
 	}, nil
 }
@@ -249,12 +258,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		pod.Labels = map[string]string{}
 	}
 
-	containerHash, err := hashContainer(containerToInject)
-	if err != nil {
-		return fmt.Errorf("computing hash to add in the label: %w", err)
-	}
-
-	pod.Labels[InjectedLabel] = containerHash
+	pod.Labels[InjectedLabel] = i.containerHash
 
 	customAttributes, err := i.config.CustomAttributes.toString(pod.Labels)
 	if err != nil {
