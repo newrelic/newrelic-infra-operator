@@ -279,6 +279,7 @@ func standardEnvVar(secretName string) []corev1.EnvVar {
 
 func extraEnvVar(s *InfraAgentConfig) []corev1.EnvVar {
 	extraEnv := []corev1.EnvVar{}
+
 	for k, v := range s.ExtraEnvVars {
 		extraEnv = append(extraEnv,
 			corev1.EnvVar{
@@ -305,7 +306,7 @@ func getAgentPassthroughEnvironment() string {
 func hashContainer(c corev1.Container) (string, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {
-		return "", fmt.Errorf("computing hash: %w", err)
+		return "", fmt.Errorf("marshalling input: %w", err)
 	}
 
 	h := sha1.New()
