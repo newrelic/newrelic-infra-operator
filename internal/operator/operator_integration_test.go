@@ -360,9 +360,6 @@ func Test_Running_operator(t *testing.T) {
 func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.Context, operator.Options, []byte) {
 	t.Helper()
 
-	ctxWithDeadline := testutil.ContextWithDeadline(t)
-	ctx, cancel := context.WithCancel(ctxWithDeadline)
-
 	testEnv := &envtest.Environment{}
 
 	cfg, err := testEnv.Start()
@@ -371,8 +368,6 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	}
 
 	t.Cleanup(func() {
-		cancel()
-
 		if err := testEnv.Stop(); err != nil {
 			t.Logf("stopping test environment: %v", err)
 		}
@@ -385,6 +380,21 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	if mutateOptions != nil {
 		mutateOptions(&options)
 	}
+
+	ctxWithDeadline := testutil.ContextWithDeadline(t)
+
+	// Run operator briefly to verify it starts without errors.
+	testCtx, cancel := context.WithDeadline(ctxWithDeadline, time.Now().Add(1*time.Second))
+
+	t.Cleanup(cancel)
+
+	if err := operator.Run(testCtx, options); err != nil {
+		t.Fatalf("starting operator: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(ctxWithDeadline)
+
+	t.Cleanup(cancel)
 
 	go func() {
 		if err := operator.Run(ctx, options); err != nil {
