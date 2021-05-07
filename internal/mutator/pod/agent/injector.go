@@ -52,6 +52,8 @@ const (
 	envClusterName            = "CLUSTER_NAME"
 	envDisplayName            = "NRIA_DISPLAY_NAME"
 	envLicenseKey             = "NRIA_LICENSE_KEY"
+
+	clusterNameAttribute = "clusterName"
 )
 
 // injector holds agent injection configuration.
@@ -64,7 +66,6 @@ type injector struct {
 	clusterRoleBindingName string
 	licenseSecretName      string
 	license                []byte
-	baseAttributes         map[string]string
 	client                 client.Client
 
 	// We do not have permissions to list and watch secrets, so we must use uncached
@@ -95,8 +96,8 @@ type CustomAttribute struct {
 	FromLabel    string
 }
 
-func (cas CustomAttributes) toString(baseAttributes map[string]string, podLabels map[string]string) (string, error) {
-	output := baseAttributes
+func (cas CustomAttributes) toString(podLabels map[string]string) (string, error) {
+	output := map[string]string{}
 
 	for _, ca := range cas {
 		value := ca.DefaultValue
@@ -130,6 +131,11 @@ type Injector interface {
 
 // New function is the constructor for the injector struct.
 func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector, error) {
+	config.CustomAttributes = append(config.CustomAttributes, CustomAttribute{
+		Name:         clusterNameAttribute,
+		DefaultValue: config.ClusterName,
+	})
+
 	if err := config.validate(); err != nil {
 		return nil, fmt.Errorf("validating configuration: %w", err)
 	}
@@ -146,9 +152,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		noCacheClient:          noCacheClient,
 		container:              config.container(licenseSecretName),
 		config:                 &config,
-		baseAttributes: map[string]string{
-			"clusterName": config.ClusterName,
-		},
 	}, nil
 }
 
@@ -161,6 +164,8 @@ func (config InjectorConfig) validate() error {
 		return fmt.Errorf("cluster name is empty")
 	}
 
+	customAttributeNames := map[string]struct{}{}
+
 	for i, ca := range config.CustomAttributes {
 		if ca.Name == "" {
 			return fmt.Errorf("custom attribute %d has empty name", i)
@@ -169,6 +174,12 @@ func (config InjectorConfig) validate() error {
 		if ca.DefaultValue == "" && ca.FromLabel == "" {
 			return fmt.Errorf("custom attribute %q has no value defined", ca.Name)
 		}
+
+		if _, ok := customAttributeNames[ca.Name]; ok {
+			return fmt.Errorf("duplicate custom attribute %q defined", ca.Name)
+		}
+
+		customAttributeNames[ca.Name] = struct{}{}
 	}
 
 	return nil
@@ -245,7 +256,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 
 	pod.Labels[InjectedLabel] = containerHash
 
-	customAttributes, err := i.config.CustomAttributes.toString(i.baseAttributes, pod.Labels)
+	customAttributes, err := i.config.CustomAttributes.toString(pod.Labels)
 	if err != nil {
 		return fmt.Errorf("creating custom attributes: %w", err)
 	}
