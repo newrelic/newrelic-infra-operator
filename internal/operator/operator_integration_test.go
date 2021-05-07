@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -75,14 +76,7 @@ func Test_Running_operator(t *testing.T) {
 			}
 		})
 
-		options := operator.Options{
-			RestConfig: cfg,
-			CertDir:    dirWithCerts(t),
-			Logger:     logrus.New(),
-			InfraAgentInjection: agent.InjectorConfig{
-				License: testLicense,
-			},
-		}
+		options := testOptions(t, cfg, dirWithCerts(t))
 
 		go func() {
 			ch <- operator.Run(ctx, options)
@@ -386,19 +380,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 
 	certDir, ca := dirWithCertsAndCA(t)
 
-	options := operator.Options{
-		Logger:                 logrus.New(),
-		RestConfig:             cfg,
-		CertDir:                certDir,
-		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
-		MetricsBindAddress:     fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
-		Port:                   randomUnprivilegedPort(t),
-		InfraAgentInjection: agent.InjectorConfig{
-			ResourcePrefix: testPrefix,
-			License:        testLicense,
-			ClusterName:    testClusterName,
-		},
-	}
+	options := testOptions(t, cfg, certDir)
 
 	if mutateOptions != nil {
 		mutateOptions(&options)
@@ -412,6 +394,24 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	}()
 
 	return ctx, options, ca
+}
+
+func testOptions(t *testing.T, cfg *rest.Config, certDir string) operator.Options {
+	t.Helper()
+
+	return operator.Options{
+		Logger:                 logrus.New(),
+		RestConfig:             cfg,
+		CertDir:                certDir,
+		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		MetricsBindAddress:     fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		Port:                   randomUnprivilegedPort(t),
+		InfraAgentInjection: agent.InjectorConfig{
+			ResourcePrefix: testPrefix,
+			License:        testLicense,
+			ClusterName:    testClusterName,
+		},
+	}
 }
 
 func createClusterRoleBinding(ctx context.Context, t *testing.T, options operator.Options) {
