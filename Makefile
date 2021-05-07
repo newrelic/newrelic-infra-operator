@@ -49,7 +49,7 @@ test-integration: ## Runs all integration tests.
 
 .PHONY: test-e2e
 test-e2e: ## Runs all e2e tests. Expects operator to be installed on the cluster using Helm chart.
-	KUBECONFIG=$(TEST_KUBECONFIG) USE_EXISTING_CLUSTER=true $(GO_TEST) -tags e2e $(GO_PACKAGES)
+	KUBECONFIG=$(TEST_KUBECONFIG) $(GO_TEST) -tags e2e $(GO_PACKAGES)
 
 .PHONY: ci
 ci: check-tidy build test ## Runs checks performed by CI without external dependencies required (e.g. golangci-lint).
@@ -100,8 +100,8 @@ image: ## Builds operator Docker image.
 image-push: image ## Builds and pushes operator Docker image.
 	$(DOCKER_CMD) push $(IMAGE_REPO)
 
-.PHONY: kind
-kind: ## Creates local Kind cluster for development.
+.PHONY: kind-up
+kind-up: ## Creates local Kind cluster for development.
 	env KUBECONFIG=$(TEST_KUBECONFIG) $(KIND_SCRIPT)
 
 .PHONY: update-kind

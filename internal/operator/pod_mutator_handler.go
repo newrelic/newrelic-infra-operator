@@ -9,20 +9,21 @@ import (
 	"net/http"
 
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
 type podMutator interface {
-	Mutate(ctx context.Context, client client.Client, pod *corev1.Pod, ns string) error
+	Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error
 }
 
 type podMutatorHandler struct {
-	Client   client.Client
 	decoder  *admission.Decoder
 	mutators []podMutator
 }
 
+// Handle is in charge of handling the request received involving new pods.
 func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
 
@@ -31,8 +32,16 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
+	requestOptions := webhook.RequestOptions{
+		Namespace: req.Namespace,
+	}
+
+	if req.DryRun != nil {
+		requestOptions.DryRun = *req.DryRun
+	}
+
 	for _, m := range a.mutators {
-		if err := m.Mutate(ctx, a.Client, pod, req.Namespace); err != nil {
+		if err := m.Mutate(ctx, pod, requestOptions); err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
 	}
@@ -45,6 +54,7 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 
+// InjectDecoder injects the decoder and is useful to respect the DecoderInjector interface.
 func (a *podMutatorHandler) InjectDecoder(d *admission.Decoder) error {
 	a.decoder = d
 

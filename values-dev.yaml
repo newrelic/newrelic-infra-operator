@@ -2,7 +2,6 @@
 image:
   repository: newrelic-infra-operator
   tag: latest
-  pullPolicy: Never
 
 restartPolicy: Never
 

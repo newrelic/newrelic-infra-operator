@@ -26,10 +26,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
+	v1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 )
@@ -38,6 +44,9 @@ const (
 	certValidityDuration = 1 * time.Hour
 	kubeconfigEnv        = "KUBECONFIG"
 	testHost             = "127.0.0.1"
+	testPrefix           = "newrelic-infra-operator-test"
+	testLicense          = "test-license"
+	testClusterName      = "test-cluster"
 )
 
 //nolint:funlen,gocognit,cyclop,gocyclo
@@ -62,23 +71,19 @@ func Test_Running_operator(t *testing.T) {
 
 		t.Cleanup(func() {
 			cancel()
-
 			if err := testEnv.Stop(); err != nil {
 				t.Logf("stopping test environment: %v", err)
 			}
 		})
 
-		options := operator.Options{
-			RestConfig: cfg,
-			CertDir:    dirWithCerts(t),
-		}
+		options := testOptions(t, cfg, dirWithCerts(t))
 
 		go func() {
 			ch <- operator.Run(ctx, options)
 		}()
 
 		select {
-		case <-ch:
+		case err = <-ch:
 			if err != nil {
 				t.Fatalf("Unexpected error from running operator: %v", err)
 			}
@@ -126,6 +131,8 @@ func Test_Running_operator(t *testing.T) {
 	t.Run("responds_to", func(t *testing.T) {
 		ctx, options, ca := runOperator(t, nil)
 
+		createClusterRoleBinding(ctx, t, options)
+
 		t.Run("readiness_probe", func(t *testing.T) {
 			t.Parallel()
 
@@ -152,7 +159,7 @@ func Test_Running_operator(t *testing.T) {
 					return false
 				}
 
-				if resp.StatusCode != 200 {
+				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
@@ -186,7 +193,7 @@ func Test_Running_operator(t *testing.T) {
 					return false
 				}
 
-				if resp.StatusCode != 200 {
+				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
@@ -199,22 +206,26 @@ func Test_Running_operator(t *testing.T) {
 
 			admissionReq := admissionv1.AdmissionReview{
 				Request: &admissionv1.AdmissionRequest{
+					Namespace: "default",
 					Object: runtime.RawExtension{
 						Raw: []byte(`{
     "apiVersion": "v1",
     "kind": "Pod",
     "metadata": {
         "name": "foo",
-        "namespace": "default"
+        "namespace": "default",
+        "creationTimestamp": "2021-04-29T11:15:14Z"
     },
     "spec": {
         "containers": [
             {
                 "image": "bar:v2",
-                "name": "bar"
+                "name": "bar",
+                "resources": {}
             }
         ]
-    }
+    },
+    "status": {}
 }`),
 					},
 				},
@@ -240,7 +251,7 @@ func Test_Running_operator(t *testing.T) {
 				t.Fatalf("adding CA certificate to pool")
 			}
 
-			client := &http.Client{
+			c := &http.Client{
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{
 						RootCAs: pool,
@@ -249,7 +260,7 @@ func Test_Running_operator(t *testing.T) {
 			}
 
 			retryUntilFinished(func() bool {
-				resp, err := client.Do(req) //nolint:bodyclose
+				resp, err := c.Do(req) //nolint:bodyclose
 
 				defer closeResponseBody(t, resp)
 
@@ -265,7 +276,7 @@ func Test_Running_operator(t *testing.T) {
 					return false
 				}
 
-				if resp.StatusCode != 200 {
+				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
@@ -280,7 +291,7 @@ func Test_Running_operator(t *testing.T) {
 					t.Fatalf("decoding admission response: %v", err)
 				}
 
-				if result := response.Response.Result; result != nil && result.Code != 200 {
+				if result := response.Response.Result; result != nil && result.Code != http.StatusOK {
 					t.Fatalf("got bad response with code %d: %v", result.Code, result.Message)
 				}
 
@@ -294,7 +305,7 @@ func Test_Running_operator(t *testing.T) {
 	//nolint:paralleltest
 	t.Run("fails_when", func(t *testing.T) {
 		t.Run("there_is_no_kubernetes_credentials_available", func(t *testing.T) {
-			ctx := context.Background()
+			ctx := testutil.ContextWithDeadline(t)
 
 			kubeconfig := os.Getenv(kubeconfigEnv)
 
@@ -310,6 +321,7 @@ func Test_Running_operator(t *testing.T) {
 
 			options := operator.Options{
 				CertDir: dirWithCerts(t),
+				Logger:  logrus.New(),
 			}
 
 			if err := operator.Run(ctx, options); err == nil {
@@ -332,6 +344,7 @@ func Test_Running_operator(t *testing.T) {
 			})
 
 			options := operator.Options{
+				Logger:                 logrus.New(),
 				RestConfig:             cfg,
 				CertDir:                dirWithCerts(t),
 				HealthProbeBindAddress: "1111",
@@ -347,9 +360,6 @@ func Test_Running_operator(t *testing.T) {
 func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.Context, operator.Options, []byte) {
 	t.Helper()
 
-	ctxWithDeadline := testutil.ContextWithDeadline(t)
-	ctx, cancel := context.WithCancel(ctxWithDeadline)
-
 	testEnv := &envtest.Environment{}
 
 	cfg, err := testEnv.Start()
@@ -358,8 +368,6 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	}
 
 	t.Cleanup(func() {
-		cancel()
-
 		if err := testEnv.Stop(); err != nil {
 			t.Logf("stopping test environment: %v", err)
 		}
@@ -367,16 +375,26 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 
 	certDir, ca := dirWithCertsAndCA(t)
 
-	options := operator.Options{
-		RestConfig:             cfg,
-		CertDir:                certDir,
-		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
-		Port:                   randomUnprivilegedPort(t),
-	}
+	options := testOptions(t, cfg, certDir)
 
 	if mutateOptions != nil {
 		mutateOptions(&options)
 	}
+
+	ctxWithDeadline := testutil.ContextWithDeadline(t)
+
+	// Run operator briefly to verify it starts without errors.
+	testCtx, cancel := context.WithDeadline(ctxWithDeadline, time.Now().Add(1*time.Second))
+
+	t.Cleanup(cancel)
+
+	if err := operator.Run(testCtx, options); err != nil {
+		t.Fatalf("starting operator: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(ctxWithDeadline)
+
+	t.Cleanup(cancel)
 
 	go func() {
 		if err := operator.Run(ctx, options); err != nil {
@@ -386,6 +404,55 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 	}()
 
 	return ctx, options, ca
+}
+
+func testOptions(t *testing.T, cfg *rest.Config, certDir string) operator.Options {
+	t.Helper()
+
+	return operator.Options{
+		Logger:                 logrus.New(),
+		RestConfig:             cfg,
+		CertDir:                certDir,
+		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		MetricsBindAddress:     fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		Port:                   randomUnprivilegedPort(t),
+		InfraAgentInjection: agent.InjectorConfig{
+			ResourcePrefix: testPrefix,
+			License:        testLicense,
+			ClusterName:    testClusterName,
+		},
+	}
+}
+
+func createClusterRoleBinding(ctx context.Context, t *testing.T, options operator.Options) {
+	t.Helper()
+
+	c, err := client.New(options.RestConfig, client.Options{})
+	if err != nil {
+		t.Fatalf("initializing client: %v", err)
+	}
+
+	crb := v1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s%s", testPrefix, agent.ClusterRoleBindingSuffix),
+		},
+		RoleRef: v1.RoleRef{
+			// Note that we are not interested into having the real role bound.
+			Name: "view",
+			Kind: "ClusterRole",
+		},
+	}
+
+	// Making sure that clusterRoleBinding exists to run tests.
+	if err := c.Create(ctx, &crb, &client.CreateOptions{}); err != nil {
+		t.Fatalf("creating ClusterRoleBinding: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if err := c.Delete(ctx, &crb, &client.DeleteOptions{}); err != nil {
+			t.Logf("removing ClusterRoleBinding: %v", err)
+		}
+	})
 }
 
 func retryUntilFinished(f func() bool) {

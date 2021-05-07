@@ -22,8 +22,10 @@ allow_k8s_contexts(settings.get("allowed_contexts", "kind-" + settings.get('kind
 load('ext://restart_process', 'docker_build_with_restart')
 
 if settings.get('live_reload'):
+  binary_name = '%s-linux' % project_name
+
   # Building daemon binary locally.
-  local_resource('%s-binary' % project_name, 'make build', deps=[
+  local_resource('%s-binary' % project_name, 'GOOS=linux make build', deps=[
     './main.go',
     './internal',
   ])
@@ -31,17 +33,17 @@ if settings.get('live_reload'):
   # Use custom Dockerfile for Tilt builds, which only takes locally built daemon binary for live reloading.
   dockerfile = '''
     FROM alpine:3.13
-    COPY %s /usr/local/bin/
+    COPY %s /usr/local/bin/%s
     ENTRYPOINT ["%s"]
-  ''' % (project_name, project_name)
+  ''' % (binary_name, project_name, project_name)
 
   docker_build_with_restart(project_name, '.',
     dockerfile_contents=dockerfile,
     entrypoint=project_name,
-    only=project_name,
+    only=binary_name,
     live_update=[
       # Copy the binary so it gets restarted.
-      sync(project_name, '/usr/local/bin/%s' % project_name),
+      sync(binary_name, '/usr/local/bin/%s' % project_name),
     ],
   )
 else:
