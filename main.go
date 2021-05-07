@@ -77,6 +77,18 @@ func stubOptions() (*operator.Options, error) {
 		InfraAgentInjection: agent.InjectorConfig{
 			AgentConfig: &infraAgentConfig,
 			License:     os.Getenv("NRIA_LICENSE_KEY"),
+			ClusterName: os.Getenv("CLUSTER_NAME"),
+			CustomAttributes: []agent.CustomAttribute{
+				{
+					Name:         "computeType",
+					DefaultValue: "serverless",
+				},
+				{
+					Name:         "fargateProfile",
+					DefaultValue: "unknown",
+					FromLabel:    "eks.amazonaws.com/fargate-profile",
+				},
+			},
 		},
 	}, nil
 }

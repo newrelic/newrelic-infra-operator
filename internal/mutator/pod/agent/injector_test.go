@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	testNamespace = "test-namespace"
-	testLicense   = "test-license"
+	testNamespace   = "test-namespace"
+	testLicense     = "test-license"
+	testClusterName = "test-cluster"
 )
 
 func Test_Creating_injector(t *testing.T) {
@@ -540,6 +541,7 @@ func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
 		AgentConfig: &agent.InfraAgentConfig{},
 		License:     testLicense,
+		ClusterName: testClusterName,
 	}
 }
 

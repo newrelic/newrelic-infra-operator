@@ -7,8 +7,8 @@ package agent
 import (
 	"context"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -46,8 +46,6 @@ const (
 
 	agentSidecarName = "newrelic-infrastructure-sidecar"
 
-	computeTypeServerless = "serverless"
-
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
 	envNodeName               = "NRK8S_NODE_NAME"
@@ -58,12 +56,15 @@ const (
 
 // injector holds agent injection configuration.
 type injector struct {
+	config *InjectorConfig
+
 	// This is the base container that will be used as base for the injection.
 	container corev1.Container
 
 	clusterRoleBindingName string
 	licenseSecretName      string
 	license                []byte
+	baseAttributes         map[string]string
 	client                 client.Client
 
 	// We do not have permissions to list and watch secrets, so we must use uncached
@@ -73,9 +74,52 @@ type injector struct {
 
 // InjectorConfig of the Injector used to pass the required data to build it.
 type InjectorConfig struct {
-	AgentConfig    *InfraAgentConfig
-	ResourcePrefix string
-	License        string
+	AgentConfig      *InfraAgentConfig
+	ResourcePrefix   string
+	License          string
+	ClusterName      string
+	CustomAttributes CustomAttributes
+}
+
+// CustomAttributes represents collection of custom attributes.
+type CustomAttributes []CustomAttribute
+
+// CustomAttribute represents single custom attribute which will be reported by infrastructure-agent.
+//
+// It's value can be taken from Pod label. If label is not present, default value will be used.
+//
+// If default value is empty as well, error will be returned.
+type CustomAttribute struct {
+	Name         string
+	DefaultValue string
+	FromLabel    string
+}
+
+func (cas CustomAttributes) toString(baseAttributes map[string]string, podLabels map[string]string) (string, error) {
+	output := baseAttributes
+
+	for _, ca := range cas {
+		value := ca.DefaultValue
+
+		if l := ca.FromLabel; l != "" {
+			if v, ok := podLabels[l]; ok && v != "" {
+				value = v
+			}
+		}
+
+		if value == "" {
+			return "", fmt.Errorf("value for custom attribute %q is empty", ca.Name)
+		}
+
+		output[ca.Name] = value
+	}
+
+	casRaw, err := json.Marshal(output)
+	if err != nil {
+		return "", fmt.Errorf("marshalling attributes: %w", err)
+	}
+
+	return string(casRaw), nil
 }
 
 // Injector injects New Relic infrastructure-agent into given pod, ensuring that it has all capabilities to run
@@ -86,16 +130,57 @@ type Injector interface {
 
 // New function is the constructor for the injector struct.
 func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector, error) {
+	if err := config.validate(); err != nil {
+		return nil, fmt.Errorf("validating configuration: %w", err)
+	}
+
+	config.setDefaults()
+
+	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
+
+	return &injector{
+		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
+		licenseSecretName:      licenseSecretName,
+		license:                []byte(config.License),
+		client:                 client,
+		noCacheClient:          noCacheClient,
+		container:              config.container(licenseSecretName),
+		config:                 &config,
+		baseAttributes: map[string]string{
+			"clusterName": config.ClusterName,
+		},
+	}, nil
+}
+
+func (config InjectorConfig) validate() error {
+	if config.License == "" {
+		return fmt.Errorf("license key is empty")
+	}
+
+	if config.ClusterName == "" {
+		return fmt.Errorf("cluster name is empty")
+	}
+
+	for i, ca := range config.CustomAttributes {
+		if ca.Name == "" {
+			return fmt.Errorf("custom attribute %d has empty name", i)
+		}
+
+		if ca.DefaultValue == "" && ca.FromLabel == "" {
+			return fmt.Errorf("custom attribute %q has no value defined", ca.Name)
+		}
+	}
+
+	return nil
+}
+
+func (config *InjectorConfig) setDefaults() {
 	if config.ResourcePrefix == "" {
 		config.ResourcePrefix = DefaultResourcePrefix
 	}
 
 	if config.AgentConfig == nil {
 		config.AgentConfig = &InfraAgentConfig{}
-	}
-
-	if config.License == "" {
-		return nil, fmt.Errorf("license key is empty")
 	}
 
 	if config.AgentConfig.Image.Repository == "" {
@@ -105,43 +190,36 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 	if config.AgentConfig.Image.Tag == "" {
 		config.AgentConfig.Image.Tag = DefaultImageTag
 	}
+}
 
-	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
-
-	i := injector{
-		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
-		licenseSecretName:      licenseSecretName,
-		license:                []byte(config.License),
-		client:                 client,
-		noCacheClient:          noCacheClient,
-		container: corev1.Container{
-			Image:           fmt.Sprintf("%s:%s", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag),
-			Name:            agentSidecarName,
-			ImagePullPolicy: config.AgentConfig.Image.PullPolicy,
-			Env:             standardEnvVar(licenseSecretName),
-			VolumeMounts:    standardVolumes(),
-			SecurityContext: &corev1.SecurityContext{
-				ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-				AllowPrivilegeEscalation: pointer.BoolPtr(false),
-			},
+func (config InjectorConfig) container(licenseSecretName string) corev1.Container {
+	c := corev1.Container{
+		Image:           fmt.Sprintf("%s:%s", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag),
+		Name:            agentSidecarName,
+		ImagePullPolicy: config.AgentConfig.Image.PullPolicy,
+		Env:             standardEnvVar(licenseSecretName, config.ClusterName),
+		VolumeMounts:    standardVolumes(),
+		SecurityContext: &corev1.SecurityContext{
+			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
 		},
 	}
 
-	i.container.Env = append(i.container.Env, extraEnvVar(config.AgentConfig)...)
+	c.Env = append(c.Env, extraEnvVar(config.AgentConfig)...)
 
 	if config.AgentConfig.ResourceRequirements != nil {
-		i.container.Resources = *config.AgentConfig.ResourceRequirements
+		c.Resources = *config.AgentConfig.ResourceRequirements
 	}
 
 	if config.AgentConfig.PodSecurityContext.RunAsUser != 0 {
-		i.container.SecurityContext.RunAsUser = &config.AgentConfig.PodSecurityContext.RunAsUser
+		c.SecurityContext.RunAsUser = &config.AgentConfig.PodSecurityContext.RunAsUser
 	}
 
 	if config.AgentConfig.PodSecurityContext.RunAsGroup != 0 {
-		i.container.SecurityContext.RunAsGroup = &config.AgentConfig.PodSecurityContext.RunAsGroup
+		c.SecurityContext.RunAsGroup = &config.AgentConfig.PodSecurityContext.RunAsGroup
 	}
 
-	return &i, nil
+	return c
 }
 
 // Mutate mutates given Pod object by injecting infrastructure-agent container into it with all dependencies.
@@ -167,12 +245,17 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 
 	pod.Labels[InjectedLabel] = containerHash
 
+	customAttributes, err := i.config.CustomAttributes.toString(i.baseAttributes, pod.Labels)
+	if err != nil {
+		return fmt.Errorf("creating custom attributes: %w", err)
+	}
+
 	containerToInject.Env = append(containerToInject.Env,
 		corev1.EnvVar{
-			Name: envCustomAttribute,
-			Value: fmt.Sprintf(`{"clusterName":"%s", "computeType":"%s", "fargateProfile":"%s"}`,
-				os.Getenv("CLUSTER_NAME"), computeTypeServerless, pod.Labels["eks.amazonaws.com/fargate-profile"]),
-		})
+			Name:  envCustomAttribute,
+			Value: customAttributes,
+		},
+	)
 
 	pod.Spec.Containers = append(pod.Spec.Containers, containerToInject)
 
@@ -235,7 +318,7 @@ func standardVolumes() []corev1.VolumeMount {
 	}
 }
 
-func standardEnvVar(secretName string) []corev1.EnvVar {
+func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
 			Name: envLicenseKey,
@@ -268,7 +351,7 @@ func standardEnvVar(secretName string) []corev1.EnvVar {
 		},
 		{
 			Name:  envClusterName,
-			Value: os.Getenv(envClusterName),
+			Value: clusterName,
 		},
 		{
 			Name:  envPassthorughEnvironment,

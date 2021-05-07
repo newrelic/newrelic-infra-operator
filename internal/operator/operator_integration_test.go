@@ -45,6 +45,7 @@ const (
 	testHost             = "127.0.0.1"
 	testPrefix           = "newrelic-infra-operator-test"
 	testLicense          = "test-license"
+	testClusterName      = "test-cluster"
 )
 
 //nolint:funlen,gocognit,cyclop,gocyclo
@@ -394,6 +395,7 @@ func runOperator(t *testing.T, mutateOptions func(*operator.Options)) (context.C
 		InfraAgentInjection: agent.InjectorConfig{
 			ResourcePrefix: testPrefix,
 			License:        testLicense,
+			ClusterName:    testClusterName,
 		},
 	}
 
