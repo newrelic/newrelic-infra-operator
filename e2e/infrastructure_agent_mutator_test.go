@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -57,19 +57,19 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 		testCommands = append(testCommands, fmt.Sprintf("kubectl get --raw %s", uri))
 	}
 
-	podTemplate := v1.Pod{
+	podTemplate := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: testPrefix,
 		},
-		Spec: v1.PodSpec{
-			InitContainers: []v1.Container{
+		Spec: corev1.PodSpec{
+			InitContainers: []corev1.Container{
 				{
 					Name:    "kubectl",
 					Image:   "bitnami/kubectl",
 					Command: []string{"sh", "-c", strings.Join(testCommands, "\n")},
 				},
 			},
-			Containers: []v1.Container{
+			Containers: []corev1.Container{
 				{
 					Name:  "nginx",
 					Image: "nginx",
@@ -209,7 +209,7 @@ func testClientset(t *testing.T) *kubernetes.Clientset {
 func withTestNamespace(ctx context.Context, t *testing.T, clientset *kubernetes.Clientset) string {
 	t.Helper()
 
-	namespaceTemplate := v1.Namespace{
+	namespaceTemplate := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: testPrefix,
 		},

@@ -28,7 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -432,11 +432,11 @@ func createClusterRoleBinding(ctx context.Context, t *testing.T, options operato
 		t.Fatalf("initializing client: %v", err)
 	}
 
-	crb := v1.ClusterRoleBinding{
+	crb := rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s%s", testPrefix, agent.ClusterRoleBindingSuffix),
 		},
-		RoleRef: v1.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			// Note that we are not interested into having the real role bound.
 			Name: "view",
 			Kind: "ClusterRole",
