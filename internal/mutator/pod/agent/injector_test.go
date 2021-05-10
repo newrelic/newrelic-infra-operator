@@ -441,6 +441,7 @@ func Test_Mutate(t *testing.T) {
 				},
 			},
 		}
+
 		for testCaseName, testData := range cases {
 			testData := testData
 
