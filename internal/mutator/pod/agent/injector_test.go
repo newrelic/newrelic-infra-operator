@@ -405,7 +405,7 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("does_not_inject_sidecar_if", func(t *testing.T) {
+	t.Run("does_not_inject_sidecar_when", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]struct {
