@@ -405,31 +405,73 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("does_not_inject_sidecar_if_owner_is_a_Job", func(t *testing.T) {
+	t.Run("does_not_inject_sidecar_if", func(t *testing.T) {
 		t.Parallel()
 
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-
-		i, err := getConfig().New(c, c)
-		if err != nil {
-			t.Fatalf("creating injector: %v", err)
-		}
-
-		p := getEmptyPod()
-		p.OwnerReferences = []metav1.OwnerReference{
-			{
-				Kind:       "Job",
-				APIVersion: "batch/v1",
-				Name:       "test-owner",
+		cases := map[string]struct {
+			OwnerReference    metav1.OwnerReference
+			InjectionExpected bool
+		}{
+			"owner_is_Job_batch/v1": {
+				InjectionExpected: false,
+				OwnerReference: metav1.OwnerReference{
+					Kind:       "Job",
+					APIVersion: "batch/v1",
+				},
+			},
+			"owner_is_Job_batch/v1beta1": {
+				InjectionExpected: false,
+				OwnerReference: metav1.OwnerReference{
+					Kind:       "Job",
+					APIVersion: "batch/v1beta1",
+				},
+			},
+			"owner_is_NotJob_batch/v1": {
+				InjectionExpected: true,
+				OwnerReference: metav1.OwnerReference{
+					Kind:       "NotJob",
+					APIVersion: "batch/v1",
+				},
+			},
+			"owner_is_Job_test/v1": {
+				InjectionExpected: true,
+				OwnerReference: metav1.OwnerReference{
+					Kind:       "Job",
+					APIVersion: "test/v1",
+				},
 			},
 		}
+		for testCaseName, testData := range cases {
+			testData := testData
 
-		if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
-			t.Fatalf("mutating first time: %v", err)
-		}
+			t.Run(testCaseName, func(t *testing.T) {
+				t.Parallel()
 
-		if len(p.Spec.Containers) != 1 {
-			t.Fatalf("expected %d containers, got %d: %v", 1, len(p.Spec.Containers), p.Spec.Containers)
+				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+
+				i, err := getConfig().New(c, c)
+				if err != nil {
+					t.Fatalf("creating injector: %v", err)
+				}
+
+				p := getEmptyPod()
+				p.OwnerReferences = []metav1.OwnerReference{testData.OwnerReference}
+
+				if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
+					t.Fatalf("mutating first time: %v", err)
+				}
+
+				var expectedContainers int
+				if testData.InjectionExpected {
+					expectedContainers = 2
+				} else {
+					expectedContainers = 1
+				}
+
+				if len(p.Spec.Containers) != expectedContainers {
+					t.Fatalf("expected %d containers, got %d: %v", expectedContainers, len(p.Spec.Containers), p.Spec.Containers)
+				}
+			})
 		}
 	})
 
