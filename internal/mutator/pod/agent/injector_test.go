@@ -409,33 +409,33 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]struct {
-			OwnerReference    metav1.OwnerReference
-			InjectionExpected bool
+			ownerReference    metav1.OwnerReference
+			injectionExpected bool
 		}{
 			"owner_is_Job_batch/v1": {
-				InjectionExpected: false,
-				OwnerReference: metav1.OwnerReference{
+				injectionExpected: false,
+				ownerReference: metav1.OwnerReference{
 					Kind:       "Job",
 					APIVersion: "batch/v1",
 				},
 			},
 			"owner_is_Job_batch/v1beta1": {
-				InjectionExpected: false,
-				OwnerReference: metav1.OwnerReference{
+				injectionExpected: false,
+				ownerReference: metav1.OwnerReference{
 					Kind:       "Job",
 					APIVersion: "batch/v1beta1",
 				},
 			},
 			"owner_is_NonExistent_batch/v1": {
-				InjectionExpected: true,
-				OwnerReference: metav1.OwnerReference{
+				injectionExpected: true,
+				ownerReference: metav1.OwnerReference{
 					Kind:       "NonExistent",
 					APIVersion: "batch/v1",
 				},
 			},
 			"owner_is_Job_test/v1": {
-				InjectionExpected: true,
-				OwnerReference: metav1.OwnerReference{
+				injectionExpected: true,
+				ownerReference: metav1.OwnerReference{
 					Kind:       "Job",
 					APIVersion: "test/v1",
 				},
@@ -456,14 +456,14 @@ func Test_Mutate(t *testing.T) {
 				}
 
 				p := getEmptyPod()
-				p.OwnerReferences = []metav1.OwnerReference{testData.OwnerReference}
+				p.OwnerReferences = []metav1.OwnerReference{testData.ownerReference}
 
 				if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
 					t.Fatalf("mutating Pod: %v", err)
 				}
 
 				expectedContainers := 1
-				if testData.InjectionExpected {
+				if testData.injectionExpected {
 					expectedContainers = 2
 				}
 
