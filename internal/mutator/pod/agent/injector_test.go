@@ -555,10 +555,7 @@ func Test_Mutation_hash(t *testing.T) {
 				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "baz"}
 			},
 			"resources": func(c *agent.InjectorConfig) {
-				cpuLimit, err := resource.ParseQuantity("100m")
-				if err != nil {
-					t.Fatalf("parsing quantity: %v", err)
-				}
+				cpuLimit := *resource.NewScaledQuantity(100, resource.Milli)
 
 				c.AgentConfig.ResourceRequirements = &corev1.ResourceRequirements{
 					Limits: corev1.ResourceList{
