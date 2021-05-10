@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -20,12 +19,7 @@ func main() {
 	logger := logrus.New()
 	logger.Printf("Starting NewRelic infra operator")
 
-	options, err := stubOptions()
-	if err != nil {
-		logger.Printf("Generating stub config: %v", err)
-
-		os.Exit(1)
-	}
+	options := stubOptions()
 
 	options.Logger = logger
 
@@ -36,39 +30,20 @@ func main() {
 	}
 }
 
-func stubOptions() (*operator.Options, error) {
-	memoryLimit, err := resource.ParseQuantity("100M")
-	if err != nil {
-		return nil, fmt.Errorf("parsing memoryLimit: %w", err)
-	}
-
-	memoryRequest, err := resource.ParseQuantity("100M")
-	if err != nil {
-		return nil, fmt.Errorf("parsing memoryRequest: %w", err)
-	}
-
-	cpuLimit, err := resource.ParseQuantity("100m")
-	if err != nil {
-		return nil, fmt.Errorf("parsing CPULimit: %w", err)
-	}
-
-	cpuRequest, err := resource.ParseQuantity("100m")
-	if err != nil {
-		return nil, fmt.Errorf("parsing CPURequest: %w", err)
-	}
-
+//nolint:gomnd
+func stubOptions() *operator.Options {
 	infraAgentConfig := agent.InfraAgentConfig{
 		ExtraEnvVars: map[string]string{
 			"NRIA_VERBOSE": "1",
 		},
 		ResourceRequirements: &corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    cpuLimit,
-				corev1.ResourceMemory: memoryLimit,
+				corev1.ResourceCPU:    *resource.NewScaledQuantity(200, resource.Milli),
+				corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
 			},
 			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    cpuRequest,
-				corev1.ResourceMemory: memoryRequest,
+				corev1.ResourceCPU:    *resource.NewScaledQuantity(100, resource.Milli),
+				corev1.ResourceMemory: *resource.NewScaledQuantity(50, resource.Mega),
 			},
 		},
 	}
@@ -91,5 +66,5 @@ func stubOptions() (*operator.Options, error) {
 				},
 			},
 		},
-	}, nil
+	}
 }
