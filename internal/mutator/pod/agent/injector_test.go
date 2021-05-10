@@ -426,10 +426,11 @@ func Test_Mutate(t *testing.T) {
 					APIVersion: "batch/v1beta1",
 				},
 			},
-			"owner_is_NotJob_batch/v1": {
+			// Notice that also CronJobs are excluded since they creates Jobs that then create and own Pods.
+			"owner_is_CronJob_batch/v1": {
 				InjectionExpected: true,
 				OwnerReference: metav1.OwnerReference{
-					Kind:       "NotJob",
+					Kind:       "CronJob",
 					APIVersion: "batch/v1",
 				},
 			},
@@ -458,14 +459,12 @@ func Test_Mutate(t *testing.T) {
 				p.OwnerReferences = []metav1.OwnerReference{testData.OwnerReference}
 
 				if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
-					t.Fatalf("mutating first time: %v", err)
+					t.Fatalf("mutating Pod: %v", err)
 				}
 
-				var expectedContainers int
+				expectedContainers := 1
 				if testData.InjectionExpected {
 					expectedContainers = 2
-				} else {
-					expectedContainers = 1
 				}
 
 				if len(p.Spec.Containers) != expectedContainers {
