@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,7 +24,7 @@ const (
 // ensureLicenseSecretExistence assures that the license secret exists and it is well configured, otherwise patches the
 // existing object or create a new one.
 func (i *injector) ensureLicenseSecretExistence(ctx context.Context, namespace string) error {
-	s := &v1.Secret{}
+	s := &corev1.Secret{}
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      i.licenseSecretName,
@@ -48,7 +48,7 @@ func (i *injector) ensureLicenseSecretExistence(ctx context.Context, namespace s
 }
 
 func (i *injector) createSecret(ctx context.Context, namespace string) error {
-	s := &v1.Secret{
+	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      i.licenseSecretName,
 			Namespace: namespace,
@@ -59,7 +59,7 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 		Data: map[string][]byte{
 			LicenseSecretKey: i.license,
 		},
-		Type: v1.SecretTypeOpaque,
+		Type: corev1.SecretTypeOpaque,
 	}
 
 	if err := i.noCacheClient.Create(ctx, s, &client.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
@@ -69,7 +69,7 @@ func (i *injector) createSecret(ctx context.Context, namespace string) error {
 	return nil
 }
 
-func (i *injector) updateSecret(ctx context.Context, s *v1.Secret) error {
+func (i *injector) updateSecret(ctx context.Context, s *corev1.Secret) error {
 	// When we update we should not add the label since likely the user or a different newrelic installation created
 	// such secret.
 	s.Data[LicenseSecretKey] = i.license
