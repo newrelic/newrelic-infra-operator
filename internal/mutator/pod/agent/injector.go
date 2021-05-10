@@ -291,13 +291,22 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 }
 
 func (i *injector) shouldInjectContainer(pod *corev1.Pod) bool {
-	_, ok := pod.Labels[InjectedLabel]
+	if _, hasInjectedLabel := pod.Labels[InjectedLabel]; hasInjectedLabel {
+		return false
+	}
+
+	// In case the pods has been created by a Job we do not inject the Pod.
+	for _, o := range pod.GetOwnerReferences() {
+		if o.Kind == "Job" && (o.APIVersion == "batch/v1" || o.APIVersion == "batch/v1beta1") {
+			return false
+		}
+	}
 
 	// TODO
 	// We should check the different labels/namespaces
 	// We should check if we want to inject it (es: job, newrelic agent, et)
 	// We should check if it is already injected
-	return !ok
+	return true
 }
 
 func (i *injector) verifyContainerInjectability(ctx context.Context, pod *corev1.Pod, namespace string) error {
