@@ -297,6 +297,7 @@ func (i *injector) shouldInjectContainer(pod *corev1.Pod) bool {
 
 	// In case the pods has been created by a Job we do not inject the Pod.
 	for _, o := range pod.GetOwnerReferences() {
+		// Notice that also CronJobs are excluded since they creates Jobs that then create and own Pods.
 		if o.Kind == "Job" && (o.APIVersion == "batch/v1" || o.APIVersion == "batch/v1beta1") {
 			return false
 		}

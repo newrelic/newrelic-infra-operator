@@ -426,11 +426,10 @@ func Test_Mutate(t *testing.T) {
 					APIVersion: "batch/v1beta1",
 				},
 			},
-			// Notice that also CronJobs are excluded since they creates Jobs that then create and own Pods.
-			"owner_is_CronJob_batch/v1": {
+			"owner_is_NonExistent_batch/v1": {
 				InjectionExpected: true,
 				OwnerReference: metav1.OwnerReference{
-					Kind:       "CronJob",
+					Kind:       "NonExistent",
 					APIVersion: "batch/v1",
 				},
 			},
