@@ -291,8 +291,8 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 }
 
 func (i *injector) shouldInjectContainer(pod *corev1.Pod) bool {
-	if _, ok := pod.Labels[InjectedLabel]; ok {
-		return !ok
+	if _, hasInjectedLabel := pod.Labels[InjectedLabel]; hasInjectedLabel {
+		return false
 	}
 
 	// In case the pods has been created by a Job we do not inject the Pod.
