@@ -405,6 +405,60 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
+	t.Run("do_not_inject_sidecar_if_owner_is_a_Job", func(t *testing.T) {
+		t.Parallel()
+
+		crb := getCRB(agent.DefaultResourcePrefix)
+		c := fake.NewClientBuilder().WithObjects(crb).Build()
+
+		i, err := getConfig().New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		p := getEmptyPod()
+		p.OwnerReferences = append([]metav1.OwnerReference{}, metav1.OwnerReference{
+			Kind: "Job",
+			Name: "test-owner",
+		})
+
+		if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
+			t.Fatalf("mutating first time: %v", err)
+		}
+
+		if len(p.Spec.Containers) != 1 {
+			t.Fatalf("expected %d containers, got %d: %v", 1, len(p.Spec.Containers), p.Spec.Containers)
+		}
+
+		t.Run("ClusterRoleBinding_is_not_updated", func(t *testing.T) {
+			key := client.ObjectKey{
+				Name: crb.Name,
+			}
+
+			if err = c.Get(ctx, key, crb); err != nil {
+				t.Fatalf("getting ClusterRoleBinding: %v", err)
+			}
+
+			expectedSubjects := 0
+
+			if subjects := len(crb.Subjects); subjects != expectedSubjects {
+				t.Fatalf("expected %d subjects, got %d: %v", expectedSubjects, subjects, crb.Subjects)
+			}
+		})
+
+		t.Run("Secret_is_not_created", func(t *testing.T) {
+			secretKey := client.ObjectKey{
+				Namespace: testNamespace,
+				Name:      secretName(),
+			}
+
+			secret := &corev1.Secret{}
+			if err := c.Get(ctx, secretKey, secret); err == nil || !errors.IsNotFound(err) {
+				t.Fatalf("the secret should not be created in the cluster if owner is job")
+			}
+		})
+	})
+
 	t.Run("updates_license_secret_when_license_key_changes", func(t *testing.T) {
 		t.Parallel()
 
