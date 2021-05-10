@@ -405,37 +405,14 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("does_not_inject_sidecar_when", func(t *testing.T) {
+	//nolint:dupl
+	t.Run("injects_sidecar_when", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]struct {
-			podMutateF        func(*corev1.Pod)
-			injectionExpected bool
+			podMutateF func(*corev1.Pod)
 		}{
-			"owner_is_Job_batch/v1": {
-				injectionExpected: false,
-				podMutateF: func(p *corev1.Pod) {
-					p.OwnerReferences = []metav1.OwnerReference{
-						{
-							Kind:       "Job",
-							APIVersion: "batch/v1",
-						},
-					}
-				},
-			},
-			"owner_is_Job_batch/v1beta1": {
-				injectionExpected: false,
-				podMutateF: func(p *corev1.Pod) {
-					p.OwnerReferences = []metav1.OwnerReference{
-						{
-							Kind:       "Job",
-							APIVersion: "batch/v1beta1",
-						},
-					}
-				},
-			},
 			"owner_is_NonExistent_batch/v1": {
-				injectionExpected: true,
 				podMutateF: func(p *corev1.Pod) {
 					p.OwnerReferences = []metav1.OwnerReference{
 						{
@@ -446,7 +423,6 @@ func Test_Mutate(t *testing.T) {
 				},
 			},
 			"owner_is_Job_test/v1": {
-				injectionExpected: true,
 				podMutateF: func(p *corev1.Pod) {
 					p.OwnerReferences = []metav1.OwnerReference{
 						{
@@ -478,10 +454,65 @@ func Test_Mutate(t *testing.T) {
 					t.Fatalf("mutating Pod: %v", err)
 				}
 
-				expectedContainers := 1
-				if testData.injectionExpected {
-					expectedContainers = 2
+				expectedContainers := 2
+
+				if len(p.Spec.Containers) != expectedContainers {
+					t.Fatalf("expected %d containers, got %d: %v", expectedContainers, len(p.Spec.Containers), p.Spec.Containers)
 				}
+			})
+		}
+	})
+
+	//nolint:dupl
+	t.Run("does_not_inject_sidecar_when", func(t *testing.T) {
+		t.Parallel()
+
+		cases := map[string]struct {
+			podMutateF func(*corev1.Pod)
+		}{
+			"owner_is_Job_batch/v1": {
+				podMutateF: func(p *corev1.Pod) {
+					p.OwnerReferences = []metav1.OwnerReference{
+						{
+							Kind:       "Job",
+							APIVersion: "batch/v1",
+						},
+					}
+				},
+			},
+			"owner_is_Job_batch/v1beta1": {
+				podMutateF: func(p *corev1.Pod) {
+					p.OwnerReferences = []metav1.OwnerReference{
+						{
+							Kind:       "Job",
+							APIVersion: "batch/v1beta1",
+						},
+					}
+				},
+			},
+		}
+
+		for testCaseName, testData := range cases {
+			testData := testData
+
+			t.Run(testCaseName, func(t *testing.T) {
+				t.Parallel()
+
+				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+
+				i, err := getConfig().New(c, c)
+				if err != nil {
+					t.Fatalf("creating injector: %v", err)
+				}
+
+				p := getEmptyPod()
+				testData.podMutateF(p)
+
+				if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
+					t.Fatalf("mutating Pod: %v", err)
+				}
+
+				expectedContainers := 1
 
 				if len(p.Spec.Containers) != expectedContainers {
 					t.Fatalf("expected %d containers, got %d: %v", expectedContainers, len(p.Spec.Containers), p.Spec.Containers)
