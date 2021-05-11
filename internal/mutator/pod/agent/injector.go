@@ -47,7 +47,8 @@ const (
 	// LicenseSecretKey is the key which under the license key is placed in license Secret object.
 	LicenseSecretKey = "license"
 
-	agentSidecarName = "newrelic-infrastructure-sidecar"
+	// AgentSidecarName is the name of the container injected.
+	AgentSidecarName = "newrelic-infrastructure-sidecar"
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
@@ -261,7 +262,7 @@ func (config *InjectorConfig) setDefaults() {
 func (config InjectorConfig) container(licenseSecretName string) corev1.Container {
 	c := corev1.Container{
 		Image:           fmt.Sprintf("%s:%s", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag),
-		Name:            agentSidecarName,
+		Name:            AgentSidecarName,
 		ImagePullPolicy: config.AgentConfig.Image.PullPolicy,
 		Env:             standardEnvVar(licenseSecretName, config.ClusterName),
 		VolumeMounts:    standardVolumes(),
