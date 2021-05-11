@@ -27,11 +27,16 @@ const (
 	testLicense     = "test-license"
 	testClusterName = "test-cluster"
 
-	customAttributeFromLabelName    = "fromLabel"
-	customAttributeFromLabel        = "custom-attribute-from-label"
-	customAttributeFromLabelValue   = "test-value"
+	customAttributeFromLabelName  = "fromLabel"
+	customAttributeFromLabel      = "custom-attribute-from-label"
+	customAttributeFromLabelValue = "test-value"
+
 	customAttributeDefaultValueName = "withDefaultValue"
 	customAttributeDefaultValue     = "defaultValue"
+
+	customAttributeWithEmptyValueName         = "withEmptyValue"
+	customAttributeWithEmptyValueLabel        = "with-empty-value"
+	customAttributeWithEmptyValueDefaultValue = "anotherDefaultValue"
 )
 
 //nolint:funlen
@@ -166,6 +171,10 @@ func Test_Mutate(t *testing.T) {
 				"default_value": {
 					key:   customAttributeDefaultValueName,
 					value: customAttributeDefaultValue,
+				},
+				"default_value_if_value_from_label_is_empty": {
+					key:   customAttributeWithEmptyValueName,
+					value: customAttributeWithEmptyValueDefaultValue,
 				},
 			}
 
@@ -798,6 +807,11 @@ func getConfig() *agent.InjectorConfig {
 				Name:         customAttributeDefaultValueName,
 				DefaultValue: customAttributeDefaultValue,
 			},
+			{
+				Name:         customAttributeWithEmptyValueName,
+				FromLabel:    customAttributeWithEmptyValueLabel,
+				DefaultValue: customAttributeWithEmptyValueDefaultValue,
+			},
 		},
 	}
 }
@@ -808,7 +822,8 @@ func getEmptyPod() *corev1.Pod {
 			Name:      "test",
 			Namespace: testNamespace,
 			Labels: map[string]string{
-				customAttributeFromLabel: customAttributeFromLabelValue,
+				customAttributeFromLabel:           customAttributeFromLabelValue,
+				customAttributeWithEmptyValueLabel: "",
 			},
 		},
 		Spec: corev1.PodSpec{
