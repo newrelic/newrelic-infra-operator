@@ -5,6 +5,7 @@ package agent_test
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -416,6 +417,142 @@ func Test_Mutate(t *testing.T) {
 
 		if err := i.Mutate(ctx, p, req); err != nil {
 			t.Fatalf("mutating Pod: %v", err)
+		}
+	})
+
+	//nolint:dupl
+	t.Run("does_not_match_resources_with_labels", func(t *testing.T) {
+		t.Parallel()
+
+		cases := map[string]map[string]string{
+			"different_values": {
+				"app.kubernetes.io/name": "nginx",
+				"key1":                   "value2",
+			},
+			"no_labels": {},
+		}
+
+		for testCaseName, labels := range cases {
+			labels := labels
+
+			t.Run(testCaseName, func(t *testing.T) {
+				t.Parallel()
+
+				p := getEmptyPod()
+				for k, v := range labels {
+					p.Labels[k] = v
+				}
+
+				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+				config := getConfig()
+
+				i, err := config.New(c, c)
+				if err != nil {
+					t.Fatalf("creating injector: %v", err)
+				}
+
+				if err := i.Mutate(ctx, p, req); err != nil {
+					t.Fatalf("mutating Pod: %v", err)
+				}
+
+				infraContainer := corev1.Container{}
+				for _, container := range p.Spec.Containers {
+					if container.Name != agent.AgentSidecarName {
+						continue
+					}
+					infraContainer = container
+				}
+
+				q := infraContainer.Resources.Limits[corev1.ResourceMemory]
+				if q != *resource.NewScaledQuantity(300, resource.Mega) {
+					t.Fatalf("standard memory limit was expected: %s. Case name:  %s", q.String(), testCaseName)
+				}
+			})
+		}
+	})
+
+	//nolint:dupl
+	t.Run("matches_resources_with_labels", func(t *testing.T) {
+		t.Parallel()
+
+		cases := map[string]map[string]string{
+			"first_matches": {
+				"key1":    "value1",
+				"k8s-app": "kube-state-metrics",
+			},
+			"second_matches": {
+				"key2": "value2",
+			},
+		}
+
+		for testCaseName, labels := range cases {
+			labels := labels
+
+			t.Run(testCaseName, func(t *testing.T) {
+				t.Parallel()
+
+				p := getEmptyPod()
+				for k, v := range labels {
+					p.Labels[k] = v
+				}
+
+				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+				config := getConfig()
+
+				i, err := config.New(c, c)
+				if err != nil {
+					t.Fatalf("creating injector: %v", err)
+				}
+
+				if err := i.Mutate(ctx, p, req); err != nil {
+					t.Fatalf("mutating Pod: %v", err)
+				}
+
+				infraContainer := corev1.Container{}
+				for _, container := range p.Spec.Containers {
+					if container.Name != agent.AgentSidecarName {
+						continue
+					}
+					infraContainer = container
+				}
+
+				q := infraContainer.Resources.Limits[corev1.ResourceMemory]
+				if q != *resource.NewScaledQuantity(100, resource.Mega) {
+					t.Fatalf("not-default CPU limit was expected: %s. Case name: %s", q.String(), testCaseName)
+				}
+			})
+		}
+	})
+
+	t.Run("does_not_fail_with_no_selectors", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		p.Labels["key1"] = "value1"
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+		config.AgentConfig.ResourcesWithSelectors = nil
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		infraContainer := corev1.Container{}
+		for _, container := range p.Spec.Containers {
+			if container.Name != agent.AgentSidecarName {
+				continue
+			}
+			infraContainer = container
+		}
+
+		if !reflect.DeepEqual(infraContainer.Resources, corev1.ResourceRequirements{}) {
+			t.Fatalf("empty resources were expected")
 		}
 	})
 
@@ -1025,15 +1162,6 @@ func Test_Mutation_hash(t *testing.T) {
 			"extra_environment_variables": func(c *agent.InjectorConfig) {
 				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "baz"}
 			},
-			"resources": func(c *agent.InjectorConfig) {
-				cpuLimit := *resource.NewScaledQuantity(100, resource.Milli)
-
-				c.AgentConfig.ResourceRequirements = &corev1.ResourceRequirements{
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU: cpuLimit,
-					},
-				}
-			},
 			"image_repository": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.Repository = "foo"
 			},
@@ -1141,7 +1269,9 @@ func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
 
 func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
-		AgentConfig: &agent.InfraAgentConfig{},
+		AgentConfig: &agent.InfraAgentConfig{
+			ResourcesWithSelectors: getResourceList(),
+		},
 		License:     testLicense,
 		ClusterName: testClusterName,
 		Policies:    []agent.InjectionPolicy{{}},
@@ -1164,5 +1294,41 @@ func getEmptyPod() *corev1.Pod {
 			},
 		},
 		Status: corev1.PodStatus{},
+	}
+}
+
+func getResourceList() []agent.Resource {
+	return []agent.Resource{
+		{
+			ResourceRequirements: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+				},
+			},
+			LabelSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"key1": "value1",
+				},
+			},
+		},
+		{
+			ResourceRequirements: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+				},
+			},
+			LabelSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"key2": "value2",
+				},
+			},
+		},
+		{
+			ResourceRequirements: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
+				},
+			},
+		},
 	}
 }
