@@ -75,6 +75,31 @@ func Test_Creating_injector(t *testing.T) {
 					},
 				}
 			},
+			"there_is_no_injection_policies_defined": func(c *agent.InjectorConfig) {
+				c.Policies = nil
+			},
+			"invalid_namespace_selector_is_configured": func(c *agent.InjectorConfig) {
+				c.Policies = []agent.InjectionPolicy{
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"_": "bad_value-",
+							},
+						},
+					},
+				}
+			},
+			"invalid_pod_selector_is_configured": func(c *agent.InjectorConfig) {
+				c.Policies = []agent.InjectionPolicy{
+					{
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"_": "bad_value-",
+							},
+						},
+					},
+				}
+			},
 		}
 
 		for testCaseName, mutateF := range cases {
@@ -414,12 +439,14 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	//nolint:dupl
 	t.Run("injects_sidecar_when", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]struct {
-			podMutateF func(*corev1.Pod)
+			extraObjects  []client.Object
+			podMutateF    func(*corev1.Pod)
+			configMutateF func(*agent.InjectorConfig)
+			reqMutateF    func(*webhook.RequestOptions)
 		}{
 			"owner_is_NonExistent_batch/v1": {
 				podMutateF: func(p *corev1.Pod) {
@@ -441,6 +468,76 @@ func Test_Mutate(t *testing.T) {
 					}
 				},
 			},
+			"pod_selector_matches": {
+				podMutateF: func(p *corev1.Pod) {
+					p.Labels["foo"] = "test"
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"foo": "test",
+								},
+							},
+						},
+					}
+				},
+			},
+			"namespace_selector_matches": {
+				extraObjects: []client.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: testNamespace,
+							Labels: map[string]string{
+								"foo": "bar",
+							},
+						},
+					},
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"foo": "bar",
+								},
+							},
+						},
+					}
+				},
+			},
+			"namespace_name_matches": {
+				reqMutateF: func(req *webhook.RequestOptions) {
+					req.Namespace = "ban"
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceName: "ban",
+						},
+					}
+				},
+			},
+			"at_least_one_policy_matches": {
+				podMutateF: func(p *corev1.Pod) {
+					p.Labels["foo"] = "baz"
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceName: "foo",
+						},
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"foo": "baz",
+								},
+							},
+						},
+					}
+				},
+			},
 		}
 
 		for testCaseName, testData := range cases {
@@ -449,15 +546,32 @@ func Test_Mutate(t *testing.T) {
 			t.Run(testCaseName, func(t *testing.T) {
 				t.Parallel()
 
-				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+				config := getConfig()
 
-				i, err := getConfig().New(c, c)
+				if configMutateF := testData.configMutateF; configMutateF != nil {
+					configMutateF(config)
+				}
+
+				objects := testData.extraObjects
+				objects = append(objects, getCRB(agent.DefaultResourcePrefix))
+
+				c := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+				i, err := config.New(c, c)
 				if err != nil {
 					t.Fatalf("creating injector: %v", err)
 				}
 
 				p := getEmptyPod()
-				testData.podMutateF(p)
+
+				if podMutateF := testData.podMutateF; podMutateF != nil {
+					podMutateF(p)
+				}
+
+				req := req
+				if reqMutateF := testData.reqMutateF; reqMutateF != nil {
+					reqMutateF(&req)
+				}
 
 				if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
 					t.Fatalf("mutating Pod: %v", err)
@@ -472,12 +586,14 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	//nolint:dupl
 	t.Run("does_not_inject_sidecar_when", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]struct {
-			podMutateF func(*corev1.Pod)
+			extraObjects  []client.Object
+			podMutateF    func(*corev1.Pod)
+			configMutateF func(*agent.InjectorConfig)
+			reqMutateF    func(*webhook.RequestOptions)
 		}{
 			"owner_is_Job_batch/v1": {
 				podMutateF: func(p *corev1.Pod) {
@@ -499,6 +615,83 @@ func Test_Mutate(t *testing.T) {
 					}
 				},
 			},
+			"there_is_no_policy_matching": {
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceName: "foo",
+						},
+					}
+				},
+			},
+			"policy_matches_pod_selector_but_not_namespace_name": {
+				podMutateF: func(p *corev1.Pod) {
+					p.Labels["foo"] = "bah"
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceName: "foo",
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"foo": "bah",
+								},
+							},
+						},
+					}
+				},
+			},
+			"policy_matches_namespace_selector_but_not_pod_selector": {
+				extraObjects: []client.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: testNamespace,
+							Labels: map[string]string{
+								"foo": "bar",
+							},
+						},
+					},
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"foo": "bar",
+								},
+							},
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"bar": "bam",
+								},
+							},
+						},
+					}
+				},
+			},
+			"namespace_selector_does_not_match": {
+				extraObjects: []client.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: testNamespace,
+							Labels: map[string]string{
+								"foo": "bar",
+							},
+						},
+					},
+				},
+				configMutateF: func(config *agent.InjectorConfig) {
+					config.Policies = []agent.InjectionPolicy{
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"baz": "bap",
+								},
+							},
+						},
+					}
+				},
+			},
 		}
 
 		for testCaseName, testData := range cases {
@@ -507,15 +700,32 @@ func Test_Mutate(t *testing.T) {
 			t.Run(testCaseName, func(t *testing.T) {
 				t.Parallel()
 
-				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+				config := getConfig()
 
-				i, err := getConfig().New(c, c)
+				if configMutateF := testData.configMutateF; configMutateF != nil {
+					configMutateF(config)
+				}
+
+				objects := testData.extraObjects
+				objects = append(objects, getCRB(agent.DefaultResourcePrefix))
+
+				c := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+				i, err := config.New(c, c)
 				if err != nil {
 					t.Fatalf("creating injector: %v", err)
 				}
 
 				p := getEmptyPod()
-				testData.podMutateF(p)
+
+				if podMutateF := testData.podMutateF; podMutateF != nil {
+					podMutateF(p)
+				}
+
+				req := req
+				if reqMutateF := testData.reqMutateF; reqMutateF != nil {
+					reqMutateF(&req)
+				}
 
 				if err := i.Mutate(testutil.ContextWithDeadline(t), p, req); err != nil {
 					t.Fatalf("mutating Pod: %v", err)
@@ -524,7 +734,7 @@ func Test_Mutate(t *testing.T) {
 				expectedContainers := 1
 
 				if len(p.Spec.Containers) != expectedContainers {
-					t.Fatalf("expected %d containers, got %d: %v", expectedContainers, len(p.Spec.Containers), p.Spec.Containers)
+					t.Fatalf("expected %d containers, got %d", expectedContainers, len(p.Spec.Containers))
 				}
 			})
 		}
@@ -622,6 +832,36 @@ func Test_Mutate(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 			config := getConfig()
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err == nil {
+				t.Fatalf("expected mutation to fail")
+			}
+		})
+
+		// Unlikely to happen in real-life scenario, but may occur in tests, it's easy to implement, so let's
+		// test it for completeness.
+		t.Run("namespace_for_mutated_Pod_does_not_exist_anymore", func(t *testing.T) {
+			t.Parallel()
+
+			p := getEmptyPod()
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+
+			config := getConfig()
+			config.Policies = []agent.InjectionPolicy{
+				{
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+						},
+					},
+				},
+			}
 
 			i, err := config.New(c, c)
 			if err != nil {
@@ -798,6 +1038,7 @@ func getConfig() *agent.InjectorConfig {
 		AgentConfig: &agent.InfraAgentConfig{},
 		License:     testLicense,
 		ClusterName: testClusterName,
+		Policies:    []agent.InjectionPolicy{{}},
 		CustomAttributes: []agent.CustomAttribute{
 			{
 				Name:      customAttributeFromLabelName,

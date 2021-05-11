@@ -11,6 +11,8 @@ licenseKey: stub
 
 config:
   infraAgentInjection:
+    policies:
+    - {}
     customAttributes:
     - name: computeType
       defaultValue: serverless
