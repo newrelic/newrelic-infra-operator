@@ -8,3 +8,13 @@ restartPolicy: Never
 # Temporary extra values, required by newrelic-infra-operator chart.
 cluster: testing
 licenseKey: stub
+
+config:
+  infraAgentInjection:
+    customAttributes:
+    - name: computeType
+      defaultValue: serverless
+    - name: fargateProfile
+      # To allow inclusion on non-fargate clusters for testing.
+      defaultValue: unknown
+      fromLabel: eks.amazonaws.com/fargate-profile
