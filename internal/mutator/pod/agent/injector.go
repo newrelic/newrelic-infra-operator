@@ -354,48 +354,72 @@ func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 		}
 	}
 
-	foundMatchingPolicy, err := i.matchPolicies(ctx, pod, namespace)
+	ns, err := i.policyNamespace(ctx, namespace)
 	if err != nil {
-		return false, fmt.Errorf("matching policies: %w", err)
+		return false, fmt.Errorf("getting Namespace %q for policy matching: %w", namespace, err)
 	}
 
-	return foundMatchingPolicy, nil
+	return matchPolicies(pod, ns, i.config.Policies), nil
 }
 
-func (i *injector) matchPolicies(ctx context.Context, pod *corev1.Pod, namespace string) (bool, error) {
+// policyNamespace returns Namespace object suitable for policy matching. If there is at least one policy
+// using namespaceSelector, full Namespace object is fetched, otherwise just stub object with filled name
+// is returned.
+func (i *injector) policyNamespace(ctx context.Context, namespace string) (*corev1.Namespace, error) {
 	for _, policy := range i.config.Policies {
-		policyMatching := true
-
-		if policy.NamespaceName != "" && namespace != policy.NamespaceName {
-			policyMatching = false
-		}
-
-		if policy.podSelector != nil && !policy.podSelector.Matches(fields.Set(pod.Labels)) {
-			policyMatching = false
-		}
-
 		if policy.namespaceSelector != nil {
-			ns := &corev1.Namespace{}
-
-			key := client.ObjectKey{
-				Name: namespace,
-			}
-
-			if err := i.client.Get(ctx, key, ns); err != nil {
-				return false, fmt.Errorf("getting Namespace %q: %w", namespace, err)
-			}
-
-			if !policy.namespaceSelector.Matches(fields.Set(ns.Labels)) {
-				policyMatching = false
-			}
-		}
-
-		if policyMatching {
-			return true, nil
+			return i.getNamespace(ctx, namespace)
 		}
 	}
 
-	return false, nil
+	return &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}, nil
+}
+
+// getNamespace fetches namespace object by name.
+func (i *injector) getNamespace(ctx context.Context, namespace string) (*corev1.Namespace, error) {
+	ns := &corev1.Namespace{}
+
+	key := client.ObjectKey{
+		Name: namespace,
+	}
+
+	if err := i.client.Get(ctx, key, ns); err != nil {
+		return nil, fmt.Errorf("getting Namespace %q: %w", namespace, err)
+	}
+
+	return ns, nil
+}
+
+// matchPolicies checks if given Pod matches any of given policies.
+func matchPolicies(pod *corev1.Pod, ns *corev1.Namespace, policies []InjectionPolicy) bool {
+	for _, policy := range policies {
+		if matchPolicy(pod, ns, &policy) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// matchPolicy checks if given Pod is matching given policy.
+func matchPolicy(pod *corev1.Pod, ns *corev1.Namespace, policy *InjectionPolicy) bool {
+	if policy.NamespaceName != "" && ns.Name != policy.NamespaceName {
+		return false
+	}
+
+	if policy.podSelector != nil && !policy.podSelector.Matches(fields.Set(pod.Labels)) {
+		return false
+	}
+
+	if policy.namespaceSelector != nil && !policy.namespaceSelector.Matches(fields.Set(ns.Labels)) {
+		return false
+	}
+
+	return true
 }
 
 func (i *injector) verifyContainerInjectability(ctx context.Context, pod *corev1.Pod, namespace string) error {
