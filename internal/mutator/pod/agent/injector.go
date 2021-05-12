@@ -301,7 +301,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		return nil
 	}
 
-	if err := i.ensureContainerInjectability(ctx, pod, requestOptions); err != nil {
+	if err := i.ensureSidecarDependencies(ctx, pod, requestOptions); err != nil {
 		return fmt.Errorf("ensuring container injectability: %w", err)
 	}
 
@@ -422,7 +422,7 @@ func matchPolicy(pod *corev1.Pod, ns *corev1.Namespace, policy *InjectionPolicy)
 	return true
 }
 
-func (i *injector) ensureContainerInjectability(ctx context.Context, pod *corev1.Pod, ro webhook.RequestOptions) error {
+func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Pod, ro webhook.RequestOptions) error {
 	if ro.DryRun {
 		return nil
 	}
