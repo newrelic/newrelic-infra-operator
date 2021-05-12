@@ -22,10 +22,12 @@ import (
 func Test_Pod_mutator_handle(t *testing.T) {
 	t.Parallel()
 
+	ctx := testutil.ContextWithDeadline(t)
+
 	t.Run("returns_no_patches_when_no_mutation_occurs", func(t *testing.T) {
 		t.Parallel()
 
-		resp := newHandler(t).Handle(testutil.ContextWithDeadline(t), testRequest())
+		resp := newHandler(t).Handle(ctx, testRequest())
 
 		if resp.Result != nil {
 			if resp.Result.Code != http.StatusOK {
@@ -53,7 +55,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 			},
 		}
 
-		resp := handler.Handle(testutil.ContextWithDeadline(t), testRequest())
+		resp := handler.Handle(ctx, testRequest())
 
 		if resp.Result != nil {
 			if resp.Result.Code != http.StatusOK {
@@ -80,7 +82,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 				},
 			}
 
-			resp := newHandler(t).Handle(testutil.ContextWithDeadline(t), admissionReq)
+			resp := newHandler(t).Handle(ctx, admissionReq)
 			if resp.Result.Code == http.StatusOK {
 				t.Fatalf("unexpected response code %d", resp.Result.Code)
 			}
@@ -102,7 +104,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 				},
 			}
 
-			resp := handler.Handle(testutil.ContextWithDeadline(t), testRequest())
+			resp := handler.Handle(ctx, testRequest())
 			if resp.Result.Code == http.StatusOK || resp.Result.Code == http.StatusBadRequest {
 				t.Logf("bad response: %v", resp)
 				t.Fatalf("unexpected response code %d", resp.Result.Code)
