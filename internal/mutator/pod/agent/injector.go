@@ -302,7 +302,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	}
 
 	if err := i.ensureSidecarDependencies(ctx, pod, requestOptions); err != nil {
-		return fmt.Errorf("ensuring container injectability: %w", err)
+		return fmt.Errorf("ensuring sidecar dependencies: %w", err)
 	}
 
 	if pod.Labels == nil {
