@@ -35,6 +35,7 @@ type Options struct {
 	Port                   int
 	RestConfig             *rest.Config
 	Logger                 *logrus.Logger
+	IgnoreMutationErrors   bool
 
 	InfraAgentInjection agent.InjectorConfig
 }
@@ -81,6 +82,8 @@ func Run(ctx context.Context, options Options) error {
 
 	admission := &webhook.Admission{
 		Handler: &podMutatorHandler{
+			ignoreMutationErrors: options.IgnoreMutationErrors,
+			logger:               options.Logger,
 			mutators: []podMutator{
 				agentInjector,
 			},

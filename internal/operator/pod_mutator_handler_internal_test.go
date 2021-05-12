@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,7 +19,7 @@ import (
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
-//nolint:funlen
+//nolint:funlen,cyclop
 func Test_Pod_mutator_handle(t *testing.T) {
 	t.Parallel()
 
@@ -65,6 +66,33 @@ func Test_Pod_mutator_handle(t *testing.T) {
 
 		if len(resp.Patches) == 0 {
 			t.Fatalf("expected at least one patch, got %v", resp)
+		}
+	})
+
+	t.Run("returns_empty_patch_when_mutation_error_occurs_and_ignoring_errors_is_enabled", func(t *testing.T) {
+		t.Parallel()
+
+		handler := newHandler(t)
+		handler.ignoreMutationErrors = true
+
+		handler.mutators = []podMutator{
+			&mockMutator{
+				mutateF: func(_ context.Context, pod *corev1.Pod, _ webhook.RequestOptions) error {
+					return fmt.Errorf("test error")
+				},
+			},
+		}
+
+		resp := handler.Handle(ctx, testRequest())
+
+		if resp.Result != nil {
+			if resp.Result.Code != http.StatusOK {
+				t.Fatalf("unexpected response code %d", resp.Result.Code)
+			}
+		}
+
+		if len(resp.Patches) != 0 {
+			t.Fatalf("unexpected patches received: %v", resp)
 		}
 	})
 
@@ -163,5 +191,6 @@ func newHandler(t *testing.T) *podMutatorHandler {
 
 	return &podMutatorHandler{
 		decoder: d,
+		logger:  logrus.New(),
 	}
 }
