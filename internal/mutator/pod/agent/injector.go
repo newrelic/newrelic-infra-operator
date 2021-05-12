@@ -453,12 +453,14 @@ func (i *injector) computeResourcesToApply(podLabels map[string]string) *corev1.
 	return nil
 }
 
-func (config InjectorConfig) buildResourceSelectors() (err error) {
+func (config *InjectorConfig) buildResourceSelectors() error {
 	for i, r := range config.AgentConfig.ResourcesWithSelectors {
-		config.AgentConfig.ResourcesWithSelectors[i].selector, err = metav1.LabelSelectorAsSelector(&r.LabelSelector)
+		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
 			return fmt.Errorf("creating selector from label selector: %w", err)
 		}
+
+		config.AgentConfig.ResourcesWithSelectors[i].selector = selector
 	}
 
 	return nil

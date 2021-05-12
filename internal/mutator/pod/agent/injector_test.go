@@ -419,59 +419,6 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	//nolint:dupl
-	t.Run("set_sidecar_resources_when_resources_rule_is_matching_empty_label_selector", func(t *testing.T) {
-		t.Parallel()
-
-		cases := map[string]map[string]string{
-			"different_values": {
-				"app.kubernetes.io/name": "nginx",
-				"key1":                   "value2",
-			},
-			"no_labels": {},
-		}
-
-		for testCaseName, labels := range cases {
-			labels := labels
-
-			t.Run(testCaseName, func(t *testing.T) {
-				t.Parallel()
-
-				p := getEmptyPod()
-				for k, v := range labels {
-					p.Labels[k] = v
-				}
-
-				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-				config := getConfig()
-				config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
-
-				i, err := config.New(c, c)
-				if err != nil {
-					t.Fatalf("creating injector: %v", err)
-				}
-
-				if err := i.Mutate(ctx, p, req); err != nil {
-					t.Fatalf("mutating Pod: %v", err)
-				}
-
-				infraContainer := corev1.Container{}
-				for _, container := range p.Spec.Containers {
-					if container.Name != agent.AgentSidecarName {
-						continue
-					}
-					infraContainer = container
-				}
-
-				q := infraContainer.Resources.Limits[corev1.ResourceMemory]
-				if q != *resource.NewScaledQuantity(300, resource.Mega) {
-					t.Fatalf("standard memory limit was expected: %s. Case name:  %s", q.String(), testCaseName)
-				}
-			})
-		}
-	})
-
-	//nolint:dupl
 	t.Run("sets_sidecar_resources_when_resources_rule_is_matching_label_selector", func(t *testing.T) {
 		t.Parallel()
 
@@ -1319,13 +1266,6 @@ func getResourcesWithSelectors() []agent.Resource {
 			LabelSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"key2": "value2",
-				},
-			},
-		},
-		{
-			ResourceRequirements: corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
 				},
 			},
 		},
