@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -19,16 +20,17 @@ type podMutator interface {
 }
 
 type podMutatorHandler struct {
-	decoder  *admission.Decoder
-	mutators []podMutator
+	decoder              *admission.Decoder
+	mutators             []podMutator
+	ignoreMutationErrors bool
+	logger               *logrus.Logger
 }
 
 // Handle is in charge of handling the request received involving new pods.
 func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
 
-	err := a.decoder.Decode(req, pod)
-	if err != nil {
+	if err := a.decoder.Decode(req, pod); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
@@ -42,6 +44,12 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 
 	for _, m := range a.mutators {
 		if err := m.Mutate(ctx, pod, requestOptions); err != nil {
+			if a.ignoreMutationErrors {
+				a.logger.Warnf("Pod %s/%s mutation failed: %v", pod.Name, req.Namespace, err)
+
+				return admission.PatchResponseFromRaw(req.Object.Raw, req.Object.Raw)
+			}
+
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
 	}
