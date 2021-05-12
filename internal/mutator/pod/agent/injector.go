@@ -12,6 +12,9 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -81,6 +84,17 @@ type InjectorConfig struct {
 	License          string
 	ClusterName      string
 	CustomAttributes CustomAttributes
+	Policies         []InjectionPolicy
+}
+
+// InjectionPolicy represents injection policy, which defines if given Pod should have agent injected or not.
+type InjectionPolicy struct {
+	NamespaceName     string
+	NamespaceSelector *metav1.LabelSelector
+	PodSelector       *metav1.LabelSelector
+
+	namespaceSelector labels.Selector
+	podSelector       labels.Selector
 }
 
 // CustomAttributes represents collection of custom attributes.
@@ -152,6 +166,10 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("computing hash to add in the label: %w", err)
 	}
 
+	if err := config.buildPolicies(); err != nil {
+		return nil, fmt.Errorf("building policies: %w", err)
+	}
+
 	return &injector{
 		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
 		licenseSecretName:      licenseSecretName,
@@ -162,6 +180,30 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		containerHash:          containerHash,
 		config:                 &config,
 	}, nil
+}
+
+func (config *InjectorConfig) buildPolicies() error {
+	for i, policy := range config.Policies {
+		if policy.NamespaceSelector != nil {
+			selector, err := metav1.LabelSelectorAsSelector(policy.NamespaceSelector)
+			if err != nil {
+				return fmt.Errorf("parsing namespace selector from policy %d: %w", i, err)
+			}
+
+			config.Policies[i].namespaceSelector = selector
+		}
+
+		if policy.PodSelector != nil {
+			selector, err := metav1.LabelSelectorAsSelector(policy.PodSelector)
+			if err != nil {
+				return fmt.Errorf("parsing pod selector from policy %d: %w", i, err)
+			}
+
+			config.Policies[i].podSelector = selector
+		}
+	}
+
+	return nil
 }
 
 func (config InjectorConfig) validate() error {
@@ -189,6 +231,10 @@ func (config InjectorConfig) validate() error {
 		}
 
 		customAttributeNames[ca.Name] = struct{}{}
+	}
+
+	if len(config.Policies) == 0 {
+		return fmt.Errorf("at least one injection policy must be configured")
 	}
 
 	return nil
@@ -246,7 +292,12 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error {
 	containerToInject := i.container
 
-	if !i.shouldInjectContainer(pod) {
+	injectContainer, err := i.shouldInjectContainer(ctx, pod, requestOptions.Namespace)
+	if err != nil {
+		return fmt.Errorf("checking if agent container should be injected: %w", err)
+	}
+
+	if !injectContainer {
 		return nil
 	}
 
@@ -290,23 +341,84 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	return nil
 }
 
-func (i *injector) shouldInjectContainer(pod *corev1.Pod) bool {
+func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) (bool, error) {
 	if _, hasInjectedLabel := pod.Labels[InjectedLabel]; hasInjectedLabel {
-		return false
+		return false, nil
 	}
 
 	// In case the pods has been created by a Job we do not inject the Pod.
 	for _, o := range pod.GetOwnerReferences() {
 		// Notice that also CronJobs are excluded since they creates Jobs that then create and own Pods.
 		if o.Kind == "Job" && (o.APIVersion == "batch/v1" || o.APIVersion == "batch/v1beta1") {
-			return false
+			return false, nil
 		}
 	}
 
-	// TODO
-	// We should check the different labels/namespaces
-	// We should check if we want to inject it (es: job, newrelic agent, et)
-	// We should check if it is already injected
+	ns, err := i.policyNamespace(ctx, namespace)
+	if err != nil {
+		return false, fmt.Errorf("getting Namespace %q for policy matching: %w", namespace, err)
+	}
+
+	return matchPolicies(pod, ns, i.config.Policies), nil
+}
+
+// policyNamespace returns Namespace object suitable for policy matching. If there is at least one policy
+// using namespaceSelector, full Namespace object is fetched, otherwise just stub object with filled name
+// is returned.
+func (i *injector) policyNamespace(ctx context.Context, namespace string) (*corev1.Namespace, error) {
+	for _, policy := range i.config.Policies {
+		if policy.namespaceSelector != nil {
+			return i.getNamespace(ctx, namespace)
+		}
+	}
+
+	return &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}, nil
+}
+
+// getNamespace fetches namespace object by name.
+func (i *injector) getNamespace(ctx context.Context, namespace string) (*corev1.Namespace, error) {
+	ns := &corev1.Namespace{}
+
+	key := client.ObjectKey{
+		Name: namespace,
+	}
+
+	if err := i.client.Get(ctx, key, ns); err != nil {
+		return nil, fmt.Errorf("getting Namespace %q: %w", namespace, err)
+	}
+
+	return ns, nil
+}
+
+// matchPolicies checks if given Pod matches any of given policies.
+func matchPolicies(pod *corev1.Pod, ns *corev1.Namespace, policies []InjectionPolicy) bool {
+	for _, policy := range policies {
+		if matchPolicy(pod, ns, &policy) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// matchPolicy checks if given Pod is matching given policy.
+func matchPolicy(pod *corev1.Pod, ns *corev1.Namespace, policy *InjectionPolicy) bool {
+	if policy.NamespaceName != "" && ns.Name != policy.NamespaceName {
+		return false
+	}
+
+	if policy.podSelector != nil && !policy.podSelector.Matches(fields.Set(pod.Labels)) {
+		return false
+	}
+
+	if policy.namespaceSelector != nil && !policy.namespaceSelector.Matches(fields.Set(ns.Labels)) {
+		return false
+	}
+
 	return true
 }
 

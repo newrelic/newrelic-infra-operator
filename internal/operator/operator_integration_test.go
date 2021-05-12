@@ -420,6 +420,9 @@ func testOptions(t *testing.T, cfg *rest.Config, certDir string) operator.Option
 			ResourcePrefix: testPrefix,
 			License:        testLicense,
 			ClusterName:    testClusterName,
+			Policies: []agent.InjectionPolicy{
+				{},
+			},
 		},
 	}
 }
