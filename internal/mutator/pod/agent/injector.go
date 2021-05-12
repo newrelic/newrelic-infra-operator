@@ -301,8 +301,8 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		return nil
 	}
 
-	if err := i.verifyContainerInjectability(ctx, pod, requestOptions.Namespace); err != nil {
-		return fmt.Errorf("verifying container injectability: %w", err)
+	if err := i.ensureSidecarDependencies(ctx, pod, requestOptions); err != nil {
+		return fmt.Errorf("ensuring sidecar dependencies: %w", err)
 	}
 
 	if pod.Labels == nil {
@@ -422,12 +422,16 @@ func matchPolicy(pod *corev1.Pod, ns *corev1.Namespace, policy *InjectionPolicy)
 	return true
 }
 
-func (i *injector) verifyContainerInjectability(ctx context.Context, pod *corev1.Pod, namespace string) error {
-	if err := i.ensureLicenseSecretExistence(ctx, namespace); err != nil {
+func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Pod, ro webhook.RequestOptions) error {
+	if ro.DryRun {
+		return nil
+	}
+
+	if err := i.ensureLicenseSecretExistence(ctx, ro.Namespace); err != nil {
 		return fmt.Errorf("ensuring Secret presence: %w", err)
 	}
 
-	if err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, namespace); err != nil {
+	if err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, ro.Namespace); err != nil {
 		return fmt.Errorf("ensuring ClusterRoleBinding subject: %w", err)
 	}
 
