@@ -23,6 +23,9 @@ import (
 )
 
 const (
+	// DisableInjectionLabel is the name of the label to prevent agent sidecar injection.
+	DisableInjectionLabel = "infra-operator.newrelic.com/disable-injection"
+
 	// InjectedLabel is the name of the label injected in pod.
 	InjectedLabel = "newrelic/agent-injected"
 
@@ -348,6 +351,10 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 
 func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) (bool, error) {
 	if _, hasInjectedLabel := pod.Labels[InjectedLabel]; hasInjectedLabel {
+		return false, nil
+	}
+
+	if _, hasDisableInjectionLabel := pod.Labels[DisableInjectionLabel]; hasDisableInjectionLabel {
 		return false, nil
 	}
 

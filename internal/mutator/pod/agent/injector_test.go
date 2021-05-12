@@ -760,6 +760,16 @@ func Test_Mutate(t *testing.T) {
 			configMutateF func(*agent.InjectorConfig)
 			reqMutateF    func(*webhook.RequestOptions)
 		}{
+			"disable_injection_label_is_present": {
+				podMutateF: func(p *corev1.Pod) {
+					p.Labels[agent.DisableInjectionLabel] = "anyValue"
+				},
+			},
+			"injected_label_is_present": {
+				podMutateF: func(p *corev1.Pod) {
+					p.Labels[agent.InjectedLabel] = "anyValue"
+				},
+			},
 			"owner_is_Job_batch/v1": {
 				podMutateF: func(p *corev1.Pod) {
 					p.OwnerReferences = []metav1.OwnerReference{
