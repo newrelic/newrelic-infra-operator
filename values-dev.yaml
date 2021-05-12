@@ -31,7 +31,7 @@ config:
               cpu: 150m
           labelSelector:
             matchLabels:
-              "k8s-app" : "kube-state-metrics"
+              k8s-app : kube-state-metrics
         - resourceRequirements:
             limits:
               memory: 300M
@@ -41,7 +41,7 @@ config:
               cpu: 150m
           labelSelector:
             matchLabels:
-              "app" : "kube-state-metrics"
+              app : kube-state-metrics
         - resourceRequirements:
             limits:
               memory: 300M
@@ -51,7 +51,7 @@ config:
               cpu: 150m
           labelSelector:
             matchLabels:
-              "app.kubernetes.io/name": "kube-state-metrics"
+              app.kubernetes.io/name: kube-state-metrics
         - resourceRequirements:
             limits:
               memory: 100M

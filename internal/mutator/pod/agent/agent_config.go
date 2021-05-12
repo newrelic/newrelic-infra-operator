@@ -35,5 +35,6 @@ type PodSecurityContext struct {
 type Resource struct {
 	ResourceRequirements corev1.ResourceRequirements
 	LabelSelector        metav1.LabelSelector
-	selector             labels.Selector
+
+	selector labels.Selector
 }

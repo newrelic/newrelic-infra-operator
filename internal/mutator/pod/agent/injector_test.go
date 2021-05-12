@@ -5,7 +5,6 @@ package agent_test
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -421,7 +420,7 @@ func Test_Mutate(t *testing.T) {
 	})
 
 	//nolint:dupl
-	t.Run("does_not_match_resources_with_labels", func(t *testing.T) {
+	t.Run("set_sidecar_resources_when_resources_rule_is_matching_empty_label_selector", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]map[string]string{
@@ -445,6 +444,7 @@ func Test_Mutate(t *testing.T) {
 
 				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 				config := getConfig()
+				config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
 
 				i, err := config.New(c, c)
 				if err != nil {
@@ -472,7 +472,7 @@ func Test_Mutate(t *testing.T) {
 	})
 
 	//nolint:dupl
-	t.Run("matches_resources_with_labels", func(t *testing.T) {
+	t.Run("sets_sidecar_resources_when_resources_rule_is_matching_label_selector", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]map[string]string{
@@ -498,6 +498,7 @@ func Test_Mutate(t *testing.T) {
 
 				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 				config := getConfig()
+				config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
 
 				i, err := config.New(c, c)
 				if err != nil {
@@ -551,8 +552,8 @@ func Test_Mutate(t *testing.T) {
 			infraContainer = container
 		}
 
-		if !reflect.DeepEqual(infraContainer.Resources, corev1.ResourceRequirements{}) {
-			t.Fatalf("empty resources were expected")
+		if diff := cmp.Diff(infraContainer.Resources, corev1.ResourceRequirements{}); diff != "" {
+			t.Fatalf("unexpected resources diff:\n%s", diff)
 		}
 	})
 
@@ -1269,9 +1270,7 @@ func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
 
 func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
-		AgentConfig: &agent.InfraAgentConfig{
-			ResourcesWithSelectors: getResourceList(),
-		},
+		AgentConfig: &agent.InfraAgentConfig{},
 		License:     testLicense,
 		ClusterName: testClusterName,
 		Policies:    []agent.InjectionPolicy{{}},
@@ -1297,7 +1296,7 @@ func getEmptyPod() *corev1.Pod {
 	}
 }
 
-func getResourceList() []agent.Resource {
+func getResourcesWithSelectors() []agent.Resource {
 	return []agent.Resource{
 		{
 			ResourceRequirements: corev1.ResourceRequirements{
