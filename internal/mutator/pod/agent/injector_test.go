@@ -419,7 +419,7 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("sets_sidecar_resources_when_resources_rule_is_matching_label_selector", func(t *testing.T) {
+	t.Run("sets_sidecar_resources_with_the_first_resources_rule_matching", func(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]map[string]string{
@@ -472,15 +472,15 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("does_not_fail_with_no_selectors", func(t *testing.T) {
+	t.Run("leaves_sidecar_resources_empty_when_there_is_no_resources_rule_matching", func(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		p.Labels["key1"] = "value1"
+		p.Labels["key3"] = "value3"
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
-		config.AgentConfig.ResourcesWithSelectors = nil
+		config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
 
 		i, err := config.New(c, c)
 		if err != nil {
