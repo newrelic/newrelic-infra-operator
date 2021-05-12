@@ -422,53 +422,33 @@ func Test_Mutate(t *testing.T) {
 	t.Run("sets_sidecar_resources_with_the_first_resources_rule_matching", func(t *testing.T) {
 		t.Parallel()
 
-		cases := map[string]map[string]string{
-			"first_matches": {
-				"key1":    "value1",
-				"k8s-app": "kube-state-metrics",
-			},
-			"second_matches": {
-				"key2": "value2",
-			},
+		p := getEmptyPod()
+		p.Labels["key2"] = "value2"
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+		config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
 		}
 
-		for testCaseName, labels := range cases {
-			labels := labels
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
 
-			t.Run(testCaseName, func(t *testing.T) {
-				t.Parallel()
+		infraContainer := corev1.Container{}
+		for _, container := range p.Spec.Containers {
+			if container.Name != agent.AgentSidecarName {
+				continue
+			}
+			infraContainer = container
+		}
 
-				p := getEmptyPod()
-				for k, v := range labels {
-					p.Labels[k] = v
-				}
-
-				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-				config := getConfig()
-				config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
-
-				i, err := config.New(c, c)
-				if err != nil {
-					t.Fatalf("creating injector: %v", err)
-				}
-
-				if err := i.Mutate(ctx, p, req); err != nil {
-					t.Fatalf("mutating Pod: %v", err)
-				}
-
-				infraContainer := corev1.Container{}
-				for _, container := range p.Spec.Containers {
-					if container.Name != agent.AgentSidecarName {
-						continue
-					}
-					infraContainer = container
-				}
-
-				q := infraContainer.Resources.Limits[corev1.ResourceMemory]
-				if q != *resource.NewScaledQuantity(100, resource.Mega) {
-					t.Fatalf("not-default CPU limit was expected: %s. Case name: %s", q.String(), testCaseName)
-				}
-			})
+		q := infraContainer.Resources.Limits[corev1.ResourceMemory]
+		if q != *resource.NewScaledQuantity(100, resource.Mega) {
+			t.Fatalf("not-default CPU limit was expected: %s.", q.String())
 		}
 	})
 
@@ -1248,7 +1228,7 @@ func getResourcesWithSelectors() []agent.Resource {
 		{
 			ResourceRequirements: corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
 				},
 			},
 			LabelSelector: metav1.LabelSelector{
