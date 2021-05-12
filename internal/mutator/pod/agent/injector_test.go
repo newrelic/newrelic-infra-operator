@@ -181,6 +181,40 @@ func Test_Mutate(t *testing.T) {
 		t.Run("includes_custom_attribute_with", func(t *testing.T) {
 			t.Parallel()
 
+			p := getEmptyPod()
+			p.Labels = map[string]string{
+				customAttributeFromLabel:           customAttributeFromLabelValue,
+				customAttributeWithEmptyValueLabel: "",
+			}
+
+			config := getConfig()
+			config.CustomAttributes = []agent.CustomAttribute{
+				{
+					Name:      customAttributeFromLabelName,
+					FromLabel: customAttributeFromLabel,
+				},
+				{
+					Name:         customAttributeDefaultValueName,
+					DefaultValue: customAttributeDefaultValue,
+				},
+				{
+					Name:         customAttributeWithEmptyValueName,
+					FromLabel:    customAttributeWithEmptyValueLabel,
+					DefaultValue: customAttributeWithEmptyValueDefaultValue,
+				},
+			}
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err != nil {
+				t.Fatalf("mutating Pod: %v", err)
+			}
+
 			cases := map[string]struct {
 				key   string
 				value string
@@ -307,7 +341,6 @@ func Test_Mutate(t *testing.T) {
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
-		config.CustomAttributes = nil
 
 		i, err := config.New(c, c)
 		if err != nil {
@@ -832,6 +865,12 @@ func Test_Mutate(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 			config := getConfig()
+			config.CustomAttributes = []agent.CustomAttribute{
+				{
+					Name:      customAttributeFromLabelName,
+					FromLabel: customAttributeFromLabel,
+				},
+			}
 
 			i, err := config.New(c, c)
 			if err != nil {
@@ -1039,21 +1078,6 @@ func getConfig() *agent.InjectorConfig {
 		License:     testLicense,
 		ClusterName: testClusterName,
 		Policies:    []agent.InjectionPolicy{{}},
-		CustomAttributes: []agent.CustomAttribute{
-			{
-				Name:      customAttributeFromLabelName,
-				FromLabel: customAttributeFromLabel,
-			},
-			{
-				Name:         customAttributeDefaultValueName,
-				DefaultValue: customAttributeDefaultValue,
-			},
-			{
-				Name:         customAttributeWithEmptyValueName,
-				FromLabel:    customAttributeWithEmptyValueLabel,
-				DefaultValue: customAttributeWithEmptyValueDefaultValue,
-			},
-		},
 	}
 }
 
@@ -1062,10 +1086,7 @@ func getEmptyPod() *corev1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: testNamespace,
-			Labels: map[string]string{
-				customAttributeFromLabel:           customAttributeFromLabelValue,
-				customAttributeWithEmptyValueLabel: "",
-			},
+			Labels:    map[string]string{},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
