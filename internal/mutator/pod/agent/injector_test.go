@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
@@ -295,6 +295,73 @@ func Test_Mutate(t *testing.T) {
 
 			if _, ok := secret.Labels[agent.OperatorCreatedLabel]; !ok {
 				t.Fatalf("expected label %q to be set, got: %v", agent.OperatorCreatedLabel, secret.Labels)
+			}
+		})
+	})
+
+	t.Run("when_succeeds_with_dry_run_option", func(t *testing.T) {
+		t.Parallel()
+
+		req := webhook.RequestOptions{
+			Namespace: testNamespace,
+			DryRun:    true,
+		}
+
+		p := getEmptyPod()
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		t.Run("adds_infrastructure_agent_sidecar_container_to_given_pod", func(t *testing.T) {
+			t.Parallel()
+
+			if len(p.Spec.Containers) != 2 {
+				t.Fatalf("expected extra container to be added, got %v", cmp.Diff(getEmptyPod(), p))
+			}
+		})
+
+		t.Run("does_not_create_license_Secret_for_Pod", func(t *testing.T) {
+			t.Parallel()
+
+			secret := &corev1.Secret{}
+			if err := c.Get(ctx, secretKey, secret); err == nil || !errors.IsNotFound(err) {
+				t.Fatalf("secret found in the cluster or err different from expected one: %v", err)
+			}
+		})
+
+		t.Run("does_not_add_pods_ServiceAccount_to_infrastructure_agent_ClusterRoleBinding", func(t *testing.T) {
+			t.Parallel()
+
+			key := client.ObjectKey{
+				Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
+			}
+
+			crb := &rbacv1.ClusterRoleBinding{}
+
+			if err := c.Get(ctx, key, crb); err != nil {
+				t.Fatalf("getting ClusterRoleBinding: %v", err)
+			}
+
+			found := false
+
+			for _, subject := range crb.Subjects {
+				if subject.Name == "default" && subject.Namespace == testNamespace {
+					found = true
+
+					break
+				}
+			}
+
+			if found {
+				t.Fatalf("found unexpected subject in ClusterRoleBinding, got: %v", crb)
 			}
 		})
 	})
