@@ -87,11 +87,13 @@ linters:
     - paralleltest
     - prealloc
     - predeclared
+    - promlinter
     - revive
     - rowserrcheck
     - sqlclosecheck
     - structcheck
     - stylecheck
+    - tagliatelle
     - testpackage
     - thelper
     - tparallel
