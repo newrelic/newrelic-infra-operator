@@ -22,13 +22,13 @@ linters-settings:
     template: |-
       Copyright {{ YEAR }} New Relic Corporation. All rights reserved.
       SPDX-License-Identifier: Apache-2.0
+  gci:
+    local-prefixes: github.com/newrelic/newrelic-infra-operator
 
 # Update list of enabled linters using 'make update-linters'.
 linters:
   disable-all: false
   disable:
-    # We use different import grouping style than gci forces.
-    - gci
     # TODOs in the code are OK.
     - godox
     # We do not have clearly defined error types yet.
@@ -55,6 +55,7 @@ linters:
     - forbidigo
     - forcetypeassert
     - funlen
+    - gci
     - gochecknoglobals
     - gochecknoinits
     - gocognit
