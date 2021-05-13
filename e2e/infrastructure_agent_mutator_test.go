@@ -169,6 +169,90 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 			t.Fatalf("waiting for Pod to converge: %v", err)
 		}
 	})
+
+	t.Run("handles_parallel_Pod_creation_in_multiple_namespaces_without_errors", func(t *testing.T) {
+		t.Parallel()
+
+		podTemplate := corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: testPrefix,
+				Labels: map[string]string{
+					"no-resources": "true",
+				},
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:    "nginx",
+						Image:   "nginx",
+						Command: []string{"tail", "-f", "/dev/null"},
+					},
+				},
+			},
+		}
+
+		parallelizm := 5
+
+		errs := make(chan error, parallelizm)
+
+		for i := 1; i <= parallelizm; i++ {
+			go func() {
+				podClient := clientset.CoreV1().Pods(withTestNamespace(ctx, t, clientset))
+
+				_, err := podClient.Create(ctx, &podTemplate, metav1.CreateOptions{})
+				errs <- err
+			}()
+		}
+
+		for i := 1; i <= parallelizm; i++ {
+			err := <-errs
+			if err != nil {
+				t.Fatalf("Pod #%d creation failed: %v", i, err)
+			}
+		}
+	})
+
+	t.Run("handles_parallel_Pod_creation_in_the_same_namespace_without_errors", func(t *testing.T) {
+		t.Parallel()
+
+		podTemplate := corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: testPrefix,
+				Labels: map[string]string{
+					"no-resources": "true",
+				},
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:    "nginx",
+						Image:   "nginx",
+						Command: []string{"tail", "-f", "/dev/null"},
+					},
+				},
+			},
+		}
+
+		podClient := clientset.CoreV1().Pods(withTestNamespace(ctx, t, clientset))
+
+		parallelizm := 5
+
+		errs := make(chan error, parallelizm)
+
+		for i := 1; i <= parallelizm; i++ {
+			go func() {
+				_, err := podClient.Create(ctx, &podTemplate, metav1.CreateOptions{})
+				errs <- err
+			}()
+		}
+
+		for i := 1; i <= parallelizm; i++ {
+			err := <-errs
+			if err != nil {
+				t.Fatalf("Pod #%d creation failed: %v", i, err)
+			}
+		}
+	})
 }
 
 func testClientset(t *testing.T) *kubernetes.Clientset {

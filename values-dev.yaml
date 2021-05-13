@@ -22,6 +22,9 @@ config:
       fromLabel: eks.amazonaws.com/fargate-profile
     agentConfig:
       configSelectors:
+        - labelSelector:
+            matchLabels:
+              no-resources: true
         - resourceRequirements:
             limits:
               memory: 100M
