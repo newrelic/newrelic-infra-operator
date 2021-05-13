@@ -80,22 +80,22 @@ type injector struct {
 
 // InjectorConfig of the Injector used to pass the required data to build it.
 type InjectorConfig struct {
-	AgentConfig      *InfraAgentConfig
-	ResourcePrefix   string
-	License          string
-	ClusterName      string
-	CustomAttributes CustomAttributes
-	Policies         []InjectionPolicy
+	AgentConfig      *InfraAgentConfig `json:"agentConfig"`
+	ResourcePrefix   string            `json:"resourcePrefix"`
+	License          string            `json:"-"`
+	ClusterName      string            `json:"clusterName"`
+	CustomAttributes CustomAttributes  `json:"customAttributes"`
+	Policies         []InjectionPolicy `json:"policies"`
 }
 
 // InjectionPolicy represents injection policy, which defines if given Pod should have agent injected or not.
 type InjectionPolicy struct {
-	NamespaceName     string
-	NamespaceSelector *metav1.LabelSelector
-	PodSelector       *metav1.LabelSelector
+	NamespaceName     string                `json:"namespaceName"`
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector"`
+	PodSelector       *metav1.LabelSelector `json:"podSelector"`
 
-	namespaceSelector labels.Selector
-	podSelector       labels.Selector
+	namespaceSelector labels.Selector `json:"-"`
+	podSelector       labels.Selector `json:"-"`
 }
 
 // CustomAttributes represents collection of custom attributes.
@@ -107,9 +107,9 @@ type CustomAttributes []CustomAttribute
 //
 // If default value is empty as well, error will be returned.
 type CustomAttribute struct {
-	Name         string
-	DefaultValue string
-	FromLabel    string
+	Name         string `json:"name"`
+	DefaultValue string `json:"defaultValue"`
+	FromLabel    string `json:"fromLabel"`
 }
 
 func (cas CustomAttributes) toString(podLabels map[string]string) (string, error) {

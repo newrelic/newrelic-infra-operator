@@ -29,15 +29,15 @@ const (
 
 // Options holds the configuration for an operator.
 type Options struct {
-	CertDir                string
-	HealthProbeBindAddress string
-	MetricsBindAddress     string
-	Port                   int
-	RestConfig             *rest.Config
-	Logger                 *logrus.Logger
-	IgnoreMutationErrors   bool
+	CertDir                string         `json:"certDir"`
+	HealthProbeBindAddress string         `json:"healthProbeBindAddress"`
+	MetricsBindAddress     string         `json:"metricsBindAddress"`
+	Port                   int            `json:"port"`
+	RestConfig             *rest.Config   `json:"-"`
+	Logger                 *logrus.Logger `json:"-"`
+	IgnoreMutationErrors   bool           `json:"ignoreMutationErrors"`
 
-	InfraAgentInjection agent.InjectorConfig
+	InfraAgentInjection agent.InjectorConfig `json:"infraAgentInjection"`
 }
 
 // Run starts operator main loop. At the moment it only runs TLS webhook server and healthcheck web server.
