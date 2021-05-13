@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	testPrefix = "newrelic-infra-operator-tests"
+	testPrefix = "newrelic-infra-operator-tests-"
 )
 
 // Test_Infra_agent_injection_webhook test covers the following functionality:
