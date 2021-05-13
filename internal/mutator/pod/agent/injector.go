@@ -174,8 +174,8 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
 
-	if err := config.buildResourceSelectors(); err != nil {
-		return nil, fmt.Errorf("building resource selectors: %w", err)
+	if err := config.buildConfigSelectors(); err != nil {
+		return nil, fmt.Errorf("building config selectors: %w", err)
 	}
 
 	return &injector{
@@ -319,6 +319,12 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		containerToInject.Resources = *resources
 	}
 
+	if envToApply := i.computeEnvVarsToApply(pod.Labels); envToApply != nil {
+		for k, v := range envToApply {
+			containerToInject.Env = append(containerToInject.Env, corev1.EnvVar{Name: k, Value: v})
+		}
+	}
+
 	customAttributes, err := i.config.CustomAttributes.toString(pod.Labels)
 	if err != nil {
 		return fmt.Errorf("creating custom attributes: %w", err)
@@ -451,23 +457,33 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 }
 
 func (i *injector) computeResourcesToApply(podLabels map[string]string) *corev1.ResourceRequirements {
-	for _, r := range i.config.AgentConfig.ResourcesWithSelectors {
+	for _, r := range i.config.AgentConfig.ConfigSelectors {
 		if r.selector.Matches(labels.Set(podLabels)) {
-			return &r.ResourceRequirements
+			return r.ResourceRequirements
 		}
 	}
 
 	return nil
 }
 
-func (config *InjectorConfig) buildResourceSelectors() error {
-	for i, r := range config.AgentConfig.ResourcesWithSelectors {
+func (i *injector) computeEnvVarsToApply(podLabels map[string]string) map[string]string {
+	for _, r := range i.config.AgentConfig.ConfigSelectors {
+		if r.selector.Matches(labels.Set(podLabels)) {
+			return r.ExtraEnvVars
+		}
+	}
+
+	return nil
+}
+
+func (config *InjectorConfig) buildConfigSelectors() error {
+	for i, r := range config.AgentConfig.ConfigSelectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
 			return fmt.Errorf("creating selector from label selector: %w", err)
 		}
 
-		config.AgentConfig.ResourcesWithSelectors[i].selector = selector
+		config.AgentConfig.ConfigSelectors[i].selector = selector
 	}
 
 	return nil
