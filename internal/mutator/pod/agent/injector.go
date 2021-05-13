@@ -47,7 +47,8 @@ const (
 	// LicenseSecretKey is the key which under the license key is placed in license Secret object.
 	LicenseSecretKey = "license"
 
-	agentSidecarName = "newrelic-infrastructure-sidecar"
+	// AgentSidecarName is the name of the container injected.
+	AgentSidecarName = "newrelic-infrastructure-sidecar"
 
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
@@ -170,6 +171,10 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
 
+	if err := config.buildResourceSelectors(); err != nil {
+		return nil, fmt.Errorf("building resource selectors: %w", err)
+	}
+
 	return &injector{
 		clusterRoleBindingName: fmt.Sprintf("%s%s", config.ResourcePrefix, ClusterRoleBindingSuffix),
 		licenseSecretName:      licenseSecretName,
@@ -261,7 +266,7 @@ func (config *InjectorConfig) setDefaults() {
 func (config InjectorConfig) container(licenseSecretName string) corev1.Container {
 	c := corev1.Container{
 		Image:           fmt.Sprintf("%s:%s", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag),
-		Name:            agentSidecarName,
+		Name:            AgentSidecarName,
 		ImagePullPolicy: config.AgentConfig.Image.PullPolicy,
 		Env:             standardEnvVar(licenseSecretName, config.ClusterName),
 		VolumeMounts:    standardVolumes(),
@@ -272,10 +277,6 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 	}
 
 	c.Env = append(c.Env, extraEnvVar(config.AgentConfig)...)
-
-	if config.AgentConfig.ResourceRequirements != nil {
-		c.Resources = *config.AgentConfig.ResourceRequirements
-	}
 
 	if config.AgentConfig.PodSecurityContext.RunAsUser != 0 {
 		c.SecurityContext.RunAsUser = &config.AgentConfig.PodSecurityContext.RunAsUser
@@ -310,6 +311,10 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	}
 
 	pod.Labels[InjectedLabel] = i.containerHash
+
+	if resources := i.computeResourcesToApply(pod.Labels); resources != nil {
+		containerToInject.Resources = *resources
+	}
 
 	customAttributes, err := i.config.CustomAttributes.toString(pod.Labels)
 	if err != nil {
@@ -433,6 +438,29 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 
 	if err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, ro.Namespace); err != nil {
 		return fmt.Errorf("ensuring ClusterRoleBinding subject: %w", err)
+	}
+
+	return nil
+}
+
+func (i *injector) computeResourcesToApply(podLabels map[string]string) *corev1.ResourceRequirements {
+	for _, r := range i.config.AgentConfig.ResourcesWithSelectors {
+		if r.selector.Matches(labels.Set(podLabels)) {
+			return &r.ResourceRequirements
+		}
+	}
+
+	return nil
+}
+
+func (config *InjectorConfig) buildResourceSelectors() error {
+	for i, r := range config.AgentConfig.ResourcesWithSelectors {
+		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
+		if err != nil {
+			return fmt.Errorf("creating selector from label selector: %w", err)
+		}
+
+		config.AgentConfig.ResourcesWithSelectors[i].selector = selector
 	}
 
 	return nil

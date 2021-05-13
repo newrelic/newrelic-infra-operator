@@ -5,15 +5,17 @@ package agent
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // InfraAgentConfig holds the user's configuration for the sidecar to be injected.
 type InfraAgentConfig struct {
 	// Here we can map the whole user configuration from helm chart.
-	ExtraEnvVars         map[string]string            `yaml:"extraEnvVars"`
-	ResourceRequirements *corev1.ResourceRequirements `yaml:"resources"`
-	Image                Image                        `yaml:"image"`
-	PodSecurityContext   PodSecurityContext           `yaml:"podSecurityContext"`
+	ExtraEnvVars           map[string]string  `yaml:"extraEnvVars"`
+	ResourcesWithSelectors []Resource         `yaml:"resourcesWithSelectors"`
+	Image                  Image              `yaml:"image"`
+	PodSecurityContext     PodSecurityContext `yaml:"podSecurityContext"`
 }
 
 // Image config.
@@ -27,4 +29,12 @@ type Image struct {
 type PodSecurityContext struct {
 	RunAsUser  int64 `yaml:"runAsUser"`
 	RunAsGroup int64 `yaml:"runAsGroup"`
+}
+
+// Resource config.
+type Resource struct {
+	ResourceRequirements corev1.ResourceRequirements
+	LabelSelector        metav1.LabelSelector
+
+	selector labels.Selector
 }

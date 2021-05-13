@@ -419,6 +419,71 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
+	t.Run("sets_sidecar_resources_with_the_first_resources_rule_matching", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		p.Labels["key2"] = "value2"
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+		config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		infraContainer := corev1.Container{}
+		for _, container := range p.Spec.Containers {
+			if container.Name != agent.AgentSidecarName {
+				continue
+			}
+			infraContainer = container
+		}
+
+		q := infraContainer.Resources.Limits[corev1.ResourceMemory]
+		if q != *resource.NewScaledQuantity(100, resource.Mega) {
+			t.Fatalf("not-default CPU limit was expected: %s.", q.String())
+		}
+	})
+
+	t.Run("leaves_sidecar_resources_empty_when_there_is_no_resources_rule_matching", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		p.Labels["key3"] = "value3"
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		config := getConfig()
+		config.AgentConfig.ResourcesWithSelectors = getResourcesWithSelectors()
+
+		i, err := config.New(c, c)
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err != nil {
+			t.Fatalf("mutating Pod: %v", err)
+		}
+
+		infraContainer := corev1.Container{}
+		for _, container := range p.Spec.Containers {
+			if container.Name != agent.AgentSidecarName {
+				continue
+			}
+			infraContainer = container
+		}
+
+		if diff := cmp.Diff(infraContainer.Resources, corev1.ResourceRequirements{}); diff != "" {
+			t.Fatalf("unexpected resources diff:\n%s", diff)
+		}
+	})
+
 	t.Run("is_idempotent", func(t *testing.T) {
 		t.Parallel()
 
@@ -1025,15 +1090,6 @@ func Test_Mutation_hash(t *testing.T) {
 			"extra_environment_variables": func(c *agent.InjectorConfig) {
 				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "baz"}
 			},
-			"resources": func(c *agent.InjectorConfig) {
-				cpuLimit := *resource.NewScaledQuantity(100, resource.Milli)
-
-				c.AgentConfig.ResourceRequirements = &corev1.ResourceRequirements{
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU: cpuLimit,
-					},
-				}
-			},
 			"image_repository": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.Repository = "foo"
 			},
@@ -1164,5 +1220,34 @@ func getEmptyPod() *corev1.Pod {
 			},
 		},
 		Status: corev1.PodStatus{},
+	}
+}
+
+func getResourcesWithSelectors() []agent.Resource {
+	return []agent.Resource{
+		{
+			ResourceRequirements: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
+				},
+			},
+			LabelSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"key1": "value1",
+				},
+			},
+		},
+		{
+			ResourceRequirements: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+				},
+			},
+			LabelSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"key2": "value2",
+				},
+			},
+		},
 	}
 }

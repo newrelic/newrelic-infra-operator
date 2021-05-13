@@ -20,3 +20,42 @@ config:
       # To allow inclusion on non-fargate clusters for testing.
       defaultValue: unknown
       fromLabel: eks.amazonaws.com/fargate-profile
+    agentConfig:
+      resourcesWithSelectors:
+        - resourceRequirements:
+            limits:
+              memory: 300M
+              cpu: 300m
+            requests:
+              memory: 150M
+              cpu: 150m
+          labelSelector:
+            matchLabels:
+              k8s-app : kube-state-metrics
+        - resourceRequirements:
+            limits:
+              memory: 300M
+              cpu: 300m
+            requests:
+              memory: 150M
+              cpu: 150m
+          labelSelector:
+            matchLabels:
+              app : kube-state-metrics
+        - resourceRequirements:
+            limits:
+              memory: 300M
+              cpu: 300m
+            requests:
+              memory: 150M
+              cpu: 150m
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: kube-state-metrics
+        - resourceRequirements:
+            limits:
+              memory: 100M
+              cpu: 200m
+            requests:
+              memory: 50M
+              cpu: 100m
