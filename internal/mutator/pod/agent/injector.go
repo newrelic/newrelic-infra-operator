@@ -27,7 +27,7 @@ const (
 	DisableInjectionLabel = "infra-operator.newrelic.com/disable-injection"
 
 	// InjectedLabel is the name of the label injected in pod.
-	InjectedLabel = "newrelic/agent-injected"
+	InjectedLabel = "infra-operator.newrelic.com/agent-injected"
 
 	// DefaultImageRepository is the default repository from where infrastructure-agent will be pulled from.
 	DefaultImageRepository = "newrelic/infrastructure-k8s"

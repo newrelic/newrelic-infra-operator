@@ -16,7 +16,7 @@ import (
 
 const (
 	// OperatorCreatedLabel is the name of the label injected to the secrets created by the operator.
-	OperatorCreatedLabel = "newrelic/infra-operator-created"
+	OperatorCreatedLabel = "infra-operator.newrelic.com/created"
 	// OperatorCreatedLabelValue is the value of the label injected to the secrets created by the operator.
 	OperatorCreatedLabelValue = "true"
 )
