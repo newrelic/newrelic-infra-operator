@@ -21,7 +21,27 @@ config:
       defaultValue: unknown
       fromLabel: eks.amazonaws.com/fargate-profile
     agentConfig:
-      resourcesWithSelectors:
+      configSelectors:
+        - resourceRequirements:
+            limits:
+              memory: 100M
+              cpu: 200m
+            requests:
+              memory: 50M
+              cpu: 100m
+          ExtraEnvVars:
+            DISABLE_KUBE_STATE_METRICS: "true"
+          labelSelector:
+            matchExpressions:
+              - key: "app.kubernetes.io/name"
+                operator: NotIn
+                values: ["kube-state-metrics"]
+              - key: "app"
+                operator: NotIn
+                values: ["kube-state-metrics"]
+              - key: "k8s-app"
+                operator: NotIn
+                values: ["kube-state-metrics"]
         - resourceRequirements:
             limits:
               memory: 300M
@@ -52,10 +72,4 @@ config:
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: kube-state-metrics
-        - resourceRequirements:
-            limits:
-              memory: 100M
-              cpu: 200m
-            requests:
-              memory: 50M
-              cpu: 100m
+
