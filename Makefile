@@ -129,4 +129,3 @@ help: ## Prints help message.
 .PHONY: buildLicenseNotice
 buildLicenseNotice:
 	@go list -mod=mod -m -json all | go-licence-detector -noticeOut=NOTICE.txt -rules ./assets/licence/rules.json  -noticeTemplate ./assets/licence/THIRD_PARTY_NOTICES.md.tmpl -noticeOut THIRD_PARTY_NOTICES.md -overrides ./assets/licence/overrides -includeIndirect
-
