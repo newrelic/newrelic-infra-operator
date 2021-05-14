@@ -158,6 +158,8 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
+		p.Labels["key1"] = "value1"
+
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
 
@@ -331,6 +333,49 @@ func Test_Mutate(t *testing.T) {
 				t.Fatalf("expected label %q to be set, got: %v", agent.OperatorCreatedLabel, secret.Labels)
 			}
 		})
+
+		t.Run("and_when_pod_matches_a_config_rule_it_gets", func(t *testing.T) {
+			t.Parallel()
+
+			t.Run("env_var_configured_from_it", func(t *testing.T) {
+				t.Parallel()
+
+				infraContainer := corev1.Container{}
+				for _, container := range p.Spec.Containers {
+					if container.Name != agent.AgentSidecarName {
+						continue
+					}
+					infraContainer = container
+				}
+
+				found := false
+				for _, env := range infraContainer.Env {
+					if env.Name == "EXTRA_ENV" && env.Value == "EXTRA_VALUE" {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatalf("missing expecting env var")
+				}
+			})
+
+			t.Run("resources_configured_from_it", func(t *testing.T) {
+				t.Parallel()
+
+				infraContainer := corev1.Container{}
+				for _, container := range p.Spec.Containers {
+					if container.Name != agent.AgentSidecarName {
+						continue
+					}
+					infraContainer = container
+				}
+
+				q := infraContainer.Resources.Limits[corev1.ResourceMemory]
+				if q != *resource.NewScaledQuantity(300, resource.Mega) {
+					t.Fatalf("not-default CPU limit was expected: %s.", q.String())
+				}
+			})
+		})
 	})
 
 	t.Run("when_succeeds_with_dry_run_option", func(t *testing.T) {
@@ -419,45 +464,7 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
-	t.Run("sets_sidecar_env_var_with_the_first_config_rule_matching", func(t *testing.T) {
-		t.Parallel()
-
-		p := getEmptyPod()
-		p.Labels["key3"] = "value3"
-
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-		config := getConfig()
-		config.AgentConfig.ConfigSelectors = getConfigSelectors()
-
-		i, err := config.New(c, c)
-		if err != nil {
-			t.Fatalf("creating injector: %v", err)
-		}
-
-		if err := i.Mutate(ctx, p, req); err != nil {
-			t.Fatalf("mutating Pod: %v", err)
-		}
-
-		infraContainer := corev1.Container{}
-		for _, container := range p.Spec.Containers {
-			if container.Name != agent.AgentSidecarName {
-				continue
-			}
-			infraContainer = container
-		}
-
-		found := false
-		for _, env := range infraContainer.Env {
-			if env.Name == "EXTRA_ENV" && env.Value == "EXTRA_VALUE" {
-				found = true
-			}
-		}
-		if !found {
-			t.Fatalf("missing expecting env var")
-		}
-	})
-
-	t.Run("sets_sidecar_resources_with_the_first_config_rule_matching", func(t *testing.T) {
+	t.Run("sets_sidecar_resources_from_the_first_config_rule_matching", func(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
@@ -494,7 +501,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		p.Labels["key3"] = "value3"
+		p.Labels["key4"] = "value4"
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
@@ -1242,7 +1249,9 @@ func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
 
 func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
-		AgentConfig: &agent.InfraAgentConfig{},
+		AgentConfig: &agent.InfraAgentConfig{
+			ConfigSelectors: getConfigSelectors(),
+		},
 		License:     testLicense,
 		ClusterName: testClusterName,
 		Policies:    []agent.InjectionPolicy{{}},
@@ -1271,6 +1280,9 @@ func getEmptyPod() *corev1.Pod {
 func getConfigSelectors() []agent.ConfigSelector {
 	return []agent.ConfigSelector{
 		{
+			ExtraEnvVars: map[string]string{
+				"EXTRA_ENV": "EXTRA_VALUE",
+			},
 			ResourceRequirements: &corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{
 					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
@@ -1291,20 +1303,6 @@ func getConfigSelectors() []agent.ConfigSelector {
 			LabelSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"key2": "value2",
-				},
-			},
-		},
-		{
-			ExtraEnvVars: map[string]string{
-				"EXTRA_ENV": "EXTRA_VALUE",
-			},
-			LabelSelector: metav1.LabelSelector{
-				MatchExpressions: []metav1.LabelSelectorRequirement{
-					{
-						Key:      "key3",
-						Operator: metav1.LabelSelectorOpIn,
-						Values:   []string{"value3"},
-					},
 				},
 			},
 		},
