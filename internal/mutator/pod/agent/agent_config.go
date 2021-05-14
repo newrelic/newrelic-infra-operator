@@ -33,9 +33,8 @@ type PodSecurityContext struct {
 // ConfigSelector allows you to set resourceRequirements and extraEnvVars based on labels.
 type ConfigSelector struct {
 	ResourceRequirements *corev1.ResourceRequirements `json:"resourceRequirements"`
-	// ExtraEnvVars are additional ones and will be appended to InfraAgentConfig.ExtraEnvVars.
-	ExtraEnvVars  map[string]string    `json:"extraEnvVars"`
-	LabelSelector metav1.LabelSelector `json:"labelSelector"`
+	ExtraEnvVars         map[string]string            `json:"extraEnvVars"`
+	LabelSelector        metav1.LabelSelector         `json:"labelSelector"`
 
 	selector labels.Selector `json:"-"`
 }
