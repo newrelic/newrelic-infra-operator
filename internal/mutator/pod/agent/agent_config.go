@@ -12,7 +12,6 @@ import (
 // InfraAgentConfig holds the user's configuration for the sidecar to be injected.
 type InfraAgentConfig struct {
 	// Here we can map the whole user configuration from helm chart.
-	ExtraEnvVars       map[string]string  `json:"extraEnvVars"`
 	ConfigSelectors    []ConfigSelector   `json:"configSelectors"`
 	Image              Image              `json:"image"`
 	PodSecurityContext PodSecurityContext `json:"podSecurityContext"`

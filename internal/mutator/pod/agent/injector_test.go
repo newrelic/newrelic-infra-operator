@@ -1135,9 +1135,6 @@ func Test_Mutation_hash(t *testing.T) {
 					t.Fatalf("creating ClusterRoleBinding with custom prefix: %v", err)
 				}
 			},
-			"extra_environment_variables": func(c *agent.InjectorConfig) {
-				c.AgentConfig.ExtraEnvVars = map[string]string{"foo": "baz"}
-			},
 			"image_repository": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.Repository = "foo"
 			},

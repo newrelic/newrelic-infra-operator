@@ -279,8 +279,6 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 		},
 	}
 
-	c.Env = append(c.Env, extraEnvVar(config.AgentConfig)...)
-
 	if config.AgentConfig.PodSecurityContext.RunAsUser != 0 {
 		c.SecurityContext.RunAsUser = &config.AgentConfig.PodSecurityContext.RunAsUser
 	}
@@ -550,20 +548,6 @@ func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
 			Value: getAgentPassthroughEnvironment(),
 		},
 	}
-}
-
-func extraEnvVar(s *InfraAgentConfig) []corev1.EnvVar {
-	extraEnv := []corev1.EnvVar{}
-
-	for k, v := range s.ExtraEnvVars {
-		extraEnv = append(extraEnv,
-			corev1.EnvVar{
-				Name:  k,
-				Value: v,
-			})
-	}
-
-	return extraEnv
 }
 
 func getAgentPassthroughEnvironment() string {

@@ -16,9 +16,9 @@ import (
 const (
 	testConfig = `
 infraAgentInjection:
-  agentConfig:
-    extraEnvVars:
-      NRIA_VERBOSE: "1"
+  customAttributes:
+  - name: computeType
+    defaultValue: serverless
 `
 )
 
@@ -37,20 +37,24 @@ func Test_Options(t *testing.T) {
 				t.Fatalf("getting options: %v", err)
 			}
 
-			expectedKey := "NRIA_VERBOSE"
-			expectedValue := "1"
+			expectedName := "computeType"
+			expectedDefaultValue := "serverless"
 
-			if options.InfraAgentInjection.AgentConfig == nil {
+			if options.InfraAgentInjection.CustomAttributes == nil {
 				t.Fatalf("expected agent config to not be empty")
 			}
 
-			v, ok := options.InfraAgentInjection.AgentConfig.ExtraEnvVars[expectedKey]
-			if !ok {
-				t.Fatalf("didn't find expected extra environment variable %q", expectedKey)
+			if l := len(options.InfraAgentInjection.CustomAttributes); l != 1 {
+				t.Fatalf("didn't find 1 customAttributes %d", l)
 			}
 
-			if v != expectedValue {
-				t.Fatalf("expected value %q for extra environment variable %q, got %q", expectedKey, expectedValue, v)
+			ca := options.InfraAgentInjection.CustomAttributes[0]
+			if ca.Name != expectedName {
+				t.Fatalf("expected name %q, got %q", expectedName, ca.Name)
+			}
+
+			if ca.DefaultValue != expectedDefaultValue {
+				t.Fatalf("expected defaultValue %q, got %q", expectedDefaultValue, ca.DefaultValue)
 			}
 		})
 
