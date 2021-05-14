@@ -158,7 +158,6 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		p.Labels["key1"] = "value1"
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 		config := getConfig()
@@ -334,19 +333,36 @@ func Test_Mutate(t *testing.T) {
 			}
 		})
 
-		t.Run("and_when_pod_matches_a_config_rule_it_gets", func(t *testing.T) {
+		t.Run("and_when_Pod_matches_the_first_matching_config_rule_it_gets", func(t *testing.T) {
 			t.Parallel()
+
+			p := getEmptyPod()
+			// Key2=value2 matches the second rule added by getConfigSelectors().
+			p.Labels["key2"] = "value2"
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			config := getConfig()
+			config.AgentConfig.ConfigSelectors = getConfigSelectors()
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err != nil {
+				t.Fatalf("mutating Pod: %v", err)
+			}
+
+			infraContainer := corev1.Container{}
+			for _, container := range p.Spec.Containers {
+				if container.Name != agent.AgentSidecarName {
+					continue
+				}
+				infraContainer = container
+			}
 
 			t.Run("env_var_configured_from_it", func(t *testing.T) {
 				t.Parallel()
-
-				infraContainer := corev1.Container{}
-				for _, container := range p.Spec.Containers {
-					if container.Name != agent.AgentSidecarName {
-						continue
-					}
-					infraContainer = container
-				}
 
 				found := false
 				for _, env := range infraContainer.Env {
@@ -362,17 +378,44 @@ func Test_Mutate(t *testing.T) {
 			t.Run("resources_configured_from_it", func(t *testing.T) {
 				t.Parallel()
 
-				infraContainer := corev1.Container{}
-				for _, container := range p.Spec.Containers {
-					if container.Name != agent.AgentSidecarName {
-						continue
-					}
-					infraContainer = container
-				}
-
 				q := infraContainer.Resources.Limits[corev1.ResourceMemory]
 				if q != *resource.NewScaledQuantity(300, resource.Mega) {
 					t.Fatalf("not-default CPU limit was expected: %s.", q.String())
+				}
+			})
+		})
+
+		t.Run("and_when_Pod_does_not_match_any_config_rule_it_gets", func(t *testing.T) {
+			t.Parallel()
+
+			p := getEmptyPod()
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			config := getConfig()
+			config.AgentConfig.ConfigSelectors = getConfigSelectors()
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err != nil {
+				t.Fatalf("mutating Pod: %v", err)
+			}
+
+			infraContainer := corev1.Container{}
+			for _, container := range p.Spec.Containers {
+				if container.Name != agent.AgentSidecarName {
+					continue
+				}
+				infraContainer = container
+			}
+
+			t.Run("sidecar_resources_empty", func(t *testing.T) {
+				t.Parallel()
+
+				if diff := cmp.Diff(infraContainer.Resources, corev1.ResourceRequirements{}); diff != "" {
+					t.Fatalf("unexpected resources diff:\n%s", diff)
 				}
 			})
 		})
@@ -461,71 +504,6 @@ func Test_Mutate(t *testing.T) {
 
 		if err := i.Mutate(ctx, p, req); err != nil {
 			t.Fatalf("mutating Pod: %v", err)
-		}
-	})
-
-	t.Run("sets_sidecar_resources_from_the_first_config_rule_matching", func(t *testing.T) {
-		t.Parallel()
-
-		p := getEmptyPod()
-		p.Labels["key2"] = "value2"
-
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-		config := getConfig()
-		config.AgentConfig.ConfigSelectors = getConfigSelectors()
-
-		i, err := config.New(c, c)
-		if err != nil {
-			t.Fatalf("creating injector: %v", err)
-		}
-
-		if err := i.Mutate(ctx, p, req); err != nil {
-			t.Fatalf("mutating Pod: %v", err)
-		}
-
-		infraContainer := corev1.Container{}
-		for _, container := range p.Spec.Containers {
-			if container.Name != agent.AgentSidecarName {
-				continue
-			}
-			infraContainer = container
-		}
-
-		q := infraContainer.Resources.Limits[corev1.ResourceMemory]
-		if q != *resource.NewScaledQuantity(100, resource.Mega) {
-			t.Fatalf("not-default CPU limit was expected: %s.", q.String())
-		}
-	})
-
-	t.Run("leaves_sidecar_resources_empty_when_there_is_no_config_rule_matching", func(t *testing.T) {
-		t.Parallel()
-
-		p := getEmptyPod()
-		p.Labels["key4"] = "value4"
-
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
-		config := getConfig()
-		config.AgentConfig.ConfigSelectors = getConfigSelectors()
-
-		i, err := config.New(c, c)
-		if err != nil {
-			t.Fatalf("creating injector: %v", err)
-		}
-
-		if err := i.Mutate(ctx, p, req); err != nil {
-			t.Fatalf("mutating Pod: %v", err)
-		}
-
-		infraContainer := corev1.Container{}
-		for _, container := range p.Spec.Containers {
-			if container.Name != agent.AgentSidecarName {
-				continue
-			}
-			infraContainer = container
-		}
-
-		if diff := cmp.Diff(infraContainer.Resources, corev1.ResourceRequirements{}); diff != "" {
-			t.Fatalf("unexpected resources diff:\n%s", diff)
 		}
 	})
 
@@ -1249,9 +1227,7 @@ func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
 
 func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
-		AgentConfig: &agent.InfraAgentConfig{
-			ConfigSelectors: getConfigSelectors(),
-		},
+		AgentConfig: &agent.InfraAgentConfig{},
 		License:     testLicense,
 		ClusterName: testClusterName,
 		Policies:    []agent.InjectionPolicy{{}},
@@ -1280,12 +1256,9 @@ func getEmptyPod() *corev1.Pod {
 func getConfigSelectors() []agent.ConfigSelector {
 	return []agent.ConfigSelector{
 		{
-			ExtraEnvVars: map[string]string{
-				"EXTRA_ENV": "EXTRA_VALUE",
-			},
 			ResourceRequirements: &corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
+					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
 				},
 			},
 			LabelSelector: metav1.LabelSelector{
@@ -1295,9 +1268,12 @@ func getConfigSelectors() []agent.ConfigSelector {
 			},
 		},
 		{
+			ExtraEnvVars: map[string]string{
+				"EXTRA_ENV": "EXTRA_VALUE",
+			},
 			ResourceRequirements: &corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
 				},
 			},
 			LabelSelector: metav1.LabelSelector{

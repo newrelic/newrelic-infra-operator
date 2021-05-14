@@ -72,4 +72,3 @@ config:
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: kube-state-metrics
-
