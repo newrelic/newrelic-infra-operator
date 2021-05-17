@@ -21,6 +21,10 @@ config:
       defaultValue: unknown
       fromLabel: eks.amazonaws.com/fargate-profile
     agentConfig:
+      image:
+        repository: newrelic/infrastructure-k8s
+        tag: 2.4.0-unprivileged
+        pullPolicy: IfNotPresent
       configSelectors:
         - labelSelector:
             matchLabels:

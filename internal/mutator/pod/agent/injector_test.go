@@ -47,6 +47,12 @@ func Test_Creating_injector(t *testing.T) {
 		t.Parallel()
 
 		cases := map[string]func(*agent.InjectorConfig){
+			"image_tag_is_empty": func(c *agent.InjectorConfig) {
+				c.AgentConfig.Image.Tag = ""
+			},
+			"image_repository_is_empty": func(c *agent.InjectorConfig) {
+				c.AgentConfig.Image.Repository = ""
+			},
 			"license_is_empty": func(c *agent.InjectorConfig) {
 				c.License = ""
 			},
@@ -140,7 +146,12 @@ func Test_Creating_injector(t *testing.T) {
 		t.Parallel()
 
 		config := getConfig()
-		config.AgentConfig = nil
+		config.AgentConfig = &agent.InfraAgentConfig{
+			Image: agent.Image{
+				Tag:        "test-tag",
+				Repository: "test-repository",
+			},
+		}
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 
@@ -1280,7 +1291,12 @@ func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
 
 func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
-		AgentConfig: &agent.InfraAgentConfig{},
+		AgentConfig: &agent.InfraAgentConfig{
+			Image: agent.Image{
+				Tag:        "test-tag",
+				Repository: "test-repository",
+			},
+		},
 		License:     testLicense,
 		ClusterName: testClusterName,
 		Policies:    []agent.InjectionPolicy{{}},
