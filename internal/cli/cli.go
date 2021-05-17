@@ -24,7 +24,8 @@ const (
 	// EnvClusterName is an environment variable from which cluster name will be read if not set in configuration file.
 	EnvClusterName = "CLUSTER_NAME"
 
-	// EnvResourcePrefix is an environment variable from which the resource prefix will be read if not set in configuration file.
+	// EnvResourcePrefix is an environment variable from which the resource prefix will be read if not set in
+	// configuration file.
 	EnvResourcePrefix = "RESOURCE_PREFIX"
 )
 

@@ -206,6 +206,7 @@ func (config *InjectorConfig) buildPolicies() error {
 	return nil
 }
 
+//nolint:cyclop
 func (config InjectorConfig) validate() error {
 	if config.License == "" {
 		return fmt.Errorf("license key is empty")
