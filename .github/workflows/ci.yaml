@@ -131,7 +131,7 @@ jobs:
         with:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
-          version: v1.40
+          version: v1.40.1
 
   codespell:
     name: Codespell
