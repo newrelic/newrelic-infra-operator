@@ -78,7 +78,7 @@ func Test_Creating_injector(t *testing.T) {
 			"there_is_no_injection_policies_defined": func(c *agent.InjectorConfig) {
 				c.Policies = nil
 			},
-			"invalid_namespace_selector_is_configured": func(c *agent.InjectorConfig) {
+			"invalid_namespace_selector_is_configured_for_injection_policy": func(c *agent.InjectorConfig) {
 				c.Policies = []agent.InjectionPolicy{
 					{
 						NamespaceSelector: &metav1.LabelSelector{
@@ -89,10 +89,21 @@ func Test_Creating_injector(t *testing.T) {
 					},
 				}
 			},
-			"invalid_pod_selector_is_configured": func(c *agent.InjectorConfig) {
+			"invalid_pod_selector_is_configured_for_injection_policy": func(c *agent.InjectorConfig) {
 				c.Policies = []agent.InjectionPolicy{
 					{
 						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"_": "bad_value-",
+							},
+						},
+					},
+				}
+			},
+			"invalid_pod_selector_is_configured_for_agent_config": func(c *agent.InjectorConfig) {
+				c.AgentConfig.ConfigSelectors = []agent.ConfigSelector{
+					{
+						LabelSelector: metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"_": "bad_value-",
 							},
