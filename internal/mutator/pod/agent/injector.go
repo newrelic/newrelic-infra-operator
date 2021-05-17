@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -447,7 +448,9 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 		return fmt.Errorf("ensuring Secret presence: %w", err)
 	}
 
-	if err := i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, ro.Namespace); err != nil {
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, ro.Namespace)
+	}); err != nil {
 		return fmt.Errorf("ensuring ClusterRoleBinding subject: %w", err)
 	}
 

@@ -26,8 +26,7 @@ func (i *injector) ensureClusterRoleBindingSubject(
 		Name: i.clusterRoleBindingName,
 	}
 
-	err := i.client.Get(ctx, key, crb)
-	if err != nil {
+	if err := i.client.Get(ctx, key, crb); err != nil {
 		return fmt.Errorf("getting ClusterRoleBinding %q: %w", i.clusterRoleBindingName, err)
 	}
 
