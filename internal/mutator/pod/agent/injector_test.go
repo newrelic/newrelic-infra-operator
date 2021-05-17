@@ -350,7 +350,7 @@ func Test_Mutate(t *testing.T) {
 					},
 					LabelSelector: metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							"key": "value",
+							"not-matching-key": "not-matching-value",
 						},
 					},
 				},
@@ -428,7 +428,7 @@ func Test_Mutate(t *testing.T) {
 					},
 					LabelSelector: metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							"key": "value",
+							"not-matching-key": "not-matching-value",
 						},
 					},
 				},
