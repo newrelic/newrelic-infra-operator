@@ -246,11 +246,11 @@ func Test_Mutate(t *testing.T) {
 
 					found := false
 
-					for _, container := range p.Spec.Containers {
-						for _, envVar := range container.Env {
-							if strings.Contains(envVar.Value, c.key) && strings.Contains(envVar.Value, c.value) {
-								found = true
-							}
+					infraContainer := infraContainer(t, p)
+
+					for _, envVar := range infraContainer.Env {
+						if strings.Contains(envVar.Value, c.key) && strings.Contains(envVar.Value, c.value) {
+							found = true
 						}
 					}
 
@@ -380,13 +380,7 @@ func Test_Mutate(t *testing.T) {
 				t.Fatalf("mutating Pod: %v", err)
 			}
 
-			infraContainer := corev1.Container{}
-			for _, container := range p.Spec.Containers {
-				if container.Name != agent.AgentSidecarName {
-					continue
-				}
-				infraContainer = container
-			}
+			infraContainer := infraContainer(t, p)
 
 			t.Run("env_var_configured_from_it", func(t *testing.T) {
 				t.Parallel()
@@ -443,13 +437,7 @@ func Test_Mutate(t *testing.T) {
 				t.Fatalf("mutating Pod: %v", err)
 			}
 
-			infraContainer := corev1.Container{}
-			for _, container := range p.Spec.Containers {
-				if container.Name != agent.AgentSidecarName {
-					continue
-				}
-				infraContainer = container
-			}
+			infraContainer := infraContainer(t, p)
 
 			t.Run("sidecar_resources_empty", func(t *testing.T) {
 				t.Parallel()
@@ -1247,6 +1235,20 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("expected labels to match, got %q and %q", firstHash, secondHash)
 		}
 	})
+}
+
+func infraContainer(t *testing.T, pod *corev1.Pod) corev1.Container {
+	t.Helper()
+
+	for _, container := range pod.Spec.Containers {
+		if container.Name == agent.AgentSidecarName {
+			return container
+		}
+	}
+
+	t.Fatalf("infra container %q not found", agent.AgentSidecarName)
+
+	return corev1.Container{}
 }
 
 func clusterRoleBindingName(prefix string) string {
