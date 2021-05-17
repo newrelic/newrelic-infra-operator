@@ -74,12 +74,11 @@ type injector struct {
 
 // InjectorConfig of the Injector used to pass the required data to build it.
 type InjectorConfig struct {
-	AgentConfig      InfraAgentConfig  `json:"agentConfig"`
-	ResourcePrefix   string            `json:"resourcePrefix"`
-	License          string            `json:"-"`
-	ClusterName      string            `json:"clusterName"`
-	CustomAttributes CustomAttributes  `json:"customAttributes"`
-	Policies         []InjectionPolicy `json:"policies"`
+	AgentConfig    InfraAgentConfig  `json:"agentConfig"`
+	ResourcePrefix string            `json:"resourcePrefix"`
+	License        string            `json:"-"`
+	ClusterName    string            `json:"clusterName"`
+	Policies       []InjectionPolicy `json:"policies"`
 }
 
 // InjectionPolicy represents injection policy, which defines if given Pod should have agent injected or not.
@@ -141,7 +140,7 @@ type Injector interface {
 
 // New function is the constructor for the injector struct.
 func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector, error) {
-	config.CustomAttributes = append(config.CustomAttributes, CustomAttribute{
+	config.AgentConfig.CustomAttributes = append(config.AgentConfig.CustomAttributes, CustomAttribute{
 		Name:         clusterNameAttribute,
 		DefaultValue: config.ClusterName,
 	})
@@ -227,7 +226,7 @@ func (config InjectorConfig) validate() error {
 
 	customAttributeNames := map[string]struct{}{}
 
-	for i, ca := range config.CustomAttributes {
+	for i, ca := range config.AgentConfig.CustomAttributes {
 		if ca.Name == "" {
 			return fmt.Errorf("custom attribute %d has empty name", i)
 		}
@@ -307,7 +306,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		}
 	}
 
-	customAttributes, err := i.config.CustomAttributes.toString(pod.Labels)
+	customAttributes, err := i.config.AgentConfig.CustomAttributes.toString(pod.Labels)
 	if err != nil {
 		return fmt.Errorf("creating custom attributes: %w", err)
 	}

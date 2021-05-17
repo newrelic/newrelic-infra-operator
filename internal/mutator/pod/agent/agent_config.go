@@ -15,6 +15,7 @@ type InfraAgentConfig struct {
 	ConfigSelectors    []ConfigSelector   `json:"configSelectors"`
 	Image              Image              `json:"image"`
 	PodSecurityContext PodSecurityContext `json:"podSecurityContext"`
+	CustomAttributes   CustomAttributes   `json:"customAttributes"`
 }
 
 // Image config.

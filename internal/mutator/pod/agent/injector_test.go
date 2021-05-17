@@ -64,7 +64,7 @@ func Test_Creating_injector(t *testing.T) {
 				c.ResourcePrefix = ""
 			},
 			"clusterName_custom_attribute_is_defined": func(c *agent.InjectorConfig) {
-				c.CustomAttributes = []agent.CustomAttribute{
+				c.AgentConfig.CustomAttributes = []agent.CustomAttribute{
 					{
 						Name:         "clusterName",
 						DefaultValue: "foo",
@@ -72,14 +72,14 @@ func Test_Creating_injector(t *testing.T) {
 				}
 			},
 			"custom_attribute_has_no_name_set": func(c *agent.InjectorConfig) {
-				c.CustomAttributes = []agent.CustomAttribute{
+				c.AgentConfig.CustomAttributes = []agent.CustomAttribute{
 					{
 						DefaultValue: "test-value",
 					},
 				}
 			},
 			"custom_attribute_has_no_default_value_or_fromLabel_source_set": func(c *agent.InjectorConfig) {
-				c.CustomAttributes = []agent.CustomAttribute{
+				c.AgentConfig.CustomAttributes = []agent.CustomAttribute{
 					{
 						Name: "attributeWithoutValue",
 					},
@@ -209,7 +209,7 @@ func Test_Mutate(t *testing.T) {
 			}
 
 			config := getConfig()
-			config.CustomAttributes = []agent.CustomAttribute{
+			config.AgentConfig.CustomAttributes = []agent.CustomAttribute{
 				{
 					Name:      customAttributeFromLabelName,
 					FromLabel: customAttributeFromLabel,
@@ -1078,7 +1078,7 @@ func Test_Mutate(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
-			config.CustomAttributes = []agent.CustomAttribute{
+			config.AgentConfig.CustomAttributes = []agent.CustomAttribute{
 				{
 					Name:      customAttributeFromLabelName,
 					FromLabel: customAttributeFromLabel,
