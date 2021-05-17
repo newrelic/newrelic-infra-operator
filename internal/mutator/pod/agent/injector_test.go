@@ -337,12 +337,39 @@ func Test_Mutate(t *testing.T) {
 			t.Parallel()
 
 			p := getEmptyPod()
-			// Key2=value2 matches the second rule added by getConfigSelectors().
-			p.Labels["key2"] = "value2"
+			p.Labels["matching-key"] = "matching-value"
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 			config := getConfig()
-			config.AgentConfig.ConfigSelectors = getConfigSelectors()
+			config.AgentConfig.ConfigSelectors = []agent.ConfigSelector{
+				{
+					ResourceRequirements: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+						},
+					},
+					LabelSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"key": "value",
+						},
+					},
+				},
+				{
+					ExtraEnvVars: map[string]string{
+						"EXTRA_ENV": "EXTRA_VALUE",
+					},
+					ResourceRequirements: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
+						},
+					},
+					LabelSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"matching-key": "matching-value",
+						},
+					},
+				},
+			}
 
 			i, err := config.New(c, c)
 			if err != nil {
@@ -392,7 +419,20 @@ func Test_Mutate(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
 			config := getConfig()
-			config.AgentConfig.ConfigSelectors = getConfigSelectors()
+			config.AgentConfig.ConfigSelectors = []agent.ConfigSelector{
+				{
+					ResourceRequirements: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
+						},
+					},
+					LabelSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"key": "value",
+						},
+					},
+				},
+			}
 
 			i, err := config.New(c, c)
 			if err != nil {
@@ -1250,37 +1290,5 @@ func getEmptyPod() *corev1.Pod {
 			},
 		},
 		Status: corev1.PodStatus{},
-	}
-}
-
-func getConfigSelectors() []agent.ConfigSelector {
-	return []agent.ConfigSelector{
-		{
-			ResourceRequirements: &corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(100, resource.Mega),
-				},
-			},
-			LabelSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"key1": "value1",
-				},
-			},
-		},
-		{
-			ExtraEnvVars: map[string]string{
-				"EXTRA_ENV": "EXTRA_VALUE",
-			},
-			ResourceRequirements: &corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(300, resource.Mega),
-				},
-			},
-			LabelSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"key2": "value2",
-				},
-			},
-		},
 	}
 }
