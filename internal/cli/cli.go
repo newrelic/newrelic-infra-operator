@@ -23,10 +23,6 @@ const (
 
 	// EnvClusterName is an environment variable from which cluster name will be read if not set in configuration file.
 	EnvClusterName = "CLUSTER_NAME"
-
-	// EnvResourcePrefix is an environment variable from which the resource prefix will be read if not set in
-	// configuration file.
-	EnvResourcePrefix = "RESOURCE_PREFIX"
 )
 
 // Options tries to read configuration from a given path and later fills missing configuration using
@@ -49,10 +45,6 @@ func Options(path string) (*operator.Options, error) {
 
 	if options.InfraAgentInjection.ClusterName == "" {
 		options.InfraAgentInjection.ClusterName = os.Getenv(EnvClusterName)
-	}
-
-	if options.InfraAgentInjection.ResourcePrefix == "" {
-		options.InfraAgentInjection.ResourcePrefix = os.Getenv(EnvResourcePrefix)
 	}
 
 	return options, nil
