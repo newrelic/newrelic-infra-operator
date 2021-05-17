@@ -417,7 +417,7 @@ func testOptions(t *testing.T, cfg *rest.Config, certDir string) operator.Option
 		MetricsBindAddress:     fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
 		Port:                   randomUnprivilegedPort(t),
 		InfraAgentInjection: agent.InjectorConfig{
-			AgentConfig: &agent.InfraAgentConfig{
+			AgentConfig: agent.InfraAgentConfig{
 				Image: agent.Image{
 					Repository: "test-repository",
 					Tag:        "test-tag",

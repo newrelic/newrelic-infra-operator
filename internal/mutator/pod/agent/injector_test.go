@@ -150,12 +150,6 @@ func Test_Creating_injector(t *testing.T) {
 		t.Parallel()
 
 		config := getConfig()
-		config.AgentConfig = &agent.InfraAgentConfig{
-			Image: agent.Image{
-				Tag:        "test-tag",
-				Repository: "test-repository",
-			},
-		}
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
@@ -1295,7 +1289,7 @@ func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
 
 func getConfig() *agent.InjectorConfig {
 	return &agent.InjectorConfig{
-		AgentConfig: &agent.InfraAgentConfig{
+		AgentConfig: agent.InfraAgentConfig{
 			Image: agent.Image{
 				Tag:        "test-tag",
 				Repository: "test-repository",

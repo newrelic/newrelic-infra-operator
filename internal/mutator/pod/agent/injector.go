@@ -74,7 +74,7 @@ type injector struct {
 
 // InjectorConfig of the Injector used to pass the required data to build it.
 type InjectorConfig struct {
-	AgentConfig      *InfraAgentConfig `json:"agentConfig"`
+	AgentConfig      InfraAgentConfig  `json:"agentConfig"`
 	ResourcePrefix   string            `json:"resourcePrefix"`
 	License          string            `json:"-"`
 	ClusterName      string            `json:"clusterName"`
@@ -145,9 +145,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		Name:         clusterNameAttribute,
 		DefaultValue: config.ClusterName,
 	})
-	if config.AgentConfig == nil {
-		config.AgentConfig = &InfraAgentConfig{}
-	}
 
 	if err := config.validate(); err != nil {
 		return nil, fmt.Errorf("validating configuration: %w", err)
