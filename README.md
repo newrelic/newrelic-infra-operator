@@ -2,21 +2,21 @@
 
 # New Relic Infrastructure Operator for Kubernetes
 
-This operator automates injection of the New Relic Infrastructure container.
+This operator automates the injection of the New Relic Infrastructure container on Pods matching the configured policies.
 
-What the operator does:
-Behind the scenes, the newrelic-infra-operator if the fargate option is enabled it sets up a mutatingWebhookConfiguration, 
-which allows it to modify the pod objects that are about to be created in the cluster.
+The newrelic-infra-operator sets up a mutatingWebhookConfiguration, which allows it to modify the pod objects that are
+about to be created in the cluster.
 
-On this event, and when the pod being created matches the user’s configuration the operator will:
+On this event, and when the pod being created matches the user’s configured policies the operator will:
 
  - Add a sidecar container to the pod, containing the New Relic Kubernetes Integration.
- - If a secret doesn't exist, create one in the same Namespace as the pod containing the New Relic license key, which is
-   needed for the integration to report data.
+ - If a secret doesn't exist, create a secret in the same Namespace as the pod containing the New Relic license key,
+   which is needed for the integration to report data.
  - Add the pod’s service account to a ClusterRoleBinding previously created by the operator chart, which will grant this
-   sidecar the required permissions to hit the Kubernetes metrics endpoints.
- - The ClusterRoleBinding grants the following permissions to the pod being injected:
+   sidecar the required permissions to hit the Kubernetes metrics endpoints. 
+   
 
+The ClusterRoleBinding grants the following permissions to the pod being injected:
 ```yaml
 - apiGroups: [""]
   resources:
@@ -31,7 +31,9 @@ On this event, and when the pod being created matches the user’s configuration
   verbs: ["get"]
 ```
 
-In order to get the sidecar injected on pods deployed before the operator has been installed, the user needs to manually perform a rollout (restart). New Relic has chosen not to do this automatically in order to prevent unexpected service disruptions and resource usage spikes.
+In order to get the sidecar injected on pods deployed before the operator has been installed, the user needs to manually
+perform a rollout (restart) of the worloads. New Relic has chosen not to do this automatically in order to prevent 
+unexpected service disruptions and resource usage spikes.
 
 Here's the injection workflow:
 
@@ -42,11 +44,14 @@ Here's the injection workflow:
 In order to install the solution you can leverage both the nri-bundle chart or directly newrelic-infra-operator.
 
 ```sh
-helm install newrelic-infra-operator ./helm-charts-newrelic/charts/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml
+helm install newrelic-infra-operator newrelic/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml
 ```
 
 Once deployed, it will automatically inject the sidecar in the pod matching the policy specified.
-Please notice that only pods created after the deployment of the monitoring solution will be injected with the configuration and agent.
+Please notice that only in pods created after the deployment of the monitoring solution the sidecar will be injected
+with the configured options.
+
+For further information regarding the installation refer to the official docs and to the `README.md` and the `values.yaml` of the chart.
 
 ### Develop, test and Run Locally
 
@@ -85,7 +90,7 @@ This repository is an authoritative source of the deployment manifests for the o
 If you have `helm-charts` repository cloned into a different path, you can configure Tilt to use it by adding the
 following key-value pair to your local `tilt_option.json` file:
 
-```json
+```
   "chart_path": "../../helm-charts-newrelic/charts/newrelic-infra-operator/"
 ```
 
@@ -153,7 +158,7 @@ If the issue has been confirmed as a bug or is a feature request, file a GitHub 
 **Support Channels**
 
 * [New Relic Documentation](https://docs.newrelic.com): Comprehensive guidance for using our platform
-* [New Relic Community](https://discuss.newrelic.com/t/<add here topic id>): The best place to engage in troubleshooting questions
+* [New Relic Community](https://discuss.newrelic.com/t/eks-fargate-integration/148947): The best place to engage in troubleshooting questions
 * [New Relic Developer](https://developer.newrelic.com/): Resources for building a custom observability applications
 * [New Relic University](https://learn.newrelic.com/): A range of online training for New Relic users of every level
 * [New Relic Technical Support](https://support.newrelic.com/) 24/7/365 ticketed support. Read more about our [Technical Support Offerings](https://docs.newrelic.com/docs/licenses/license-information/general-usage-licenses/support-plan).
