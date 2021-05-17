@@ -13,18 +13,18 @@ config:
   infraAgentInjection:
     policies:
     - {}
-    customAttributes:
-    - name: computeType
-      defaultValue: serverless
-    - name: fargateProfile
-      # To allow inclusion on non-fargate clusters for testing.
-      defaultValue: unknown
-      fromLabel: eks.amazonaws.com/fargate-profile
     agentConfig:
       image:
         repository: newrelic/infrastructure-k8s
         tag: 2.4.0-unprivileged
         pullPolicy: IfNotPresent
+      customAttributes:
+        - name: computeType
+          defaultValue: serverless
+        - name: fargateProfile
+          # To allow inclusion on non-fargate clusters for testing.
+          defaultValue: unknown
+          fromLabel: eks.amazonaws.com/fargate-profile
       configSelectors:
         - labelSelector:
             matchLabels:

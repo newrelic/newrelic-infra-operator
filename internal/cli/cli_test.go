@@ -16,9 +16,10 @@ import (
 const (
 	testConfig = `
 infraAgentInjection:
-  customAttributes:
-  - name: computeType
-    defaultValue: serverless
+  agentConfig:
+    customAttributes:
+    - name: computeType
+      defaultValue: serverless
 `
 )
 
@@ -40,15 +41,15 @@ func Test_Options(t *testing.T) {
 			expectedName := "computeType"
 			expectedDefaultValue := "serverless"
 
-			if options.InfraAgentInjection.CustomAttributes == nil {
+			if options.InfraAgentInjection.AgentConfig.CustomAttributes == nil {
 				t.Fatalf("expected agent config to not be empty")
 			}
 
-			if l := len(options.InfraAgentInjection.CustomAttributes); l != 1 {
+			if l := len(options.InfraAgentInjection.AgentConfig.CustomAttributes); l != 1 {
 				t.Fatalf("didn't find 1 customAttributes %d", l)
 			}
 
-			ca := options.InfraAgentInjection.CustomAttributes[0]
+			ca := options.InfraAgentInjection.AgentConfig.CustomAttributes[0]
 			if ca.Name != expectedName {
 				t.Fatalf("expected name %q, got %q", expectedName, ca.Name)
 			}
