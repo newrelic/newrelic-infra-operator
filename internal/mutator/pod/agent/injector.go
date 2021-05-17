@@ -30,16 +30,6 @@ const (
 	// InjectedLabel is the name of the label injected in pod.
 	InjectedLabel = "infra-operator.newrelic.com/agent-injected"
 
-	// DefaultImageRepository is the default repository from where infrastructure-agent will be pulled from.
-	DefaultImageRepository = "newrelic/infrastructure-k8s"
-
-	// DefaultImageTag is the default tag which will be pulled for infrastructure-agent image.
-	DefaultImageTag = "2.4.0-unprivileged"
-
-	// DefaultResourcePrefix is the default prefix which will be used for touched side-effect resources
-	// like ClusterRoleBinding or Secrets.
-	DefaultResourcePrefix = "newrelic-infra-operator"
-
 	// ClusterRoleBindingSuffix is the expected suffix on pre-created ClusterRoleBinding. It will be combined
 	// with configured resource prefix.
 	ClusterRoleBindingSuffix = "-infra-agent"
@@ -84,7 +74,7 @@ type injector struct {
 
 // InjectorConfig of the Injector used to pass the required data to build it.
 type InjectorConfig struct {
-	AgentConfig      *InfraAgentConfig `json:"agentConfig"`
+	AgentConfig      InfraAgentConfig  `json:"agentConfig"`
 	ResourcePrefix   string            `json:"resourcePrefix"`
 	License          string            `json:"-"`
 	ClusterName      string            `json:"clusterName"`
@@ -160,8 +150,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("validating configuration: %w", err)
 	}
 
-	config.setDefaults()
-
 	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
 
 	containerToInject := config.container(licenseSecretName)
@@ -215,6 +203,7 @@ func (config *InjectorConfig) buildPolicies() error {
 	return nil
 }
 
+//nolint:cyclop
 func (config InjectorConfig) validate() error {
 	if config.License == "" {
 		return fmt.Errorf("license key is empty")
@@ -222,6 +211,18 @@ func (config InjectorConfig) validate() error {
 
 	if config.ClusterName == "" {
 		return fmt.Errorf("cluster name is empty")
+	}
+
+	if config.AgentConfig.Image.Tag == "" {
+		return fmt.Errorf("config.infraAgentInjection.agentConfig.Image.Tag is empty")
+	}
+
+	if config.AgentConfig.Image.Repository == "" {
+		return fmt.Errorf("config.infraAgentInjection.agentConfig.Image.Repository is empty")
+	}
+
+	if config.ResourcePrefix == "" {
+		return fmt.Errorf("config.infraAgentInjection.ResourcePrefix is empty")
 	}
 
 	customAttributeNames := map[string]struct{}{}
@@ -247,24 +248,6 @@ func (config InjectorConfig) validate() error {
 	}
 
 	return nil
-}
-
-func (config *InjectorConfig) setDefaults() {
-	if config.ResourcePrefix == "" {
-		config.ResourcePrefix = DefaultResourcePrefix
-	}
-
-	if config.AgentConfig == nil {
-		config.AgentConfig = &InfraAgentConfig{}
-	}
-
-	if config.AgentConfig.Image.Repository == "" {
-		config.AgentConfig.Image.Repository = DefaultImageRepository
-	}
-
-	if config.AgentConfig.Image.Tag == "" {
-		config.AgentConfig.Image.Tag = DefaultImageTag
-	}
 }
 
 func (config InjectorConfig) container(licenseSecretName string) corev1.Container {
