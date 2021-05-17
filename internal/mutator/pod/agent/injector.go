@@ -174,8 +174,8 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
 
-	if err := config.buildResourceSelectors(); err != nil {
-		return nil, fmt.Errorf("building resource selectors: %w", err)
+	if err := config.buildConfigSelectors(); err != nil {
+		return nil, fmt.Errorf("building config selectors: %w", err)
 	}
 
 	return &injector{
@@ -279,8 +279,6 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 		},
 	}
 
-	c.Env = append(c.Env, extraEnvVar(config.AgentConfig)...)
-
 	if config.AgentConfig.PodSecurityContext.RunAsUser != 0 {
 		c.SecurityContext.RunAsUser = &config.AgentConfig.PodSecurityContext.RunAsUser
 	}
@@ -317,6 +315,12 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 
 	if resources := i.computeResourcesToApply(pod.Labels); resources != nil {
 		containerToInject.Resources = *resources
+	}
+
+	if envToApply := i.computeEnvVarsToApply(pod.Labels); envToApply != nil {
+		for k, v := range envToApply {
+			containerToInject.Env = append(containerToInject.Env, corev1.EnvVar{Name: k, Value: v})
+		}
 	}
 
 	customAttributes, err := i.config.CustomAttributes.toString(pod.Labels)
@@ -451,23 +455,33 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 }
 
 func (i *injector) computeResourcesToApply(podLabels map[string]string) *corev1.ResourceRequirements {
-	for _, r := range i.config.AgentConfig.ResourcesWithSelectors {
+	for _, r := range i.config.AgentConfig.ConfigSelectors {
 		if r.selector.Matches(labels.Set(podLabels)) {
-			return &r.ResourceRequirements
+			return r.ResourceRequirements
 		}
 	}
 
 	return nil
 }
 
-func (config *InjectorConfig) buildResourceSelectors() error {
-	for i, r := range config.AgentConfig.ResourcesWithSelectors {
+func (i *injector) computeEnvVarsToApply(podLabels map[string]string) map[string]string {
+	for _, r := range i.config.AgentConfig.ConfigSelectors {
+		if r.selector.Matches(labels.Set(podLabels)) {
+			return r.ExtraEnvVars
+		}
+	}
+
+	return nil
+}
+
+func (config *InjectorConfig) buildConfigSelectors() error {
+	for i, r := range config.AgentConfig.ConfigSelectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
 			return fmt.Errorf("creating selector from label selector: %w", err)
 		}
 
-		config.AgentConfig.ResourcesWithSelectors[i].selector = selector
+		config.AgentConfig.ConfigSelectors[i].selector = selector
 	}
 
 	return nil
@@ -534,20 +548,6 @@ func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
 			Value: getAgentPassthroughEnvironment(),
 		},
 	}
-}
-
-func extraEnvVar(s *InfraAgentConfig) []corev1.EnvVar {
-	extraEnv := []corev1.EnvVar{}
-
-	for k, v := range s.ExtraEnvVars {
-		extraEnv = append(extraEnv,
-			corev1.EnvVar{
-				Name:  k,
-				Value: v,
-			})
-	}
-
-	return extraEnv
 }
 
 func getAgentPassthroughEnvironment() string {

@@ -12,10 +12,9 @@ import (
 // InfraAgentConfig holds the user's configuration for the sidecar to be injected.
 type InfraAgentConfig struct {
 	// Here we can map the whole user configuration from helm chart.
-	ExtraEnvVars           map[string]string  `json:"extraEnvVars"`
-	ResourcesWithSelectors []Resource         `json:"resourcesWithSelectors"`
-	Image                  Image              `json:"image"`
-	PodSecurityContext     PodSecurityContext `json:"podSecurityContext"`
+	ConfigSelectors    []ConfigSelector   `json:"configSelectors"`
+	Image              Image              `json:"image"`
+	PodSecurityContext PodSecurityContext `json:"podSecurityContext"`
 }
 
 // Image config.
@@ -31,10 +30,11 @@ type PodSecurityContext struct {
 	RunAsGroup int64 `json:"runAsGroup"`
 }
 
-// Resource config.
-type Resource struct {
-	ResourceRequirements corev1.ResourceRequirements `json:"resourceRequirements"`
-	LabelSelector        metav1.LabelSelector        `json:"labelSelector"`
+// ConfigSelector allows you to set resourceRequirements and extraEnvVars based on labels.
+type ConfigSelector struct {
+	ResourceRequirements *corev1.ResourceRequirements `json:"resourceRequirements"`
+	ExtraEnvVars         map[string]string            `json:"extraEnvVars"`
+	LabelSelector        metav1.LabelSelector         `json:"labelSelector"`
 
 	selector labels.Selector `json:"-"`
 }
