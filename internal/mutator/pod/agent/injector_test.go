@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	testNamespace   = "test-namespace"
-	testLicense     = "test-license"
-	testClusterName = "test-cluster"
+	testNamespace      = "test-namespace"
+	testLicense        = "test-license"
+	testClusterName    = "test-cluster"
+	testResourcePrefix = "test-resource"
 
 	customAttributeFromLabelName  = "fromLabel"
 	customAttributeFromLabel      = "custom-attribute-from-label"
@@ -58,6 +59,9 @@ func Test_Creating_injector(t *testing.T) {
 			},
 			"cluster_name_is_empty": func(c *agent.InjectorConfig) {
 				c.ClusterName = ""
+			},
+			"resource_prefix_is_empty": func(c *agent.InjectorConfig) {
+				c.ResourcePrefix = ""
 			},
 			"clusterName_custom_attribute_is_defined": func(c *agent.InjectorConfig) {
 				c.CustomAttributes = []agent.CustomAttribute{
@@ -128,7 +132,7 @@ func Test_Creating_injector(t *testing.T) {
 				config := getConfig()
 				mutateF(config)
 
-				c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+				c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
 				i, err := config.New(c, c)
 				if err == nil {
@@ -153,7 +157,7 @@ func Test_Creating_injector(t *testing.T) {
 			},
 		}
 
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
 		if _, err := config.New(c, c); err != nil {
 			t.Fatalf("creating injector: %v", err)
@@ -181,7 +185,7 @@ func Test_Mutate(t *testing.T) {
 
 		p := getEmptyPod()
 
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -227,7 +231,7 @@ func Test_Mutate(t *testing.T) {
 				},
 			}
 
-			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
 			i, err := config.New(c, c)
 			if err != nil {
@@ -287,7 +291,7 @@ func Test_Mutate(t *testing.T) {
 			t.Parallel()
 
 			key := client.ObjectKey{
-				Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
+				Name: clusterRoleBindingName(testResourcePrefix),
 			}
 
 			crb := &rbacv1.ClusterRoleBinding{}
@@ -361,7 +365,7 @@ func Test_Mutate(t *testing.T) {
 			p := getEmptyPod()
 			p.Labels["matching-key"] = "matching-value"
 
-			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 			config.AgentConfig.ConfigSelectors = []agent.ConfigSelector{
 				{
@@ -433,7 +437,7 @@ func Test_Mutate(t *testing.T) {
 
 			p := getEmptyPod()
 
-			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 			config.AgentConfig.ConfigSelectors = []agent.ConfigSelector{
 				{
@@ -480,7 +484,7 @@ func Test_Mutate(t *testing.T) {
 		}
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -513,7 +517,7 @@ func Test_Mutate(t *testing.T) {
 			t.Parallel()
 
 			key := client.ObjectKey{
-				Name: clusterRoleBindingName(agent.DefaultResourcePrefix),
+				Name: clusterRoleBindingName(testResourcePrefix),
 			}
 
 			crb := &rbacv1.ClusterRoleBinding{}
@@ -544,7 +548,7 @@ func Test_Mutate(t *testing.T) {
 		p := getEmptyPod()
 		p.Labels = nil
 
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -561,7 +565,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -588,7 +592,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		crb := getCRB(agent.DefaultResourcePrefix)
+		crb := getCRB(testResourcePrefix)
 		crb.Subjects = []rbacv1.Subject{
 			{
 				Name:      "default",
@@ -646,7 +650,7 @@ func Test_Mutate(t *testing.T) {
 	t.Run("does_not_add_the_same_subject_to_ClusterRoleBinding_twice", func(t *testing.T) {
 		t.Parallel()
 
-		crb := getCRB(agent.DefaultResourcePrefix)
+		crb := getCRB(testResourcePrefix)
 		c := fake.NewClientBuilder().WithObjects(crb).Build()
 
 		i, err := getConfig().New(c, c)
@@ -791,7 +795,7 @@ func Test_Mutate(t *testing.T) {
 				}
 
 				objects := testData.extraObjects
-				objects = append(objects, getCRB(agent.DefaultResourcePrefix))
+				objects = append(objects, getCRB(testResourcePrefix))
 
 				c := fake.NewClientBuilder().WithObjects(objects...).Build()
 
@@ -955,7 +959,7 @@ func Test_Mutate(t *testing.T) {
 				}
 
 				objects := testData.extraObjects
-				objects = append(objects, getCRB(agent.DefaultResourcePrefix))
+				objects = append(objects, getCRB(testResourcePrefix))
 
 				c := fake.NewClientBuilder().WithObjects(objects...).Build()
 
@@ -992,7 +996,7 @@ func Test_Mutate(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -1078,7 +1082,7 @@ func Test_Mutate(t *testing.T) {
 			p := getEmptyPod()
 			p.Labels[customAttributeFromLabel] = ""
 
-			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 			config.CustomAttributes = []agent.CustomAttribute{
 				{
@@ -1104,7 +1108,7 @@ func Test_Mutate(t *testing.T) {
 
 			p := getEmptyPod()
 
-			c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
 			config := getConfig()
 			config.Policies = []agent.InjectionPolicy{
@@ -1145,7 +1149,7 @@ func Test_Mutation_hash(t *testing.T) {
 		t.Parallel()
 
 		basePod := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -1223,7 +1227,7 @@ func Test_Mutation_hash(t *testing.T) {
 		t.Parallel()
 
 		p := getEmptyPod()
-		c := fake.NewClientBuilder().WithObjects(getCRB(agent.DefaultResourcePrefix)).Build()
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
 		i, err := config.New(c, c)
@@ -1278,7 +1282,7 @@ func clusterRoleBindingName(prefix string) string {
 }
 
 func secretName() string {
-	return fmt.Sprintf("%s%s", agent.DefaultResourcePrefix, agent.LicenseSecretSuffix)
+	return fmt.Sprintf("%s%s", testResourcePrefix, agent.LicenseSecretSuffix)
 }
 
 func getCRB(prefix string) *rbacv1.ClusterRoleBinding {
@@ -1297,9 +1301,10 @@ func getConfig() *agent.InjectorConfig {
 				Repository: "test-repository",
 			},
 		},
-		License:     testLicense,
-		ClusterName: testClusterName,
-		Policies:    []agent.InjectionPolicy{{}},
+		License:        testLicense,
+		ClusterName:    testClusterName,
+		ResourcePrefix: testResourcePrefix,
+		Policies:       []agent.InjectionPolicy{{}},
 	}
 }
 

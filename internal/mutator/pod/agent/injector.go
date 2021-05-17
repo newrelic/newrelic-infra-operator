@@ -30,10 +30,6 @@ const (
 	// InjectedLabel is the name of the label injected in pod.
 	InjectedLabel = "infra-operator.newrelic.com/agent-injected"
 
-	// DefaultResourcePrefix is the default prefix which will be used for touched side-effect resources
-	// like ClusterRoleBinding or Secrets.
-	DefaultResourcePrefix = "newrelic-infra-operator"
-
 	// ClusterRoleBindingSuffix is the expected suffix on pre-created ClusterRoleBinding. It will be combined
 	// with configured resource prefix.
 	ClusterRoleBindingSuffix = "-infra-agent"
@@ -157,10 +153,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("validating configuration: %w", err)
 	}
 
-	if config.ResourcePrefix == "" {
-		config.ResourcePrefix = DefaultResourcePrefix
-	}
-
 	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
 
 	containerToInject := config.container(licenseSecretName)
@@ -229,6 +221,10 @@ func (config InjectorConfig) validate() error {
 
 	if config.AgentConfig.Image.Repository == "" {
 		return fmt.Errorf("config.infraAgentInjection.agentConfig.Image.Repository is empty")
+	}
+
+	if config.ResourcePrefix == "" {
+		return fmt.Errorf("config.infraAgentInjection.ResourcePrefix is empty")
 	}
 
 	customAttributeNames := map[string]struct{}{}
