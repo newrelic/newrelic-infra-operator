@@ -1243,7 +1243,7 @@ func Test_Mutation_hash(t *testing.T) {
 		for testCaseName, mutateConfigF := range cases {
 			mutateConfigF := mutateConfigF
 
-			t.Run(fmt.Sprintf("%s_changes", testCaseName), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/changes", testCaseName), func(t *testing.T) {
 				t.Parallel()
 
 				p := getEmptyPod()
