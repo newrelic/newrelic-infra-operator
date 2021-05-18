@@ -1223,20 +1223,31 @@ func Test_Mutation_hash(t *testing.T) {
 					t.Fatalf("creating ClusterRoleBinding with custom prefix: %v", err)
 				}
 			},
-			"image_repository": func(c *agent.InjectorConfig) {
+			"image_config": func(c *agent.InjectorConfig) {
 				c.AgentConfig.Image.Repository = "foo"
 			},
-			"image_tag": func(c *agent.InjectorConfig) {
-				c.AgentConfig.Image.Tag = "baz"
-			},
-			"image_pull_policy": func(c *agent.InjectorConfig) {
-				c.AgentConfig.Image.PullPolicy = corev1.PullAlways
-			},
-			"runnable_user": func(c *agent.InjectorConfig) {
+			"pod_security_context": func(c *agent.InjectorConfig) {
 				c.AgentConfig.PodSecurityContext.RunAsUser = 1000
 			},
-			"runnable_group": func(c *agent.InjectorConfig) {
-				c.AgentConfig.PodSecurityContext.RunAsGroup = 1000
+			"matching_config_selector": func(c *agent.InjectorConfig) {
+				c.AgentConfig.ConfigSelectors = []agent.ConfigSelector{
+					{
+						ExtraEnvVars: map[string]string{
+							"foo": "bar",
+						},
+					},
+				}
+			},
+			"cluster_name": func(config *agent.InjectorConfig) {
+				config.ClusterName = "baz"
+			},
+			"custom_attributes_config": func(config *agent.InjectorConfig) {
+				config.AgentConfig.CustomAttributes = []agent.CustomAttribute{
+					{
+						Name:         "far",
+						DefaultValue: "ban",
+					},
+				}
 			},
 		}
 

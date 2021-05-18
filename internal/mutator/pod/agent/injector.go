@@ -64,7 +64,7 @@ type injector struct {
 	clusterRoleBindingName string
 	licenseSecretName      string
 	license                []byte
-	containerHash          string
+	configHash             string
 	client                 client.Client
 
 	// We do not have permissions to list and watch secrets, so we must use uncached
@@ -153,16 +153,25 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 
 	containerToInject := config.container(licenseSecretName)
 
-	containerHash, err := hashContainer(containerToInject)
+	configHash := &configHash{
+		CustomAttributes:   config.AgentConfig.CustomAttributes,
+		ResourcePrefix:     config.ResourcePrefix,
+		ClusterName:        config.ClusterName,
+		Image:              config.AgentConfig.Image,
+		PodSecurityContext: config.AgentConfig.PodSecurityContext,
+		Container:          containerToInject,
+	}
+
+	hash, err := configHash.calculate()
 	if err != nil {
-		return nil, fmt.Errorf("computing hash to add in the label: %w", err)
+		return nil, fmt.Errorf("calculating config hash: %w", err)
 	}
 
 	if err := config.buildPolicies(); err != nil {
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
 
-	if err := config.buildConfigSelectors(); err != nil {
+	if err := config.buildConfigSelectors(containerToInject); err != nil {
 		return nil, fmt.Errorf("building config selectors: %w", err)
 	}
 
@@ -172,9 +181,9 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		license:                []byte(config.License),
 		client:                 client,
 		noCacheClient:          noCacheClient,
-		container:              config.container(licenseSecretName),
-		containerHash:          containerHash,
+		container:              containerToInject,
 		config:                 &config,
+		configHash:             hash,
 	}, nil
 }
 
@@ -294,9 +303,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		pod.Labels = map[string]string{}
 	}
 
-	pod.Labels[InjectedLabel] = i.containerHash
-
-	i.applyAgentConfig(pod.Labels, &containerToInject)
+	pod.Labels[InjectedLabel] = i.applyAgentConfig(pod.Labels, &containerToInject)
 
 	customAttributes, err := i.config.AgentConfig.CustomAttributes.toString(pod.Labels)
 	if err != nil {
@@ -431,7 +438,7 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 	return nil
 }
 
-func (i *injector) applyAgentConfig(podLabels map[string]string, container *corev1.Container) {
+func (i *injector) applyAgentConfig(podLabels map[string]string, container *corev1.Container) string {
 	for _, r := range i.config.AgentConfig.ConfigSelectors {
 		if r.selector.Matches(labels.Set(podLabels)) {
 			if r.ResourceRequirements != nil {
@@ -441,11 +448,26 @@ func (i *injector) applyAgentConfig(podLabels map[string]string, container *core
 			for k, v := range r.ExtraEnvVars {
 				container.Env = append(container.Env, corev1.EnvVar{Name: k, Value: v})
 			}
+
+			return r.hash
 		}
 	}
+
+	return i.configHash
 }
 
-func (config *InjectorConfig) buildConfigSelectors() error {
+type configHash struct {
+	CustomAttributes     CustomAttributes
+	ResourcePrefix       string
+	ClusterName          string
+	Image                Image
+	PodSecurityContext   PodSecurityContext
+	ResourceRequirements *corev1.ResourceRequirements
+	ExtraEnvVars         map[string]string
+	Container            corev1.Container
+}
+
+func (config *InjectorConfig) buildConfigSelectors(container corev1.Container) error {
 	for i, r := range config.AgentConfig.ConfigSelectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
@@ -453,6 +475,24 @@ func (config *InjectorConfig) buildConfigSelectors() error {
 		}
 
 		config.AgentConfig.ConfigSelectors[i].selector = selector
+
+		configHash := &configHash{
+			CustomAttributes:     config.AgentConfig.CustomAttributes,
+			ResourcePrefix:       config.ResourcePrefix,
+			ClusterName:          config.ClusterName,
+			Image:                config.AgentConfig.Image,
+			PodSecurityContext:   config.AgentConfig.PodSecurityContext,
+			ResourceRequirements: r.ResourceRequirements,
+			ExtraEnvVars:         r.ExtraEnvVars,
+			Container:            container,
+		}
+
+		hash, err := configHash.calculate()
+		if err != nil {
+			return fmt.Errorf("calculating config hash: %w", err)
+		}
+
+		config.AgentConfig.ConfigSelectors[i].hash = hash
 	}
 
 	return nil
@@ -533,7 +573,7 @@ func getAgentPassthroughEnvironment() string {
 	return strings.Join(flags, ",")
 }
 
-func hashContainer(c corev1.Container) (string, error) {
+func (c configHash) calculate() (string, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {
 		return "", fmt.Errorf("marshalling input: %w", err)
