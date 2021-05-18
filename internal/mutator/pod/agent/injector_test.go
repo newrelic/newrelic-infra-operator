@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -350,6 +351,60 @@ func Test_Mutate(t *testing.T) {
 
 			if _, ok := secret.Labels[agent.OperatorCreatedLabel]; !ok {
 				t.Fatalf("expected label %q to be set, got: %v", agent.OperatorCreatedLabel, secret.Labels)
+			}
+		})
+
+		t.Run("and_when_RunAsUser_is_configured_to_non_zero_value_it_gets_set_on_injected_container", func(t *testing.T) {
+			t.Parallel()
+
+			p := getEmptyPod()
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
+			config := getConfig()
+
+			expectedUID := pointer.Int64Ptr(1000)
+			config.AgentConfig.PodSecurityContext.RunAsUser = *expectedUID
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err != nil {
+				t.Fatalf("mutating Pod: %v", err)
+			}
+
+			infraContainer := infraContainer(t, p)
+
+			if *infraContainer.SecurityContext.RunAsUser != *expectedUID {
+				t.Fatalf("unexpected RunAsUser value %d, expected %d", infraContainer.SecurityContext.RunAsUser, expectedUID)
+			}
+		})
+
+		t.Run("and_when_RunAsGroup_is_configured_to_non_zero_value_it_gets_set_on_injected_container", func(t *testing.T) {
+			t.Parallel()
+
+			p := getEmptyPod()
+
+			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
+			config := getConfig()
+
+			expectedGID := pointer.Int64Ptr(1000)
+			config.AgentConfig.PodSecurityContext.RunAsGroup = *expectedGID
+
+			i, err := config.New(c, c)
+			if err != nil {
+				t.Fatalf("creating injector: %v", err)
+			}
+
+			if err := i.Mutate(ctx, p, req); err != nil {
+				t.Fatalf("mutating Pod: %v", err)
+			}
+
+			infraContainer := infraContainer(t, p)
+
+			if *infraContainer.SecurityContext.RunAsGroup != *expectedGID {
+				t.Fatalf("unexpected RunAsGroup value %d, expected %d", infraContainer.SecurityContext.RunAsGroup, expectedGID)
 			}
 		})
 
