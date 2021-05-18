@@ -2,21 +2,21 @@
 
 # New Relic Infrastructure Operator for Kubernetes
 
-This operator automates the injection of the New Relic Infrastructure container on Pods matching the configured policies.
+This operator automates the injection of the New Relic Infrastructure sidecar on Pods matching the configured policies.
 
-The newrelic-infra-operator sets up a mutatingWebhookConfiguration, which allows it to modify the pod objects that are
+The `newrelic-infra-operator` sets up a `mutatingWebhookConfiguration`, which allows it to modify the Pod objects that are
 about to be created in the cluster.
 
-On this event, and when the pod being created matches the user’s configured policies the operator will:
+On this event, and when the Pod being created matches the user’s configured policies the operator will:
 
- - Add a sidecar container to the pod, containing the New Relic Kubernetes Integration.
- - If a secret doesn't exist, create a secret in the same Namespace as the pod containing the New Relic license key,
-   which is needed for the integration to report data.
- - Add the pod’s service account to a ClusterRoleBinding previously created by the operator chart, which will grant this
-   sidecar the required permissions to hit the Kubernetes metrics endpoints. 
+ - Add a sidecar container to the Pod, containing the New Relic Kubernetes Integration.
+ - If a secret containing license key doesn't exist, create it in the same Namespace as the pod,
+   since it is needed for the integration to report data.
+ - Add the Pod’s service account to a `ClusterRoleBinding` previously created by the operator chart, which will grant this
+   sidecar the required permissions to access the Kubernetes metrics endpoints. 
    
 
-The ClusterRoleBinding grants the following permissions to the pod being injected:
+The ClusterRoleBinding grants the following permissions to the Pod being injected:
 ```yaml
 - apiGroups: [""]
   resources:
@@ -31,38 +31,47 @@ The ClusterRoleBinding grants the following permissions to the pod being injecte
   verbs: ["get"]
 ```
 
-In order to get the sidecar injected on pods deployed before the operator has been installed, the user needs to manually
-perform a rollout (restart) of the worloads. New Relic has chosen not to do this automatically in order to prevent 
+In order to get the sidecar injected on Pods deployed before the operator has been installed, you need to manually
+perform a rollout (restart) of the workloads. New Relic has chosen not to do this automatically in order to prevent 
 unexpected service disruptions and resource usage spikes.
-
-Here's the injection workflow:
-
-![workflow](screenshots/flow.png)
 
 ## Installation
 
-In order to install the solution you can leverage both the nri-bundle chart or directly newrelic-infra-operator.
+In order to install the solution, you can leverage either the `nri-bundle` chart or install
+directly the `newrelic-infra-operator` one.
 
 ```sh
 helm install newrelic-infra-operator newrelic/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml
 ```
 
-Once deployed, it will automatically inject the sidecar in the pod matching the policy specified.
-Please notice that only in pods created after the deployment of the monitoring solution the sidecar will be injected
-with the configured options.
+Once deployed, it will automatically inject the sidecar in the Pod matching the policy specified.
+Only Pods created after the deployment of the monitoring solution will be injected with the configuration and agent.
 
-For further information regarding the installation refer to the official docs and to the `README.md` and the `values.yaml` of the chart.
+For further information regarding the installation refer to the official docs and to the `README.md` 
+and the `values.yaml` of the [chart](https://github.com/newrelic/helm-charts/tree/master/charts/newrelic-infra-operator).
 
-### Develop, test and Run Locally
+### Develop, Test and Run Locally
 
 For the development process [kind](https://kind.sigs.k8s.io) and [tilt](https://tilt.dev/) tools are used.
 
 * [Install kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 * [Install Tilt](https://docs.tilt.dev/install.html)
 
+#### Building
+
+To build the image:
+```sh
+GOOS=linux make image
+```
+
+To build the binary:
+```sh
+GOOS=linux make build
+```
+
 #### Configure Tilt
 
-If you want to use kind cluster for testing, configure Tilt using the command below:
+If you want to use a `kind` cluster for testing, configure Tilt using the command below:
 
 ```sh
 cat <<EOF > tilt_option.json
@@ -83,8 +92,9 @@ If you want to use existing Kubernetes cluster, create `tilt_option.json` file w
 
 ##### Helm chart location
 
-Current Tilt configuration expects New Relic [helm-charts](https://github.com/newrelic/helm-charts) repository to be
-cloned as a sibling to this repository under a name `helm-charts-newrelic`, to be able to deploy the operator.
+To deploy the operator, the current Tilt configuration expects the New Relic 
+[helm-charts](https://github.com/newrelic/helm-charts) repository to be
+cloned as a sibling to this repository under the name `helm-charts-newrelic`
 This repository is an authoritative source of the deployment manifests for the operator.
 
 If you have `helm-charts` repository cloned into a different path, you can configure Tilt to use it by adding the
@@ -96,7 +106,7 @@ following key-value pair to your local `tilt_option.json` file:
 
 #### Creating kind cluster
 
-If you want to use local kind cluster for testing, create it with command below:
+If you want to use a local `kind` cluster for testing, create it with command below:
 
 ```sh
 make kind-up
@@ -104,7 +114,7 @@ make kind-up
 
 #### Run
 
-If you use kind cluster, simply run:
+If you use a `kind` cluster, simply run:
 
 ```sh
 make tilt-up
@@ -116,19 +126,7 @@ If you deploy on external cluster, run the command below, pointing `TILT_KUBECON
 TILT_KUBECONFIG=~/.kube/config make tilt-down
 ```
 
-Now, when you do changes to the code, operator binary will be locally built, copied to the Pod and executed.
-
-#### Building
-
-To build the image:
-```sh
-GOOS=linux make image
-```
-
-To build the binary:
-```sh
-GOOS=linux make build
-```
+Now, when you make changes to the code, the operator binary will be built locally, copied to the Pod, and then executed.
 
 #### Testing
 
@@ -143,15 +141,16 @@ make test-integration
 make test-e2e
 ```
 
-Notice that in order to run both integration tests and e2e you will need a working environment available with the
-newrelic-infra-operator running. 
-Both installing the newrelic-infra-operator chart or spinning up the environment with `make tilt-up` are possible options.
+Notice that in order to run both integration tests and E2e, you will need a working environment available with the
+`newrelic-infra-operator` running. 
+Both installing the `newrelic-infra-operator` chart or spinning up the environment with `make tilt-up` are possible options.
+
+It is also possible to run such tests against any cluster you have access to by setting the environment variable
+`TEST_KUBECONFIG=/your/kube/config/path`. 
 
 ## Support
 
 Should you need assistance with New Relic products, you are in good hands with several support diagnostic tools and support channels.
-
->New Relic offers NRDiag, [a client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket. Remove this section if it doesn't apply.
 
 If the issue has been confirmed as a bug or is a feature request, file a GitHub issue.
 
@@ -165,7 +164,7 @@ If the issue has been confirmed as a bug or is a feature request, file a GitHub 
 
 ## Contribute
 
-We encourage your contributions to improve newrelic-infra-operator! Keep in mind that when you submit your pull request,
+We encourage your contributions to improve the newrelic-infra-operator! Keep in mind that when you submit your pull request,
 you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per 
 project.
 
@@ -190,5 +189,5 @@ To all contributors, we thank you!  Without your contribution, this project woul
 newrelic-infra-operator is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License.
 
 > The newrelic-infra-operator also uses source code from third-party libraries. 
-> You can find full details on which libraries are used and the terms under which they are licensed in the third-party 
+> You can find full details on which libraries are used, and the terms under which they are licensed in the third-party 
 > notices document.
