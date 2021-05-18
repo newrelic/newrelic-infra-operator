@@ -296,15 +296,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 
 	pod.Labels[InjectedLabel] = i.containerHash
 
-	if resources := i.computeResourcesToApply(pod.Labels); resources != nil {
-		containerToInject.Resources = *resources
-	}
-
-	if envToApply := i.computeEnvVarsToApply(pod.Labels); envToApply != nil {
-		for k, v := range envToApply {
-			containerToInject.Env = append(containerToInject.Env, corev1.EnvVar{Name: k, Value: v})
-		}
-	}
+	i.applyAgentConfig(pod.Labels, &containerToInject)
 
 	customAttributes, err := i.config.AgentConfig.CustomAttributes.toString(pod.Labels)
 	if err != nil {
@@ -439,24 +431,18 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 	return nil
 }
 
-func (i *injector) computeResourcesToApply(podLabels map[string]string) *corev1.ResourceRequirements {
+func (i *injector) applyAgentConfig(podLabels map[string]string, container *corev1.Container) {
 	for _, r := range i.config.AgentConfig.ConfigSelectors {
 		if r.selector.Matches(labels.Set(podLabels)) {
-			return r.ResourceRequirements
+			if r.ResourceRequirements != nil {
+				container.Resources = *r.ResourceRequirements
+			}
+
+			for k, v := range r.ExtraEnvVars {
+				container.Env = append(container.Env, corev1.EnvVar{Name: k, Value: v})
+			}
 		}
 	}
-
-	return nil
-}
-
-func (i *injector) computeEnvVarsToApply(podLabels map[string]string) map[string]string {
-	for _, r := range i.config.AgentConfig.ConfigSelectors {
-		if r.selector.Matches(labels.Set(podLabels)) {
-			return r.ExtraEnvVars
-		}
-	}
-
-	return nil
 }
 
 func (config *InjectorConfig) buildConfigSelectors() error {
