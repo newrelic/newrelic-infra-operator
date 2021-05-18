@@ -172,6 +172,8 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 		return nil, fmt.Errorf("calculating config hash: %w", err)
 	}
 
+	logger.Infof("'%s' label value for Pod with no config selector: '%s'", InjectedLabel, hash)
+
 	if err := config.buildPolicies(); err != nil {
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
@@ -496,6 +498,8 @@ func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, l
 		if err != nil {
 			return fmt.Errorf("calculating config hash: %w", err)
 		}
+
+		logger.Infof("'%s' label value for Pod with config selector %d: '%s'", InjectedLabel, i, hash)
 
 		config.AgentConfig.ConfigSelectors[i].hash = hash
 	}
