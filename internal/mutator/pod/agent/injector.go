@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -139,7 +140,7 @@ type Injector interface {
 }
 
 // New function is the constructor for the injector struct.
-func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector, error) {
+func (config InjectorConfig) New(client, noCacheClient client.Client, logger *logrus.Logger) (Injector, error) {
 	config.AgentConfig.CustomAttributes = append(config.AgentConfig.CustomAttributes, CustomAttribute{
 		Name:         clusterNameAttribute,
 		DefaultValue: config.ClusterName,
@@ -147,6 +148,10 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 
 	if err := config.validate(); err != nil {
 		return nil, fmt.Errorf("validating configuration: %w", err)
+	}
+
+	if logger == nil {
+		return nil, fmt.Errorf("no logger given")
 	}
 
 	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
@@ -171,7 +176,7 @@ func (config InjectorConfig) New(client, noCacheClient client.Client) (Injector,
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
 
-	if err := config.buildConfigSelectors(containerToInject); err != nil {
+	if err := config.buildConfigSelectors(containerToInject, logger); err != nil {
 		return nil, fmt.Errorf("building config selectors: %w", err)
 	}
 
@@ -467,7 +472,7 @@ type configHash struct {
 	Container            corev1.Container
 }
 
-func (config *InjectorConfig) buildConfigSelectors(container corev1.Container) error {
+func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, logger *logrus.Logger) error {
 	for i, r := range config.AgentConfig.ConfigSelectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
