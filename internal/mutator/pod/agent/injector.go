@@ -302,8 +302,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		return nil
 	}
 
-	err = i.canInjectContainer(pod, containerToInject)
-	if err != nil {
+	if err := i.canInjectContainer(pod, containerToInject); err != nil {
 		return fmt.Errorf("checking if agent container can be injected: %w", err)
 	}
 
@@ -361,25 +360,31 @@ func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 }
 
 func (i *injector) canInjectContainer(pod *corev1.Pod, containerToInject corev1.Container) error {
+	volumes := pod.Spec.Volumes
+	duplicateVolumeNames := getDuplicateVolumeNames(append(volumes, toEmptyDirVolumes(containerToInject.VolumeMounts)...))
+
 	// Checking if there is any overlapping with the volumes we want to mount and the volumes already present.
-	duplicateVolumeName := getDuplicateVolumeName(toEmptyDirVolumes(containerToInject.VolumeMounts), pod.Spec.Volumes)
-	if duplicateVolumeName != "" {
-		return fmt.Errorf("one of the volumes of the container to inject is already present: %s", duplicateVolumeName)
+	if len(duplicateVolumeNames) > 0 {
+		return fmt.Errorf("injecting agent would produce duplicate Pod volumes: %s",
+			strings.Join(duplicateVolumeNames, ","))
 	}
 
 	return nil
 }
 
-func getDuplicateVolumeName(v1 []corev1.Volume, v2 []corev1.Volume) string {
-	for _, v := range v1 {
-		for _, v2 := range v2 {
-			if v.Name == v2.Name {
-				return v.Name
-			}
+func getDuplicateVolumeNames(volumes []corev1.Volume) []string {
+	duplicates := []string{}
+	unique := map[string]struct{}{}
+
+	for _, v := range volumes {
+		if _, ok := unique[v.Name]; ok {
+			duplicates = append(duplicates, v.Name)
 		}
+
+		unique[v.Name] = struct{}{}
 	}
 
-	return ""
+	return duplicates
 }
 
 // policyNamespace returns Namespace object suitable for policy matching. If there is at least one policy
