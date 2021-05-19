@@ -302,6 +302,10 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 		return nil
 	}
 
+	if err := i.canInjectContainer(pod, containerToInject); err != nil {
+		return fmt.Errorf("checking if agent container can be injected: %w", err)
+	}
+
 	if err := i.ensureSidecarDependencies(ctx, pod, requestOptions); err != nil {
 		return fmt.Errorf("ensuring sidecar dependencies: %w", err)
 	}
@@ -325,19 +329,7 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	)
 
 	pod.Spec.Containers = append(pod.Spec.Containers, containerToInject)
-
-	volumes := []corev1.Volume{}
-	for _, v := range i.container.VolumeMounts {
-		// TODO We should check if the volume is already present
-		volumes = append(volumes, corev1.Volume{
-			Name: v.Name,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		})
-	}
-
-	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, toEmptyDirVolumes(containerToInject.VolumeMounts)...)
 
 	return nil
 }
@@ -365,6 +357,34 @@ func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 	}
 
 	return matchPolicies(pod, ns, i.config.Policies), nil
+}
+
+func (i *injector) canInjectContainer(pod *corev1.Pod, containerToInject corev1.Container) error {
+	volumes := pod.Spec.Volumes
+	duplicateVolumeNames := getDuplicateVolumeNames(append(volumes, toEmptyDirVolumes(containerToInject.VolumeMounts)...))
+
+	// Checking if there is any overlapping with the volumes we want to mount and the volumes already present.
+	if len(duplicateVolumeNames) > 0 {
+		return fmt.Errorf("injecting agent would produce duplicate Pod volumes: %s",
+			strings.Join(duplicateVolumeNames, ","))
+	}
+
+	return nil
+}
+
+func getDuplicateVolumeNames(volumes []corev1.Volume) []string {
+	duplicates := []string{}
+	unique := map[string]struct{}{}
+
+	for _, v := range volumes {
+		if _, ok := unique[v.Name]; ok {
+			duplicates = append(duplicates, v.Name)
+		}
+
+		unique[v.Name] = struct{}{}
+	}
+
+	return duplicates
 }
 
 // policyNamespace returns Namespace object suitable for policy matching. If there is at least one policy
@@ -510,22 +530,36 @@ func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, l
 func standardVolumes() []corev1.VolumeMount {
 	return []corev1.VolumeMount{
 		{
-			Name:      "tmpfs-data",
+			Name:      "tmpfs-data-injected",
 			MountPath: "/var/db/newrelic-infra/data",
 		},
 		{
-			Name:      "tmpfs-user-data",
+			Name:      "tmpfs-user-data-injected",
 			MountPath: "/var/db/newrelic-infra/user_data",
 		},
 		{
-			Name:      "tmpfs-tmp",
+			Name:      "tmpfs-tmp-injected",
 			MountPath: "/tmp",
 		},
 		{
-			Name:      "tmpfs-cache",
+			Name:      "tmpfs-cache-injected",
 			MountPath: "/var/cache/nr-kubernetes",
 		},
 	}
+}
+
+func toEmptyDirVolumes(volumeMounts []corev1.VolumeMount) []corev1.Volume {
+	volumes := []corev1.Volume{}
+	for _, v := range volumeMounts {
+		volumes = append(volumes, corev1.Volume{
+			Name: v.Name,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+	}
+
+	return volumes
 }
 
 func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
