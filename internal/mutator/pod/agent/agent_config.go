@@ -38,4 +38,5 @@ type ConfigSelector struct {
 	LabelSelector        metav1.LabelSelector         `json:"labelSelector"`
 
 	selector labels.Selector `json:"-"`
+	hash     string          `json:"-"`
 }
