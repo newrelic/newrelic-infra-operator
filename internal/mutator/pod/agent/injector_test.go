@@ -627,6 +627,29 @@ func Test_Mutate(t *testing.T) {
 		}
 	})
 
+	t.Run("fails_if_mutating_pod_has_already_a_volume_of_the_injected_container", func(t *testing.T) {
+		t.Parallel()
+
+		p := getEmptyPod()
+		p.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "tmpfs-user-data-injected",
+			},
+		}
+
+		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
+		config := getConfig()
+
+		i, err := config.New(c, c, logrus.New())
+		if err != nil {
+			t.Fatalf("creating injector: %v", err)
+		}
+
+		if err := i.Mutate(ctx, p, req); err == nil {
+			t.Fatalf("mutating Pod should fail")
+		}
+	})
+
 	t.Run("is_idempotent", func(t *testing.T) {
 		t.Parallel()
 

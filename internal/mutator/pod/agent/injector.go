@@ -293,7 +293,7 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error {
 	containerToInject := i.container
 
-	injectContainer, err := i.shouldInjectContainer(ctx, pod, requestOptions.Namespace)
+	injectContainer, err := i.shouldInjectContainer(ctx, pod, containerToInject, requestOptions.Namespace)
 	if err != nil {
 		return fmt.Errorf("checking if agent container should be injected: %w", err)
 	}
@@ -328,7 +328,6 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 
 	volumes := []corev1.Volume{}
 	for _, v := range i.container.VolumeMounts {
-		// TODO We should check if the volume is already present
 		volumes = append(volumes, corev1.Volume{
 			Name: v.Name,
 			VolumeSource: corev1.VolumeSource{
@@ -342,7 +341,8 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	return nil
 }
 
-func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) (bool, error) {
+func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod,
+	containerToInject corev1.Container, namespace string) (bool, error) {
 	if _, hasInjectedLabel := pod.Labels[InjectedLabel]; hasInjectedLabel {
 		return false, nil
 	}
@@ -364,7 +364,25 @@ func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 		return false, fmt.Errorf("getting Namespace %q for policy matching: %w", namespace, err)
 	}
 
+	// Checking if there is any overlapping with the volumes we want to mount and the volumes already present.
+	duplicate := isVolumeNameDuplicatePresent(containerToInject.VolumeMounts, pod.Spec.Volumes)
+	if duplicate {
+		return false, fmt.Errorf("one the volume of the container to inject is already present")
+	}
+
 	return matchPolicies(pod, ns, i.config.Policies), nil
+}
+
+func isVolumeNameDuplicatePresent(v1 []corev1.VolumeMount, v2 []corev1.Volume) bool {
+	for _, v := range v1 {
+		for _, v2 := range v2 {
+			if v.Name == v2.Name {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // policyNamespace returns Namespace object suitable for policy matching. If there is at least one policy
@@ -510,19 +528,19 @@ func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, l
 func standardVolumes() []corev1.VolumeMount {
 	return []corev1.VolumeMount{
 		{
-			Name:      "tmpfs-data",
+			Name:      "tmpfs-data-injected",
 			MountPath: "/var/db/newrelic-infra/data",
 		},
 		{
-			Name:      "tmpfs-user-data",
+			Name:      "tmpfs-user-data-injected",
 			MountPath: "/var/db/newrelic-infra/user_data",
 		},
 		{
-			Name:      "tmpfs-tmp",
+			Name:      "tmpfs-tmp-injected",
 			MountPath: "/tmp",
 		},
 		{
-			Name:      "tmpfs-cache",
+			Name:      "tmpfs-cache-injected",
 			MountPath: "/var/cache/nr-kubernetes",
 		},
 	}
