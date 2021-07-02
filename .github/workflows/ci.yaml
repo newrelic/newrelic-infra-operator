@@ -91,14 +91,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: newrelic/helm-charts
-          ref: invidian/nri-kubernetes-operator
           path: helm-charts-newrelic
 
-      - name: Install Helm
-        uses: azure/setup-helm@v1
-
       - name: Install kind
-        run: go install sigs.k8s.io/kind@v0.10.0
+        run: go install sigs.k8s.io/kind@v0.11.1
 
       - name: Create k8s Kind Cluster
         run: make -C newrelic-infra-operator kind-up
@@ -113,7 +109,9 @@ jobs:
         env:
           KUBECONFIG: ./newrelic-infra-operator/kubeconfig
         run: |
-          helm install newrelic-infra-operator ./helm-charts-newrelic/charts/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml --set image.repository=localhost:5000/newrelic-infra-operator
+          helm install newrelic-infra-operator ./helm-charts-newrelic/charts/newrelic-infra-operator \
+          --values ./newrelic-infra-operator/values-dev.yaml \
+          --set image.repository=localhost:5000/newrelic-infra-operator
 
       - name: Run e2e tests
         run: make -C newrelic-infra-operator test-e2e
