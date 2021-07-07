@@ -422,6 +422,8 @@ func (i *injector) getNamespace(ctx context.Context, namespace string) (*corev1.
 // matchPolicies checks if given Pod matches any of given policies.
 func matchPolicies(pod *corev1.Pod, ns *corev1.Namespace, policies []InjectionPolicy) bool {
 	for _, policy := range policies {
+		policy := policy
+
 		if matchPolicy(pod, ns, &policy) {
 			return true
 		}

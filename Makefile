@@ -92,7 +92,7 @@ codespell: ## Runs spell checking.
 image: GOOS := $(if $(GOOS),$(GOOS),linux)
 image: GOARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 image: ## Builds operator Docker image.
-	@if [[ $$GOOS != "linux" ]]; then echo "'make image' must be called with GOOS=linux (or empty), found '$$GOOS'"; exit 1; fi
+	@if [ "$(GOOS)" != "linux" ]; then echo "'make image' must be called with GOOS=linux (or empty), found '$(GOOS)'"; exit 1; fi
 	$(MAKE) build GOOS=$(GOOS) GOARCH=$(GOARCH)
 	DOCKER_BUILDKIT=1 $(DOCKER_CMD) build --rm=true -t $(IMAGE_REPO) .
 

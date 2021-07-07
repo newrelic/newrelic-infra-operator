@@ -38,7 +38,6 @@ linters:
     # This linters has been deprecated.
     - interfacer
     - maligned
-    - scopelint
     - golint
   enable:
     - asciicheck
@@ -90,6 +89,7 @@ linters:
     - promlinter
     - revive
     - rowserrcheck
+    - scopelint
     - sqlclosecheck
     - structcheck
     - stylecheck
