@@ -13,7 +13,7 @@ BINARY_NAME ?= newrelic-infra-operator
 LD_FLAGS ?= "-extldflags '-static'"
 
 ifeq (, $(shell which golangci-lint))
-GOLANGCI_LINT ?= go run -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint
+GOLANGCI_LINT ?= go run -modfile=tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint
 else
 GOLANGCI_LINT ?= golangci-lint
 endif
