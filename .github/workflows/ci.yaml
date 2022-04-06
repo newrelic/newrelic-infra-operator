@@ -125,7 +125,7 @@ jobs:
       - name: Check linters are up to date
         run: make check-update-linters
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3.1.0
         with:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
