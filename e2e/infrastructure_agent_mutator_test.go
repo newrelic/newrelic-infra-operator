@@ -1,7 +1,7 @@
 // Copyright 2021 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// +build e2e
+//go:build e2e
 
 // Package e2e_test implements e2e tests for operator, which are not related to any specific package.
 package e2e_test

@@ -1,7 +1,7 @@
 // Copyright 2021 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// +build integration
+//go:build integration
 
 package operator_test
 
@@ -60,7 +60,7 @@ func Test_Running_operator(t *testing.T) {
 
 		ctxWithDeadline := testutil.ContextWithDeadline(t)
 
-		ctx, cancel := context.WithTimeout(ctxWithDeadline, 1*time.Second)
+		ctx, cancel := context.WithTimeout(ctxWithDeadline, 2*time.Second)
 
 		testEnv := &envtest.Environment{}
 
