@@ -31,14 +31,14 @@ jobs:
       # Regardless of whether `key` was found or not, it will be created at the end of the run.
       # With this mechanism, we ensure caches are cycled regularly.
       - name: Go modules cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         with:
           path: ~/.cache/go-build
           key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
@@ -73,14 +73,14 @@ jobs:
           path: newrelic-infra-operator
 
       - name: Go modules cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         with:
           path: ~/.cache/go-build
           key: gobuild-linux-amd64-${{ github.sha }}
@@ -125,7 +125,7 @@ jobs:
       - name: Check linters are up to date
         run: make check-update-linters
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3.1.0
         with:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
