@@ -147,24 +147,24 @@ jobs:
         run: go install sigs.k8s.io/kind@v0.11.1
 
       - name: Create k8s Kind Cluster
-        run: make -C newrelic-infra-operator kind-up
+        run: make kind-up
 
       - name: Run integration tests
-        run: make -C newrelic-infra-operator test-integration
+        run: make test-integration
 
       - name: Build Docker image
-        run: make -C newrelic-infra-operator image-push IMAGE_REPO=localhost:5000/newrelic-infra-operator
+        run: make image-push IMAGE_REPO=localhost:5000/newrelic-infra-operator
 
       - name: Create Helm release
         env:
-          KUBECONFIG: ./newrelic-infra-operator/kubeconfig
+          KUBECONFIG: ./kubeconfig
         run: |
           helm install newrelic-infra-operator ./charts/newrelic-infra-operator \
           --values ./values-dev.yaml \
           --set image.repository=localhost:5000/newrelic-infra-operator
 
       - name: Run e2e tests
-        run: make -C newrelic-infra-operator test-e2e
+        run: make test-e2e
 
   lint:
     name: Lint
