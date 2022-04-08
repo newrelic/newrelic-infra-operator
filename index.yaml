@@ -1,3 +1,27 @@
 apiVersion: v1
-entries: {}
-generated: "2022-04-06T16:25:00.565278+02:00"
+entries:
+  newrelic-infra-operator:
+  - apiVersion: v1
+    appVersion: 0.6.0
+    created: "2022-04-08T09:52:38.427873711Z"
+    description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
+    digest: 58dd7d366eaeb8cc85f6505975cd6e67170d46e584482c8161b668dfddb1b1e3
+    home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
+    icon: https://newrelic.com/assets/newrelic/source/NewRelic-logo-square.svg
+    keywords:
+    - infrastructure
+    - newrelic
+    - monitoring
+    maintainers:
+    - name: douglascamata
+    - name: paologallinaharbur
+    - name: davidbrota
+    - name: gsanchezgavier
+    - name: roobre
+    name: newrelic-infra-operator
+    sources:
+    - https://github.com/newrelic/newrelic-infra-operator
+    urls:
+    - https://github.com/newrelic/newrelic-infra-operator/releases/download/newrelic-infra-operator-0.6.0/newrelic-infra-operator-0.6.0.tgz
+    version: 0.6.0
+generated: "2022-04-08T09:52:38.427878111Z"
