@@ -60,7 +60,7 @@ func Test_Running_operator(t *testing.T) {
 
 		ctxWithDeadline := testutil.ContextWithDeadline(t)
 
-		ctx, cancel := context.WithTimeout(ctxWithDeadline, 2*time.Second)
+		ctx, cancel := context.WithTimeout(ctxWithDeadline, 3*time.Second)
 
 		testEnv := &envtest.Environment{}
 

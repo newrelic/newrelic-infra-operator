@@ -50,7 +50,7 @@ jobs:
           name: newrelic-infra-operator-${{ matrix.goos }}-${{ matrix.goarch }}
           path: newrelic-infra-operator-${{ matrix.goos }}-${{ matrix.goarch }}
 
-  release:
+  docker-release:
     name: Release Docker images
     needs: [ build ]
     runs-on: ubuntu-latest
@@ -66,10 +66,6 @@ jobs:
           DOCKER_IMAGE_TAG=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
           echo "DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG" >> $GITHUB_ENV
 
-      - if: ${{ github.event.release.prerelease }}
-        run: |
-          echo "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}-pre" >> $GITHUB_ENV
-
       - uses: docker/setup-qemu-action@v1
       - uses: docker/setup-buildx-action@v1
 
@@ -81,14 +77,17 @@ jobs:
           username: ${{ secrets.FSI_DOCKERHUB_USERNAME }}
           password: ${{ secrets.FSI_DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push pre-release image
+        if: ${{ github.event.release.prerelease }}
         run: |
+          DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}-pre
           docker buildx build --push --platform=$DOCKER_PLATFORMS \
             -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG \
             .
-      - name: Push :latest image
+      - name: Push release images
         if: ${{ ! github.event.release.prerelease }}
         run: |
           docker buildx build --push --platform=$DOCKER_PLATFORMS \
+            -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG \
             -t $DOCKER_IMAGE_NAME:latest \
             .
