@@ -160,6 +160,7 @@ jobs:
           KUBECONFIG: ./kubeconfig
         run: |
           helm install newrelic-infra-operator ./charts/newrelic-infra-operator \
+          --dependency-update \
           --values ./values-dev.yaml \
           --set image.repository=localhost:5000/newrelic-infra-operator
 
