@@ -6,7 +6,6 @@ appVersion: 0.6.0
 home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
 sources:
   - https://github.com/newrelic/newrelic-infra-operator
-engine: gotpl
 icon: https://newrelic.com/assets/newrelic/source/NewRelic-logo-square.svg
 
 dependencies:

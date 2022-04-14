@@ -2,12 +2,12 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: {{ template "newrelic-infra-operator.fullname" . }}-admission
+  name: {{ include "newrelic.common.naming.fullname" . }}-admission
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    app: {{ template "newrelic-infra-operator.name" . }}-admission
+    app: {{ include "newrelic.common.naming.name" . }}-admission
 {{ include "newrelic-infra-operator.labels" . | indent 4 }}
 spec:
   privileged: false

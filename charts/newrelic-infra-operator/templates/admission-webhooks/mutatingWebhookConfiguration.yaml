@@ -1,7 +1,7 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: {{ template "newrelic-infra-operator.fullname" . }}
+  name: {{ include "newrelic.common.naming.fullname" . }}
 {{- if .Values.certManager.enabled }}
   annotations:
     certmanager.k8s.io/inject-ca-from: {{ printf "%s/%s-root-cert" .Release.Namespace (include "newrelic-infra-operator.fullname" .) | quote }}
@@ -13,7 +13,7 @@ webhooks:
 - name: newrelic-infra-operator.newrelic.com
   clientConfig:
     service:
-      name: {{ template "newrelic-infra-operator.fullname" . }}
+      name: {{ include "newrelic.common.naming.fullname" . }}
       namespace: {{ .Release.Namespace }}
       path: "/mutate-v1-pod"
 {{- if not .Values.certManager.enabled }}
