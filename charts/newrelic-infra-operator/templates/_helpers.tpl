@@ -15,19 +15,6 @@ app.kubernetes.io/name: {{ include "newrelic.common.naming.name" . }}
 {{- end -}}
 
 {{/*
-Common labels
-*/}}
-{{- define "newrelic-infra-operator.labels" -}}
-{{ include "newrelic-infra-operator.appLabel" . }}
-helm.sh/chart: {{ include "newrelic-infra-operator.chart" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end -}}
-
-{{/*
 Create the name of the service account to use
 */}}
 {{- define "newrelic-infra-operator.serviceAccountName" -}}

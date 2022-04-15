@@ -17,7 +17,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "newrelic.common.naming.fullname" . }}
   labels:
-    {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 rules:
   {{/* Allow creating and updating secrets with license key for infra agent. */ -}}
   - apiGroups: [""]
@@ -47,6 +47,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "newrelic.common.naming.fullname" . }}-infra-agent
-  labels: {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+  labels:
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 rules:
   {{- include "newrelic-infra-operator.infra-agent-monitoring-rules" . | nindent 2 }}

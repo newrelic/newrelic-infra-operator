@@ -8,7 +8,7 @@ metadata:
     cert-manager.io/inject-ca-from: {{ printf "%s/%s-root-cert" .Release.Namespace (include "newrelic-infra-operator.fullname" .) | quote }}
 {{- end }}
   labels:
-    {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 webhooks:
 - name: newrelic-infra-operator.newrelic.com
   clientConfig:

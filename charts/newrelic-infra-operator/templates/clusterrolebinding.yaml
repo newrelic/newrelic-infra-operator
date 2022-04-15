@@ -3,7 +3,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "newrelic.common.naming.fullname" . }}
   labels:
-    {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -19,7 +19,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "newrelic.common.naming.fullname" . }}-infra-agent
   labels:
-    {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

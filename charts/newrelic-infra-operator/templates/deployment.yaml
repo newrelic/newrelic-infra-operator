@@ -4,7 +4,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   name: {{ include "newrelic.common.naming.fullname" . }}
   labels:
-    {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicas }}
   selector:
@@ -19,7 +19,7 @@ spec:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "newrelic-infra-operator.labels" . | nindent 8 }}
+        {{- include "newrelic.common.labels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ template "newrelic-infra-operator.serviceAccountName" . }}
       {{- if .Values.podSecurityContext.enabled }}

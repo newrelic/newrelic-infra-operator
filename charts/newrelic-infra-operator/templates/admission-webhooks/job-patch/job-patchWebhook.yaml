@@ -9,14 +9,14 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
     app: {{ include "newrelic.common.naming.name" $ }}-admission-patch
-{{ include "newrelic-infra-operator.labels" $ | indent 4 }}
+{{ include "newrelic.common.labels" $ | indent 4 }}
 spec:
   template:
     metadata:
       name: {{ include "newrelic.common.naming.fullname" . }}-admission-patch
       labels:
         app: {{ include "newrelic.common.naming.name" $ }}-admission-patch
-{{ include "newrelic-infra-operator.labels" $ | indent 8 }}
+{{ include "newrelic.common.labels" $ | indent 8 }}
     spec:
       {{- if .Values.admissionWebhooksPatchJob.image.pullSecrets }}
       imagePullSecrets:
