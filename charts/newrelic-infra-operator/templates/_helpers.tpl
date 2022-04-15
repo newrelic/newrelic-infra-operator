@@ -15,17 +15,6 @@ app.kubernetes.io/name: {{ include "newrelic.common.naming.name" . }}
 {{- end -}}
 
 {{/*
-Create the name of the service account to use
-*/}}
-{{- define "newrelic-infra-operator.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create -}}
-    {{ default (include "newrelic.common.naming.fullname" .) .Values.serviceAccount.name }}
-{{- else -}}
-    {{ default "default" .Values.serviceAccount.name }}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Return the licenseKey
 */}}
 {{- define "newrelic-infra-operator.licenseKey" -}}

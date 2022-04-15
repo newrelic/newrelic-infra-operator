@@ -10,7 +10,7 @@ roleRef:
   name: {{ include "newrelic.common.naming.fullname" . }}
 subjects:
   - kind: ServiceAccount
-    name: {{ template "newrelic-infra-operator.serviceAccountName" . }}
+    name: {{ template "newrelic.common.serviceAccount.name" . }}
     namespace: {{ .Release.Namespace }}
 ---
 {{/* infra-agent is the ClusterRoleBinding to be used by the ServiceAccounts of the injected agents */}}
