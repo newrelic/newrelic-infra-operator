@@ -30,21 +30,6 @@ Return the licenseKey
 {{- end -}}
 
 {{/*
-Return the cluster
-*/}}
-{{- define "newrelic-infra-operator.cluster" -}}
-{{- if .Values.global -}}
-  {{- if .Values.global.cluster -}}
-      {{- .Values.global.cluster -}}
-  {{- else -}}
-      {{- .Values.cluster | required "cluster name must be set" -}}
-  {{- end -}}
-{{- else -}}
-  {{- .Values.cluster | required "cluster name must be set" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Renders a value that contains template.
 Usage:
 {{ include "tplvalues.render" ( dict "value" .Values.path.to.the.Value "context" $) }}

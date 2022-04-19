@@ -38,7 +38,7 @@ spec:
         imagePullPolicy: "{{ .Values.image.pullPolicy }}"
         env:
         - name: CLUSTER_NAME
-          value: {{ include "newrelic-infra-operator.cluster" . }}
+          value: {{ include "newrelic.common.cluster" . }}
         - name: NRIA_LICENSE_KEY
           valueFrom:
             secretKeyRef:
