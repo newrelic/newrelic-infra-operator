@@ -20,11 +20,11 @@ spec:
     spec:
       {{- if .Values.admissionWebhooksPatchJob.image.pullSecrets }}
       imagePullSecrets:
-{{ toYaml .Values.admissionWebhooksPatchJob.image.pullSecrets | indent 8 }}
+        {{- include "newrelic.common.images.renderPullSecrets" ( dict "pullSecrets" ( list .Values.admissionWebhooksPatchJob.image.pullSecrets ) "context" .) | nindent 8 }}
       {{- end }}
       containers:
         - name: patch
-          image: {{ .Values.admissionWebhooksPatchJob.image.repository }}:{{ .Values.admissionWebhooksPatchJob.image.tag }}
+          image: {{ include "newrelic.common.images.image" ( dict "imageRoot" .Values.admissionWebhooksPatchJob.image "context" .) }}
           imagePullPolicy: {{ .Values.admissionWebhooksPatchJob.image.pullPolicy }}
           args:
             - patch

@@ -30,11 +30,11 @@ spec:
       {{- end }}
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
-        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+        {{- include "newrelic.common.images.renderPullSecrets" ( dict "pullSecrets" ( list .Values.image.pullSecrets ) "context" .) | nindent 8 }}
       {{- end }}
       containers:
       - name: {{ include "newrelic.common.naming.name" . }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: {{ include "newrelic.common.images.image" ( dict "imageRoot" .Values.image "context" .) }}
         imagePullPolicy: "{{ .Values.image.pullPolicy }}"
         env:
         - name: CLUSTER_NAME
