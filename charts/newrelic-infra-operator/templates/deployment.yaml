@@ -76,13 +76,13 @@ spec:
       {{- if $.Values.priorityClassName }}
       priorityClassName: {{ $.Values.priorityClassName }}
       {{- end }}
-      {{- if $.Values.nodeSelector }}
+      {{- with include "newrelic.common.nodeSelector" . }}
       nodeSelector:
-        {{- toYaml $.Values.nodeSelector | nindent 8 }}
+        {{- . | nindent 8 -}}
       {{- end }}
       {{- with include "newrelic.common.tolerations" . }}
       tolerations:
-      {{- . | nindent 8 -}}
+        {{- . | nindent 8 -}}
       {{- end }}
       {{- with include "newrelic.common.affinity" . }}
       affinity:
