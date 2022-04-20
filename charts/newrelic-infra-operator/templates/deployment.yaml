@@ -73,8 +73,8 @@ spec:
       - name: tls-key-cert-pair
         secret:
           secretName: {{ include "newrelic.common.naming.fullname" . }}-admission
-      {{- if $.Values.priorityClassName }}
-      priorityClassName: {{ $.Values.priorityClassName }}
+      {{- with include "newrelic.common.priorityClassName" . }}
+      priorityClassName: {{ . }}
       {{- end }}
       {{- with include "newrelic.common.nodeSelector" . }}
       nodeSelector:
