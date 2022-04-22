@@ -9,7 +9,7 @@ spec:
   replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      {{- include "newrelic-infra-operator.appLabel" . | nindent 6 }}
+      {{- include "newrelic.common.labels.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:

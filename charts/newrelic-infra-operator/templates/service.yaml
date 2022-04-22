@@ -10,4 +10,4 @@ spec:
   - port: 443
     targetPort: 9443
   selector:
-    {{- include "newrelic-infra-operator.appLabel" . | nindent 4 }}
+    {{- include "newrelic.common.labels.selectorLabels" . | nindent 4 }}

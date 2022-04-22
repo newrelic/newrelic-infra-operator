@@ -8,13 +8,6 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
-Common app label
-*/}}
-{{- define "newrelic-infra-operator.appLabel" -}}
-app.kubernetes.io/name: {{ include "newrelic.common.naming.name" . }}
-{{- end -}}
-
-{{/*
 Return the licenseKey
 */}}
 {{- define "newrelic-infra-operator.licenseKey" -}}
