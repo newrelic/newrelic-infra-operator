@@ -6,7 +6,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ include "newrelic.common.naming.fullname" . }}-self-signed-issuer
+  name: {{ include "newrelic-infra-operator.fullname.self-signed-issuer" . }}
 spec:
   selfSigned: {}
 ---
@@ -15,12 +15,12 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ include "newrelic.common.naming.fullname" . }}-root-cert
+  name: {{ include "newrelic-infra-operator.fullname.root-cert" . }}
 spec:
-  secretName: {{ include "newrelic.common.naming.fullname" . }}-root-cert
+  secretName: {{ include "newrelic-infra-operator.fullname.root-cert" . }}
   duration: 43800h # 5y
   issuerRef:
-    name: {{ include "newrelic.common.naming.fullname" . }}-self-signed-issuer
+    name: {{ include "newrelic-infra-operator.fullname.self-signed-issuer" . }}
   commonName: "ca.webhook.nri"
   isCA: true
 ---
@@ -29,22 +29,22 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ include "newrelic.common.naming.fullname" . }}-root-issuer
+  name: {{ include "newrelic-infra-operator.fullname.root-issuer" . }}
 spec:
   ca:
-    secretName: {{ include "newrelic.common.naming.fullname" . }}-root-cert
+    secretName: {{ include "newrelic-infra-operator.fullname.root-cert" . }}
 ---
 # Finally, generate a serving certificate for the webhook to use
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ include "newrelic.common.naming.fullname" . }}-webhook-cert
+  name: {{ include "newrelic-infra-operator.fullname.webhook-cert" . }}
 spec:
-  secretName: {{ include "newrelic.common.naming.fullname" . }}-admission
+  secretName: {{ include "newrelic-infra-operator.fullname.admission" . }}
   duration: 8760h # 1y
   issuerRef:
-    name: {{ include "newrelic.common.naming.fullname" . }}-root-issuer
+    name: {{ include "newrelic-infra-operator.fullname.root-issuer" . }}
   dnsNames:
   - {{ include "newrelic.common.naming.fullname" . }}
   - {{ include "newrelic.common.naming.fullname" . }}.{{ .Release.Namespace }}

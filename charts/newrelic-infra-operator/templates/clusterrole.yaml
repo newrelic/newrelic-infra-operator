@@ -24,7 +24,7 @@ rules:
     resources:
       - "secrets"
     verbs: ["get", "update", "patch"]
-    resourceNames: [{{ include "newrelic.common.naming.fullname" . }}-config]
+    resourceNames: [{{ include "newrelic-infra-operator.fullname.config" . }}]
   {{/* resourceNames used above do not support "create" verb. */ -}}
   - apiGroups: [""]
     resources:
@@ -38,7 +38,7 @@ rules:
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterrolebindings"]
     verbs: ["update"]
-    resourceNames: [{{ include "newrelic.common.naming.fullname" . }}-infra-agent]
+    resourceNames: [{{ include "newrelic-infra-operator.fullname.infra-agent" . }}]
   {{- /* Controller must have permissions it will grant to other ServiceAccounts. */ -}}
   {{- include "newrelic-infra-operator.infra-agent-monitoring-rules" . | nindent 2 }}
 ---
@@ -46,7 +46,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "newrelic.common.naming.fullname" . }}-infra-agent
+  name: {{ include "newrelic-infra-operator.fullname.infra-agent" . }}
   labels:
     {{- include "newrelic.common.labels" . | nindent 4 }}
 rules:

@@ -3,20 +3,20 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ include "newrelic.common.naming.fullname" . }}-admission-patch
+  name: {{ include "newrelic-infra-operator.fullname.admission-patch" . }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    app: {{ include "newrelic.common.naming.name" $ }}-admission-patch
-{{ include "newrelic.common.labels" $ | indent 4 }}
+    app: {{ include "newrelic-infra-operator.name.admission-patch" . }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 spec:
   template:
     metadata:
-      name: {{ include "newrelic.common.naming.fullname" . }}-admission-patch
+      name: {{ include "newrelic-infra-operator.fullname.admission-patch" . }}
       labels:
-        app: {{ include "newrelic.common.naming.name" $ }}-admission-patch
-{{ include "newrelic.common.labels" $ | indent 8 }}
+        app: {{ include "newrelic-infra-operator.name.admission-patch" . }}
+        {{- include "newrelic.common.labels" . | nindent 8 }}
     spec:
       {{- if .Values.admissionWebhooksPatchJob.image.pullSecrets }}
       imagePullSecrets:
@@ -30,7 +30,7 @@ spec:
             - patch
             - --webhook-name={{ include "newrelic.common.naming.fullname" . }}
             - --namespace={{ .Release.Namespace }}
-            - --secret-name={{ include "newrelic.common.naming.fullname" . }}-admission
+            - --secret-name={{ include "newrelic-infra-operator.fullname.admission" . }}
             - --patch-failure-policy=Ignore
             - --patch-validating=false
           {{- if .Values.admissionWebhooksPatchJob.image.volumeMounts }}
@@ -42,7 +42,7 @@ spec:
       {{- include "tplvalues.render" ( dict "value" .Values.admissionWebhooksPatchJob.image.volumes "context" $ ) | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
-      serviceAccountName: {{ include "newrelic.common.naming.fullname" . }}-admission
+      serviceAccountName: {{ include "newrelic-infra-operator.fullname.admission" . }}
       securityContext:
         runAsGroup: 2000
         runAsNonRoot: true
