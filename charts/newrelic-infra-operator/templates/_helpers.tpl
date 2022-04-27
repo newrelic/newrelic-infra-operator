@@ -1,28 +1,6 @@
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "newrelic-infra-operator.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
-Return the licenseKey
-*/}}
-{{- define "newrelic-infra-operator.licenseKey" -}}
-{{- if .Values.global}}
-  {{- if .Values.global.licenseKey }}
-      {{- .Values.global.licenseKey -}}
-  {{- else -}}
-      {{- .Values.licenseKey | default "" -}}
-  {{- end -}}
-{{- else -}}
-    {{- .Values.licenseKey | default "" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Renders a value that contains template.
 Usage:
 {{ include "tplvalues.render" ( dict "value" .Values.path.to.the.Value "context" $) }}
@@ -38,7 +16,6 @@ Usage:
 {{- /*
 Naming helpers
 */ -}}
-
 {{- define "newrelic-infra-operator.name.admission" -}}
 {{ include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.name" .) "suffix" "admission") }}
 {{- end -}}
@@ -89,35 +66,6 @@ Naming helpers
 
 {{- define "newrelic-infra-operator.fullname.license" -}}
 {{ include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.fullname" .) "suffix" "license") }}
-{{- end -}}
-
-{{/*
-Return the customSecretName
-*/}}
-{{- define "newrelic-infra-operator.customSecretName" -}}
-{{- if .Values.global }}
-  {{- if .Values.global.customSecretName }}
-      {{- .Values.global.customSecretName -}}
-  {{- else -}}
-      {{- .Values.customSecretName | default "" -}}
-  {{- end -}}
-{{- else -}}
-    {{- .Values.customSecretName | default "" -}}
-{{- end -}}
-{{- end -}}
-{{/*
-Return the customSecretLicenseKey
-*/}}
-{{- define "newrelic-infra-operator.customSecretLicenseKey" -}}
-{{- if .Values.global }}
-  {{- if .Values.global.customSecretLicenseKey }}
-      {{- .Values.global.customSecretLicenseKey -}}
-  {{- else -}}
-      {{- .Values.customSecretLicenseKey | default "" -}}
-  {{- end -}}
-{{- else -}}
-    {{- .Values.customSecretLicenseKey | default "" -}}
-{{- end -}}
 {{- end -}}
 
 {{/*

@@ -42,12 +42,12 @@ spec:
         - name: NRIA_LICENSE_KEY
           valueFrom:
             secretKeyRef:
-              {{- if (include "newrelic-infra-operator.licenseKey" .) }}
+              {{- if (include "newrelic.common.license._licenseKey" .) }}
               name: {{ include "newrelic-infra-operator.fullname.license" . }}
               key: license
-              {{- else if include "newrelic-infra-operator.customSecretName" . }}
-              name: {{ include "newrelic-infra-operator.customSecretName" . }}
-              key: {{ include "newrelic-infra-operator.customSecretLicenseKey" . }}
+              {{- else if include "newrelic.common.license.secretName" . }}
+              name: {{ include "newrelic.common.license.secretName" . }}
+              key: {{ include "newrelic.common.license.secretKeyName" . }}
               {{- else }}
               {{- "" | required "Cannot find License Key, either licenseKey or customSecretName must be defined" }}
               {{- end }}
