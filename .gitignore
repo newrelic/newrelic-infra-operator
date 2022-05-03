@@ -5,3 +5,8 @@
 /newrelic-infra-operator-*
 /kubeconfig
 /vendor
+
+# Chart dependencies
+**/charts/*
+
+/.idea/*

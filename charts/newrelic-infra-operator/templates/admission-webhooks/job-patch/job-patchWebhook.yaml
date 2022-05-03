@@ -3,34 +3,34 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ template "newrelic-infra-operator.fullname" . }}-admission-patch
+  name: {{ include "newrelic-infra-operator.fullname.admission-patch" . }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    app: {{ template "newrelic-infra-operator.name" $ }}-admission-patch
-{{ include "newrelic-infra-operator.labels" $ | indent 4 }}
+    app: {{ include "newrelic-infra-operator.name.admission-patch" . }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 spec:
   template:
     metadata:
-      name: {{ template "newrelic-infra-operator.fullname" . }}-admission-patch
+      name: {{ include "newrelic-infra-operator.fullname.admission-patch" . }}
       labels:
-        app: {{ template "newrelic-infra-operator.name" $ }}-admission-patch
-{{ include "newrelic-infra-operator.labels" $ | indent 8 }}
+        app: {{ include "newrelic-infra-operator.name.admission-patch" . }}
+        {{- include "newrelic.common.labels" . | nindent 8 }}
     spec:
       {{- if .Values.admissionWebhooksPatchJob.image.pullSecrets }}
       imagePullSecrets:
-{{ toYaml .Values.admissionWebhooksPatchJob.image.pullSecrets | indent 8 }}
+        {{- include "newrelic.common.images.renderPullSecrets" ( dict "pullSecrets" ( list .Values.admissionWebhooksPatchJob.image.pullSecrets ) "context" .) | nindent 8 }}
       {{- end }}
       containers:
         - name: patch
-          image: {{ .Values.admissionWebhooksPatchJob.image.repository }}:{{ .Values.admissionWebhooksPatchJob.image.tag }}
+          image: {{ include "newrelic.common.images.image" ( dict "imageRoot" .Values.admissionWebhooksPatchJob.image "context" .) }}
           imagePullPolicy: {{ .Values.admissionWebhooksPatchJob.image.pullPolicy }}
           args:
             - patch
-            - --webhook-name={{ template "newrelic-infra-operator.fullname" . }}
+            - --webhook-name={{ include "newrelic.common.naming.fullname" . }}
             - --namespace={{ .Release.Namespace }}
-            - --secret-name={{ template "newrelic-infra-operator.fullname" . }}-admission
+            - --secret-name={{ include "newrelic-infra-operator.fullname.admission" . }}
             - --patch-failure-policy=Ignore
             - --patch-validating=false
           {{- if .Values.admissionWebhooksPatchJob.image.volumeMounts }}
@@ -42,13 +42,13 @@ spec:
       {{- include "tplvalues.render" ( dict "value" .Values.admissionWebhooksPatchJob.image.volumes "context" $ ) | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
-      serviceAccountName: {{ template "newrelic-infra-operator.fullname" . }}-admission
+      serviceAccountName: {{ include "newrelic-infra-operator.fullname.admission" . }}
       securityContext:
         runAsGroup: 2000
         runAsNonRoot: true
         runAsUser: 2000
-      {{- if .Values.tolerations }}
+      {{- with include "newrelic.common.tolerations" . }}
       tolerations:
-        {{- toYaml .Values.tolerations | nindent 8 }}
+        {{- . | nindent 8 -}}
       {{- end }}
 {{- end }}

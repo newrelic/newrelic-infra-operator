@@ -1,19 +1,36 @@
-apiVersion: v1
+apiVersion: v2
 description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
 name: newrelic-infra-operator
-version: 0.6.0
+version: 1.0.0
 appVersion: 0.6.0
 home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
 sources:
   - https://github.com/newrelic/newrelic-infra-operator
-engine: gotpl
-icon: https://newrelic.com/assets/newrelic/source/NewRelic-logo-square.svg
+icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_vertical.svg
+
+dependencies:
+  - name: common-library
+    version: 1.0.2
+    repository: "https://helm-charts.newrelic.com"
+
 maintainers:
-  - name: douglascamata
-  - name: paologallinaharbur
-  - name: davidbrota
+  - name: alvarocabanas
+    url: https://github.com/alvarocabanas
+  - name: carlossscastro
+    url: https://github.com/carlossscastro
   - name: gsanchezgavier
+    url: https://github.com/gsanchezgavier
+  - name: kang-makes
+    url: https://github.com/kang-makes
+  - name: marcsanmi
+    url: https://github.com/marcsanmi
+  - name: paologallinaharbur
+    url: https://github.com/paologallinaharbur
   - name: roobre
+    url: https://github.com/roobre
+  - name: sigilioso
+    url: https://github.com/sigilioso
+
 keywords:
   - infrastructure
   - newrelic

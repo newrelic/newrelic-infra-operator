@@ -2,14 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ template "newrelic-infra-operator.fullname" . }}
+  name: {{ include "newrelic.common.naming.fullname" . }}
   labels:
-    {{- include "newrelic-infra-operator.labels" . | nindent 4 }}
+    {{- include "newrelic.common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      {{- include "newrelic-infra-operator.appLabel" . | nindent 6 }}
+      {{- include "newrelic.common.labels.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -19,9 +19,9 @@ spec:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "newrelic-infra-operator.labels" . | nindent 8 }}
+        {{- include "newrelic.common.labels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ template "newrelic-infra-operator.serviceAccountName" . }}
+      serviceAccountName: {{ template "newrelic.common.serviceAccount.name" . }}
       {{- if .Values.podSecurityContext.enabled }}
       securityContext:
         runAsUser: {{ .Values.podSecurityContext.runAsUser }}
@@ -30,27 +30,20 @@ spec:
       {{- end }}
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
-        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+        {{- include "newrelic.common.images.renderPullSecrets" ( dict "pullSecrets" ( list .Values.image.pullSecrets ) "context" .) | nindent 8 }}
       {{- end }}
       containers:
-      - name: {{ template "newrelic-infra-operator.name" . }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+      - name: {{ include "newrelic.common.naming.name" . }}
+        image: {{ include "newrelic.common.images.image" ( dict "imageRoot" .Values.image "context" .) }}
         imagePullPolicy: "{{ .Values.image.pullPolicy }}"
         env:
         - name: CLUSTER_NAME
-          value: {{ include "newrelic-infra-operator.cluster" . }}
+          value: {{ include "newrelic.common.cluster" . }}
         - name: NRIA_LICENSE_KEY
           valueFrom:
             secretKeyRef:
-              {{- if (include "newrelic-infra-operator.licenseKey" .) }}
-              name: {{ template "newrelic-infra-operator.fullname" . }}-license
-              key: license
-              {{- else if include "newrelic-infra-operator.customSecretName" . }}
-              name: {{ include "newrelic-infra-operator.customSecretName" . }}
-              key: {{ include "newrelic-infra-operator.customSecretLicenseKey" . }}
-              {{- else }}
-              {{- "" | required "Cannot find License Key, either licenseKey or customSecretName must be defined" }}
-              {{- end }}
+              name: {{ include "newrelic.common.license.secretName" . }}
+              key: {{ include "newrelic.common.license.secretKeyName" . }}
         volumeMounts:
         - name: config
           mountPath: /etc/newrelic/newrelic-infra-operator/
@@ -69,22 +62,22 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: {{ template "newrelic-infra-operator.fullname" . }}-config
+          name: {{ include "newrelic-infra-operator.fullname.config" . }}
       - name: tls-key-cert-pair
         secret:
-          secretName: {{ template "newrelic-infra-operator.fullname" . }}-admission
-      {{- if $.Values.priorityClassName }}
-      priorityClassName: {{ $.Values.priorityClassName }}
+          secretName: {{ include "newrelic-infra-operator.fullname.admission" . }}
+      {{- with include "newrelic.common.priorityClassName" . }}
+      priorityClassName: {{ . }}
       {{- end }}
-      {{- if $.Values.nodeSelector }}
+      {{- with include "newrelic.common.nodeSelector" . }}
       nodeSelector:
-        {{- toYaml $.Values.nodeSelector | nindent 8 }}
+        {{- . | nindent 8 -}}
       {{- end }}
-      {{- if .Values.tolerations }}
+      {{- with include "newrelic.common.tolerations" . }}
       tolerations:
-        {{- toYaml .Values.tolerations | nindent 8 }}
+        {{- . | nindent 8 -}}
       {{- end }}
-      {{- if .Values.affinity }}
+      {{- with include "newrelic.common.affinity" . }}
       affinity:
-        {{- toYaml .Values.affinity | nindent 8 }}
+        {{- . | nindent 8 -}}
       {{- end }}
