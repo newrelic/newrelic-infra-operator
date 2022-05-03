@@ -64,10 +64,6 @@ Naming helpers
 {{ include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.fullname" .) "suffix" "config") }}
 {{- end -}}
 
-{{- define "newrelic-infra-operator.fullname.license" -}}
-{{ include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.fullname" .) "suffix" "license") }}
-{{- end -}}
-
 {{/*
 Returns fargate
 */}}
