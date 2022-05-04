@@ -1,17 +1,3 @@
-{{- define "newrelic-infra-operator.infra-agent-monitoring-rules" -}}
-- apiGroups: [""]
-  resources:
-    - "nodes"
-    - "nodes/metrics"
-    - "nodes/stats"
-    - "nodes/proxy"
-    - "pods"
-    - "services"
-  verbs: ["get", "list"]
-- nonResourceURLs: ["/metrics"]
-  verbs: ["get"]
-{{- end -}}
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:

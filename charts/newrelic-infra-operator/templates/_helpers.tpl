@@ -65,6 +65,23 @@ Naming helpers
 {{- end -}}
 
 {{/*
+Returns Infra-agent rules
+*/}}
+{{- define "newrelic-infra-operator.infra-agent-monitoring-rules" -}}
+- apiGroups: [""]
+  resources:
+    - "nodes"
+    - "nodes/metrics"
+    - "nodes/stats"
+    - "nodes/proxy"
+    - "pods"
+    - "services"
+  verbs: ["get", "list"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+{{- end -}}
+
+{{/*
 Returns fargate
 */}}
 {{- define "newrelic.fargate" -}}
