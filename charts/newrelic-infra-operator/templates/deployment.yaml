@@ -81,8 +81,11 @@ spec:
       affinity:
         {{- . | nindent 8 -}}
       {{- end }}
-      hostNetwork: {{ include "newrelic.common.hostNetwork.value" . }}
       {{- with include "newrelic.common.dnsConfig" . }}
       dnsConfig:
         {{- . | nindent 8 }}
+      {{- end }}
+      hostNetwork: {{ include "newrelic.common.hostNetwork.value" . }}
+      {{- if include "newrelic.common.hostNetwork" . }}
+      dnsPolicy: ClusterFirstWithHostNet
       {{- end }}
