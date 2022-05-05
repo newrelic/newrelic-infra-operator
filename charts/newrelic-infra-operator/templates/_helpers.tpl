@@ -65,9 +65,26 @@ Naming helpers
 {{- end -}}
 
 {{/*
+Returns Infra-agent rules
+*/}}
+{{- define "newrelic-infra-operator.infra-agent-monitoring-rules" -}}
+- apiGroups: [""]
+  resources:
+    - "nodes"
+    - "nodes/metrics"
+    - "nodes/stats"
+    - "nodes/proxy"
+    - "pods"
+    - "services"
+  verbs: ["get", "list"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+{{- end -}}
+
+{{/*
 Returns fargate
 */}}
-{{- define "newrelic.fargate" -}}
+{{- define "newrelic-infra-operator.fargate" -}}
 {{- if .Values.global }}
   {{- if .Values.global.fargate }}
     {{- .Values.global.fargate -}}
@@ -76,3 +93,35 @@ Returns fargate
   {{- .Values.fargate -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Returns fargate configuration for configmap data
+*/}}
+{{- define "newrelic-infra-operator.fargate-config" -}}
+infraAgentInjection:
+  resourcePrefix: {{ include "newrelic.common.naming.fullname" . }}
+{{- if include "newrelic-infra-operator.fargate" . }}
+{{- if not .Values.config.infraAgentInjection.policies }}
+  policies:
+    - podSelector:
+        matchExpressions:
+          - key: "eks.amazonaws.com/fargate-profile"
+            operator: Exists
+{{- end }}
+  agentConfig:
+{{- if not .Values.config.infraAgentInjection.agentConfig.customAttributes }}
+    customAttributes:
+      - name: computeType
+        defaultValue: serverless
+      - name: fargateProfile
+        fromLabel: eks.amazonaws.com/fargate-profile
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns configmap data
+*/}}
+{{- define "newrelic-infra-operator.configmap.data" -}}
+{{ toYaml (merge (include "newrelic-infra-operator.fargate-config" . | fromYaml) .Values.config) }}
+{{- end }}

@@ -25,7 +25,7 @@ spec:
     - 'secret'
     - 'downwardAPI'
     - 'persistentVolumeClaim'
-  hostNetwork: false
+  hostNetwork: {{ include "newrelic.common.hostNetwork.value" . }}
   hostIPC: false
   hostPID: false
   runAsUser:

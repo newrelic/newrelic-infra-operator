@@ -1,7 +1,7 @@
 apiVersion: v2
 description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
 name: newrelic-infra-operator
-version: 1.0.0
+version: 1.0.1
 appVersion: 0.6.0
 home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
 sources:
@@ -10,7 +10,7 @@ icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_ve
 
 dependencies:
   - name: common-library
-    version: 1.0.2
+    version: 1.0.4
     repository: "https://helm-charts.newrelic.com"
 
 maintainers:
