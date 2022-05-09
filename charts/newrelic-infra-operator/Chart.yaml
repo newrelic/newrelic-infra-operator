@@ -1,12 +1,14 @@
 apiVersion: v2
-description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
 name: newrelic-infra-operator
-version: 1.0.1
-appVersion: 0.6.0
+description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
+icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_vertical.svg
 home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
 sources:
   - https://github.com/newrelic/newrelic-infra-operator
-icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_vertical.svg
+  - https://github.com/newrelic/newrelic-infra-operator/tree/master/charts/newrelic-infra-operator
+
+version: 1.0.2
+appVersion: 0.6.0
 
 dependencies:
   - name: common-library
@@ -18,6 +20,8 @@ maintainers:
     url: https://github.com/alvarocabanas
   - name: carlossscastro
     url: https://github.com/carlossscastro
+  - name: sigilioso
+    url: https://github.com/sigilioso
   - name: gsanchezgavier
     url: https://github.com/gsanchezgavier
   - name: kang-makes
@@ -28,8 +32,6 @@ maintainers:
     url: https://github.com/paologallinaharbur
   - name: roobre
     url: https://github.com/roobre
-  - name: sigilioso
-    url: https://github.com/sigilioso
 
 keywords:
   - infrastructure
