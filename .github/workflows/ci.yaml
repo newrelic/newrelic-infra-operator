@@ -44,7 +44,7 @@ jobs:
             fi
           done
       - name: Setup Minikube
-        uses: manusa/actions-setup-minikube@v2.4.3
+        uses: manusa/actions-setup-minikube@v2.6.0
         if: steps.list-changed.outputs.changed == 'true'
         with:
           minikube version: v1.20.0
@@ -91,14 +91,14 @@ jobs:
       # Regardless of whether `key` was found or not, it will be created at the end of the run.
       # With this mechanism, we ensure caches are cycled regularly.
       - name: Go modules cache
-        uses: actions/cache@v3.0.1
+        uses: actions/cache@v3.0.2
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v3.0.1
+        uses: actions/cache@v3.0.2
         with:
           path: ~/.cache/go-build
           key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
@@ -129,14 +129,14 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
       - name: Go modules cache
-        uses: actions/cache@v3.0.1
+        uses: actions/cache@v3.0.2
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v3.0.1
+        uses: actions/cache@v3.0.2
         with:
           path: ~/.cache/go-build
           key: gobuild-linux-amd64-${{ github.sha }}
