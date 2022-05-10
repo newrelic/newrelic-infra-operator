@@ -37,18 +37,19 @@ unexpected service disruptions and resource usage spikes.
 
 ## Installation
 
-In order to install the solution, you can leverage either the `nri-bundle` chart or install
-directly the `newrelic-infra-operator` one.
+You can install this chart using [`nri-bundle`](https://github.com/newrelic/helm-charts/tree/master/charts/nri-bundle) located in the
+[helm-charts repository](https://github.com/newrelic/helm-charts) or directly from this repository by adding this Helm repository:
 
-```sh
-helm install newrelic-infra-operator newrelic/newrelic-infra-operator --values ./newrelic-infra-operator/values-dev.yaml
+```shell
+helm repo add newrelic-infra-operator https://newrelic.github.io/newrelic-infra-operator
+helm upgrade --install newrelic-infra-operator/newrelic-infra-operator -f your-custom-values.yaml
 ```
 
 Once deployed, it will automatically inject the sidecar in the Pod matching the policy specified.
 Only Pods created after the deployment of the monitoring solution will be injected with the configuration and agent.
 
 For further information regarding the installation refer to the official docs and to the `README.md` 
-and the `values.yaml` of the [chart](https://github.com/newrelic/helm-charts/tree/master/charts/newrelic-infra-operator).
+and the `values.yaml` of the [chart](https://github.com/newrelic/newrelic-infra-operator/tree/master/charts/newrelic-infra-operator).
 
 ### Develop, Test and Run Locally
 
