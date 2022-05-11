@@ -1,4 +1,4 @@
-// Copyright 2021 New Relic Corporation. All rights reserved.
+// Copyright 2022 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 // Package agent implements injection of infrastructure-agent container into given Pod.
