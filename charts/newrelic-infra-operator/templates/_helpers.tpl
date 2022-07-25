@@ -24,6 +24,14 @@ Naming helpers
 {{ include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.fullname" .) "suffix" "admission") }}
 {{- end -}}
 
+{{- define "newrelic-infra-operator.fullname.admission.serviceAccount" -}}
+{{- if include "newrelic.common.serviceAccount.create" . -}}
+  {{- include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.fullname" .) "suffix" "admission") -}}
+{{- else -}}
+  {{- include "newrelic.common.serviceAccount.name" . -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "newrelic-infra-operator.name.admission-create" -}}
 {{ include "newrelic.common.naming.truncateToDNSWithSuffix" (dict "name" (include "newrelic.common.naming.name" .) "suffix" "admission-create") }}
 {{- end -}}

@@ -15,6 +15,6 @@ roleRef:
   name: {{ include "newrelic-infra-operator.fullname.admission" . }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "newrelic-infra-operator.fullname.admission" . }}
+    name: {{ include "newrelic-infra-operator.fullname.admission.serviceAccount" . }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
