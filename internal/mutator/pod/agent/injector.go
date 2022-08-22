@@ -449,17 +449,17 @@ func matchPolicy(pod *corev1.Pod, ns *corev1.Namespace, policy *InjectionPolicy)
 	return true
 }
 
-func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Pod, ro webhook.RequestOptions) error {
-	if ro.DryRun {
+func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Pod, options webhook.RequestOptions) error {
+	if options.DryRun {
 		return nil
 	}
 
-	if err := i.ensureLicenseSecretExistence(ctx, ro.Namespace); err != nil {
+	if err := i.ensureLicenseSecretExistence(ctx, options.Namespace); err != nil {
 		return fmt.Errorf("ensuring Secret presence: %w", err)
 	}
 
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, ro.Namespace)
+		return i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, options.Namespace)
 	}); err != nil {
 		return fmt.Errorf("ensuring ClusterRoleBinding subject: %w", err)
 	}
