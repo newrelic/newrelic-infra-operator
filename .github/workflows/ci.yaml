@@ -196,3 +196,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Codespell test
         uses: codespell-project/actions-codespell@master
+        with:
+          check_filenames: true
+          check_hidden: true
+          skip: ./.git,go.sum
