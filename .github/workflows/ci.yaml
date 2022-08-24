@@ -167,20 +167,27 @@ jobs:
       - name: Run e2e tests
         run: make test-e2e
 
-  lint:
-    name: Lint
+  static-analysis:
+    name: Static analysis and linting
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
-      - name: Check linters are up to date
-        run: make check-update-linters
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.1.0
+      - uses: actions/setup-go@v2
         with:
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          go-version: '1.18'
+      - uses: newrelic/newrelic-infra-checkers@v1
+        with:
+          golangci-lint-config: golangci-lint
+      - name: Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          auditOn: push
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        with:
           only-new-issues: true
-          version: v1.42.0
+          args: --timeout 3m
 
   codespell:
     name: Codespell
