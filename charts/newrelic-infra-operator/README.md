@@ -19,7 +19,7 @@ helm upgrade --install newrelic-infra-operator/newrelic-infra-operator -f your-c
 ## Source Code
 
 * <https://github.com/newrelic/newrelic-infra-operator>
-* <https://github.com/newrelic/newrelic-infra-operator/tree/master/charts/newrelic-infra-operator>
+* <https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator>
 
 ## Usage example
 
