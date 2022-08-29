@@ -5,7 +5,7 @@ icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_ve
 home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
 sources:
   - https://github.com/newrelic/newrelic-infra-operator
-  - https://github.com/newrelic/newrelic-infra-operator/tree/master/charts/newrelic-infra-operator
+  - https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator
 
 version: 1.0.6
 appVersion: 0.6.0
