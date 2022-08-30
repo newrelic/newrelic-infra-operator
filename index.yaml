@@ -3,6 +3,45 @@ entries:
   newrelic-infra-operator:
   - apiVersion: v2
     appVersion: 0.6.0
+    created: "2022-08-30T07:55:39.438545236Z"
+    dependencies:
+    - name: common-library
+      repository: https://helm-charts.newrelic.com
+      version: 1.0.6
+    description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
+    digest: fe2c7e46363de3296f7b19e0fccc2831474e479285d8656504b6847beac0a25c
+    home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
+    icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_vertical.svg
+    keywords:
+    - infrastructure
+    - newrelic
+    - monitoring
+    maintainers:
+    - name: alvarocabanas
+      url: https://github.com/alvarocabanas
+    - name: carlossscastro
+      url: https://github.com/carlossscastro
+    - name: sigilioso
+      url: https://github.com/sigilioso
+    - name: gsanchezgavier
+      url: https://github.com/gsanchezgavier
+    - name: kang-makes
+      url: https://github.com/kang-makes
+    - name: marcsanmi
+      url: https://github.com/marcsanmi
+    - name: paologallinaharbur
+      url: https://github.com/paologallinaharbur
+    - name: roobre
+      url: https://github.com/roobre
+    name: newrelic-infra-operator
+    sources:
+    - https://github.com/newrelic/newrelic-infra-operator
+    - https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator
+    urls:
+    - https://github.com/newrelic/newrelic-infra-operator/releases/download/newrelic-infra-operator-1.0.7/newrelic-infra-operator-1.0.7.tgz
+    version: 1.0.7
+  - apiVersion: v2
+    appVersion: 0.6.0
     created: "2022-08-29T10:37:16.642508119Z"
     dependencies:
     - name: common-library
@@ -257,4 +296,4 @@ entries:
     urls:
     - https://github.com/newrelic/newrelic-infra-operator/releases/download/newrelic-infra-operator-0.6.0/newrelic-infra-operator-0.6.0.tgz
     version: 0.6.0
-generated: "2022-08-29T10:37:16.642534319Z"
+generated: "2022-08-30T07:55:39.438579137Z"
