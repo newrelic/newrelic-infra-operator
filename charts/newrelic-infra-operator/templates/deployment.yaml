@@ -19,7 +19,7 @@ spec:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "newrelic.common.labels" . | nindent 8 }}
+        {{- include "newrelic.common.labels.podLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ template "newrelic.common.serviceAccount.name" . }}
       {{- with include "newrelic.common.securityContext.pod" . }}
