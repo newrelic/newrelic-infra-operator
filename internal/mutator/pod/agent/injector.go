@@ -73,7 +73,7 @@ type injector struct {
 	noCacheClient client.Client
 }
 
-// InjectorConfig of the Injector used to pass the required data to build it.
+// InjectorConfig of the Mutator used to pass the required data to build it.
 type InjectorConfig struct {
 	AgentConfig    InfraAgentConfig  `json:"agentConfig"`
 	ResourcePrefix string            `json:"resourcePrefix"`
@@ -133,14 +133,14 @@ func (cas CustomAttributes) toString(podLabels map[string]string) (string, error
 	return string(casRaw), nil
 }
 
-// Injector injects New Relic infrastructure-agent into given pod, ensuring that it has all capabilities to run
+// Mutator injects New Relic infrastructure-agent into given pod, ensuring that it has all capabilities to run
 // like right permissions and access to the New Relic license key.
-type Injector interface {
+type Mutator interface {
 	Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error
 }
 
 // New function is the constructor for the injector struct.
-func (config InjectorConfig) New(client, noCacheClient client.Client, logger *logrus.Logger) (Injector, error) {
+func (config InjectorConfig) New(client, noCacheClient client.Client, logger *logrus.Logger) (Mutator, error) {
 	config.AgentConfig.CustomAttributes = append(config.AgentConfig.CustomAttributes, CustomAttribute{
 		Name:         clusterNameAttribute,
 		DefaultValue: config.ClusterName,

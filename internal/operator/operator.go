@@ -84,7 +84,7 @@ func Run(ctx context.Context, options Options) error {
 		Handler: &podMutatorHandler{
 			ignoreMutationErrors: options.IgnoreMutationErrors,
 			logger:               options.Logger,
-			mutators: []podMutator{
+			mutators: []agent.Mutator{
 				agentInjector,
 			},
 		},

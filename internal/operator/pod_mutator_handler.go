@@ -6,6 +6,7 @@ package operator
 import (
 	"context"
 	"encoding/json"
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -15,13 +16,9 @@ import (
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
-type podMutator interface {
-	Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error
-}
-
 type podMutatorHandler struct {
 	decoder              *admission.Decoder
-	mutators             []podMutator
+	mutators             []agent.Mutator
 	ignoreMutationErrors bool
 	logger               *logrus.Logger
 }
