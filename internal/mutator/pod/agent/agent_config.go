@@ -40,3 +40,12 @@ type ConfigSelector struct {
 	selector labels.Selector `json:"-"`
 	hash     string          `json:"-"`
 }
+
+// InfraAgentConfig holds the user's configuration for the sidecar to be injected.
+type KubeletConfig struct {
+	// Here we can map the whole user configuration from helm chart.
+	ConfigSelectors    []ConfigSelector   `json:"configSelectors"`
+	ScraperConfig      string             `json:"scraperConfigToInject"`
+	Image              Image              `json:"image"`
+	PodSecurityContext PodSecurityContext `json:"podSecurityContext"`
+}

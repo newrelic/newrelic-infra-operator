@@ -1,7 +1,7 @@
 // Copyright 2022 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package agent implements injection of infrastructure-agent container into given Pod.
+// Package agent implements injection of infrastructure-agent agentContainer into given Pod.
 package agent
 
 import (
@@ -42,15 +42,30 @@ const (
 	// LicenseSecretKey is the key which under the license key is placed in license Secret object.
 	LicenseSecretKey = "license"
 
-	// AgentSidecarName is the name of the container injected.
+	// AgentSidecarName is the name of the agentContainer injected.
 	AgentSidecarName = "newrelic-infrastructure-sidecar"
 
+	// KubeletSidecarName is the name of the kubeletContainer injected.
+	KubeletSidecarName = "newrelic-infrastructure-kubelet"
+
+	envClusterName            = "CLUSTER_NAME"
 	envCustomAttribute        = "NRIA_CUSTOM_ATTRIBUTES"
 	envPassthorughEnvironment = "NRIA_PASSTHROUGH_ENVIRONMENT"
-	envNodeName               = "NRK8S_NODE_NAME"
-	envClusterName            = "CLUSTER_NAME"
 	envDisplayName            = "NRIA_DISPLAY_NAME"
 	envLicenseKey             = "NRIA_LICENSE_KEY"
+	envHost                   = "NRIA_HOST"
+	envOverrideHostnameShort  = "NRIA_OVERRIDE_HOSTNAME_SHORT"
+	envOverrideHostname       = "NRIA_OVERRIDE_HOSTNAME"
+	envOverrideHostRoot       = "NRIA_OVERRIDE_HOST_ROOT"
+	envHTTPServerEnabled      = "NRIA_HTTP_SERVER_ENABLED"
+	envHTTPServerPort         = "NRIA_HTTP_SERVER_PORT"
+
+	envSinkHTTPPort       = "NRI_KUBERNETES_SINK_HTTP_PORT"
+	envNodeName           = "NRI_KUBERNETES_NODENAME"
+	envKubeletClusterName = "NRI_KUBERNETES_CLUSTERNAME"
+	envNodeIp             = "NRI_KUBERNETES_NODEIP"
+
+	envSinkHTTPPortValue = "8003"
 
 	clusterNameAttribute = "clusterName"
 )
@@ -59,13 +74,15 @@ const (
 type injector struct {
 	config *InjectorConfig
 
-	// This is the base container that will be used as base for the injection.
-	container corev1.Container
+	// This is the base agentContainer that will be used as base for the injection.
+	agentContainer corev1.Container
+
+	// This is the base kubeletContainer that will be used as base for the injection.
+	kubeletContainer corev1.Container
 
 	clusterRoleBindingName string
 	licenseSecretName      string
 	license                []byte
-	configHash             string
 	client                 client.Client
 
 	// We do not have permissions to list and watch secrets, so we must use uncached
@@ -76,6 +93,7 @@ type injector struct {
 // InjectorConfig of the Mutator used to pass the required data to build it.
 type InjectorConfig struct {
 	AgentConfig    InfraAgentConfig  `json:"agentConfig"`
+	KubeletConfig  KubeletConfig     `json:"kubeletConfig"`
 	ResourcePrefix string            `json:"resourcePrefix"`
 	License        string            `json:"-"`
 	ClusterName    string            `json:"clusterName"`
@@ -156,29 +174,14 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 
 	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
 
-	containerToInject := config.container(licenseSecretName)
-
-	configHash := &configHash{
-		CustomAttributes:   config.AgentConfig.CustomAttributes,
-		ResourcePrefix:     config.ResourcePrefix,
-		ClusterName:        config.ClusterName,
-		Image:              config.AgentConfig.Image,
-		PodSecurityContext: config.AgentConfig.PodSecurityContext,
-		Container:          containerToInject,
-	}
-
-	hash, err := configHash.calculate()
-	if err != nil {
-		return nil, fmt.Errorf("calculating config hash: %w", err)
-	}
-
-	logger.Infof("'%s' label value for Pod with no config selector: '%s'", InjectedLabel, hash)
+	agentContainerToInject := config.agentContainer(licenseSecretName)
+	kubeletContainerToInject := config.kubeletContainer()
 
 	if err := config.buildPolicies(); err != nil {
 		return nil, fmt.Errorf("building policies: %w", err)
 	}
 
-	if err := config.buildConfigSelectors(containerToInject, logger); err != nil {
+	if err := config.buildConfigSelectors(agentContainerToInject, kubeletContainerToInject, logger); err != nil {
 		return nil, fmt.Errorf("building config selectors: %w", err)
 	}
 
@@ -188,9 +191,9 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 		license:                []byte(config.License),
 		client:                 client,
 		noCacheClient:          noCacheClient,
-		container:              containerToInject,
+		agentContainer:         agentContainerToInject,
+		kubeletContainer:       kubeletContainerToInject,
 		config:                 &config,
-		configHash:             hash,
 	}, nil
 }
 
@@ -265,13 +268,13 @@ func (config InjectorConfig) validate() error {
 	return nil
 }
 
-func (config InjectorConfig) container(licenseSecretName string) corev1.Container {
+func (config InjectorConfig) agentContainer(licenseSecretName string) corev1.Container {
 	c := corev1.Container{
 		Image:           fmt.Sprintf("%s:%s", config.AgentConfig.Image.Repository, config.AgentConfig.Image.Tag),
 		Name:            AgentSidecarName,
 		ImagePullPolicy: config.AgentConfig.Image.PullPolicy,
-		Env:             standardEnvVar(licenseSecretName, config.ClusterName),
-		VolumeMounts:    standardVolumes(),
+		Env:             agentStandardEnvVar(licenseSecretName, config.ClusterName),
+		VolumeMounts:    agentStandardVolumes(),
 		SecurityContext: &corev1.SecurityContext{
 			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
 			AllowPrivilegeEscalation: pointer.BoolPtr(false),
@@ -289,36 +292,115 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 	return c
 }
 
-// Mutate mutates given Pod object by injecting infrastructure-agent container into it with all dependencies.
-func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error {
-	containerToInject := i.container
+func (config InjectorConfig) kubeletContainer() corev1.Container {
+	c := corev1.Container{
+		Image:           fmt.Sprintf("%s:%s", config.KubeletConfig.Image.Repository, config.KubeletConfig.Image.Tag),
+		Name:            KubeletSidecarName,
+		ImagePullPolicy: config.KubeletConfig.Image.PullPolicy,
+		Env:             kubeletStandardEnvVar(config.ClusterName),
+		VolumeMounts:    []corev1.VolumeMount{kubeletConfigMapVolumeMount()},
+		SecurityContext: &corev1.SecurityContext{
+			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		},
+	}
 
-	injectContainer, err := i.shouldInjectContainer(ctx, pod, requestOptions.Namespace)
+	if config.KubeletConfig.PodSecurityContext.RunAsUser != 0 {
+		c.SecurityContext.RunAsUser = &config.KubeletConfig.PodSecurityContext.RunAsUser
+	}
+
+	if config.KubeletConfig.PodSecurityContext.RunAsGroup != 0 {
+		c.SecurityContext.RunAsGroup = &config.KubeletConfig.PodSecurityContext.RunAsGroup
+	}
+
+	return c
+}
+
+// Mutate mutates given Pod object by injecting infrastructure-agent agentContainer into it with all dependencies.
+func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions webhook.RequestOptions) error {
+	injectContainer, err := i.shouldInjectContainers(ctx, pod, requestOptions.Namespace)
 	if err != nil {
-		return fmt.Errorf("checking if agent container should be injected: %w", err)
+		return fmt.Errorf("checking if agent agentContainer and kubeletContainer should be injected: %w", err)
 	}
 
 	if !injectContainer {
 		return nil
 	}
 
-	if err := i.canInjectContainer(pod, containerToInject); err != nil {
-		return fmt.Errorf("checking if agent container can be injected: %w", err)
+	if err := i.canInjectContainer(pod); err != nil {
+		return fmt.Errorf("checking if agent agentContainer and kubeletContainer can be injected: %w", err)
 	}
 
 	if err := i.ensureSidecarDependencies(ctx, pod, requestOptions); err != nil {
-		return fmt.Errorf("ensuring sidecar dependencies: %w", err)
+		return fmt.Errorf("ensuring sidecars dependencies: %w", err)
 	}
+
+	agentInjected, err := i.injectAgentContainer(pod)
+	if err != nil {
+		return fmt.Errorf("injecting agent container: %w", err)
+	}
+
+	kubeletInjected, err := i.injectKubeletContainer(pod)
+	if err != nil {
+		return fmt.Errorf("injecting kubelet container: %w", err)
+	}
+
+	hash, err := i.computeHash(agentInjected, kubeletInjected)
+	if err != nil {
+		return fmt.Errorf("calculating config hash for injected containers: %w", err)
+	}
+
+	pod.Labels[InjectedLabel] = hash
+
+	return nil
+}
+
+func (i *injector) computeHash(agentInjected corev1.Container, kubeletInjected corev1.Container) (string, error) {
+	configHash := &configHash{
+		CustomAttributes:   i.config.AgentConfig.CustomAttributes,
+		ResourcePrefix:     i.config.ResourcePrefix,
+		ClusterName:        i.config.ClusterName,
+		Image:              i.config.AgentConfig.Image,
+		PodSecurityContext: i.config.AgentConfig.PodSecurityContext,
+		AgentContainer:     agentInjected,
+		KubeletContainer:   kubeletInjected,
+	}
+
+	hash, err := configHash.calculate()
+	if err != nil {
+		return "", fmt.Errorf("calculating config hash: %w", err)
+	}
+
+	return hash, nil
+}
+
+func (i *injector) injectKubeletContainer(pod *corev1.Pod) (corev1.Container, error) {
+	containerToInject := i.kubeletContainer
 
 	if pod.Labels == nil {
 		pod.Labels = map[string]string{}
 	}
 
-	pod.Labels[InjectedLabel] = i.applyAgentConfig(pod.Labels, &containerToInject)
+	i.applyAgentConfig(pod.Labels, &containerToInject)
+
+	pod.Spec.Containers = append(pod.Spec.Containers, containerToInject)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, kubeletConfigMapVolume())
+
+	return containerToInject, nil
+}
+
+func (i *injector) injectAgentContainer(pod *corev1.Pod) (corev1.Container, error) {
+	containerToInject := i.agentContainer
+
+	if pod.Labels == nil {
+		pod.Labels = map[string]string{}
+	}
+
+	i.applyAgentConfig(pod.Labels, &containerToInject)
 
 	customAttributes, err := i.config.AgentConfig.CustomAttributes.toString(pod.Labels)
 	if err != nil {
-		return fmt.Errorf("creating custom attributes: %w", err)
+		return corev1.Container{}, fmt.Errorf("creating custom attributes: %w", err)
 	}
 
 	containerToInject.Env = append(containerToInject.Env,
@@ -331,10 +413,10 @@ func (i *injector) Mutate(ctx context.Context, pod *corev1.Pod, requestOptions w
 	pod.Spec.Containers = append(pod.Spec.Containers, containerToInject)
 	pod.Spec.Volumes = append(pod.Spec.Volumes, toEmptyDirVolumes(containerToInject.VolumeMounts)...)
 
-	return nil
+	return containerToInject, nil
 }
 
-func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, namespace string) (bool, error) {
+func (i *injector) shouldInjectContainers(ctx context.Context, pod *corev1.Pod, namespace string) (bool, error) {
 	if _, hasInjectedLabel := pod.Labels[InjectedLabel]; hasInjectedLabel {
 		return false, nil
 	}
@@ -359,9 +441,12 @@ func (i *injector) shouldInjectContainer(ctx context.Context, pod *corev1.Pod, n
 	return matchPolicies(pod, ns, i.config.Policies), nil
 }
 
-func (i *injector) canInjectContainer(pod *corev1.Pod, containerToInject corev1.Container) error {
+func (i *injector) canInjectContainer(pod *corev1.Pod) error {
 	volumes := pod.Spec.Volumes
-	duplicateVolumeNames := getDuplicateVolumeNames(append(volumes, toEmptyDirVolumes(containerToInject.VolumeMounts)...))
+	allVolumes := append(volumes, toEmptyDirVolumes(i.agentContainer.VolumeMounts)...)
+	allVolumes = append(volumes, toEmptyDirVolumes(i.kubeletContainer.VolumeMounts)...)
+
+	duplicateVolumeNames := getDuplicateVolumeNames(allVolumes)
 
 	// Checking if there is any overlapping with the volumes we want to mount and the volumes already present.
 	if len(duplicateVolumeNames) > 0 {
@@ -458,6 +543,10 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 		return fmt.Errorf("ensuring Secret presence: %w", err)
 	}
 
+	if err := i.ensureConfigMapExistence(ctx, options.Namespace); err != nil {
+		return fmt.Errorf("ensuring ConfigMap presence: %w", err)
+	}
+
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return i.ensureClusterRoleBindingSubject(ctx, pod.Spec.ServiceAccountName, options.Namespace)
 	}); err != nil {
@@ -467,7 +556,7 @@ func (i *injector) ensureSidecarDependencies(ctx context.Context, pod *corev1.Po
 	return nil
 }
 
-func (i *injector) applyAgentConfig(podLabels map[string]string, container *corev1.Container) string {
+func (i *injector) applyAgentConfig(podLabels map[string]string, container *corev1.Container) {
 	for _, r := range i.config.AgentConfig.ConfigSelectors {
 		if r.selector.Matches(labels.Set(podLabels)) {
 			if r.ResourceRequirements != nil {
@@ -478,11 +567,10 @@ func (i *injector) applyAgentConfig(podLabels map[string]string, container *core
 				container.Env = append(container.Env, corev1.EnvVar{Name: k, Value: v})
 			}
 
-			return r.hash
+			return
 		}
 	}
-
-	return i.configHash
+	return
 }
 
 type configHash struct {
@@ -493,43 +581,26 @@ type configHash struct {
 	PodSecurityContext   PodSecurityContext
 	ResourceRequirements *corev1.ResourceRequirements
 	ExtraEnvVars         map[string]string
-	Container            corev1.Container
+	AgentContainer       corev1.Container
+	KubeletContainer     corev1.Container
 }
 
-func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, logger *logrus.Logger) error {
-	for i, r := range config.AgentConfig.ConfigSelectors {
+func (config *InjectorConfig) buildConfigSelectors(agentContainer corev1.Container, kubeletContainer corev1.Container, logger *logrus.Logger) error {
+	selectors := append(config.AgentConfig.ConfigSelectors, config.KubeletConfig.ConfigSelectors...)
+
+	for i, r := range selectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
 			return fmt.Errorf("creating selector from label selector: %w", err)
 		}
 
-		config.AgentConfig.ConfigSelectors[i].selector = selector
-
-		configHash := &configHash{
-			CustomAttributes:     config.AgentConfig.CustomAttributes,
-			ResourcePrefix:       config.ResourcePrefix,
-			ClusterName:          config.ClusterName,
-			Image:                config.AgentConfig.Image,
-			PodSecurityContext:   config.AgentConfig.PodSecurityContext,
-			ResourceRequirements: r.ResourceRequirements,
-			ExtraEnvVars:         r.ExtraEnvVars,
-			Container:            container,
-		}
-
-		hash, err := configHash.calculate()
-		if err != nil {
-			return fmt.Errorf("calculating config hash: %w", err)
-		}
-
-		logger.Infof("'%s' label value for Pod with config selector %d: '%s'", InjectedLabel, i, hash)
-
-		config.AgentConfig.ConfigSelectors[i].hash = hash
+		selectors[i].selector = selector
 	}
 
 	return nil
 }
 
-func standardVolumes() []corev1.VolumeMount {
+func agentStandardVolumes() []corev1.VolumeMount {
 	return []corev1.VolumeMount{
 		{
 			Name:      "tmpfs-data-injected",
@@ -543,10 +614,33 @@ func standardVolumes() []corev1.VolumeMount {
 			Name:      "tmpfs-tmp-injected",
 			MountPath: "/tmp",
 		},
-		{
-			Name:      "tmpfs-cache-injected",
-			MountPath: "/var/cache/nr-kubernetes",
+	}
+}
+
+func kubeletConfigMapVolume() corev1.Volume {
+	return corev1.Volume{
+		Name: "nri-kubernetes-config",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: kubeletCMName,
+				},
+				Items: []corev1.KeyToPath{
+					{
+						Key:  "nri-kubernetes.yml",
+						Path: "nri-kubernetes.yml",
+					},
+				},
+			},
 		},
+	}
+}
+
+func kubeletConfigMapVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      "nri-kubernetes-config",
+		MountPath: "/etc/newrelic-infra/nri-kubernetes.yml",
+		SubPath:   "nri-kubernetes.yml",
 	}
 }
 
@@ -564,8 +658,48 @@ func toEmptyDirVolumes(volumeMounts []corev1.VolumeMount) []corev1.Volume {
 	return volumes
 }
 
-func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
+func kubeletStandardEnvVar(clusterName string) []corev1.EnvVar {
 	return []corev1.EnvVar{
+		{
+			Name: envNodeName,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "spec.nodeName",
+				},
+			},
+		},
+		{
+			Name: envNodeIp,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.hostIP",
+				},
+			},
+		},
+		{
+			Name:  envSinkHTTPPort,
+			Value: envSinkHTTPPortValue,
+		},
+		{
+			Name:  envKubeletClusterName,
+			Value: clusterName,
+		},
+	}
+}
+
+func agentStandardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name: envHost,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.hostIP",
+				},
+			},
+		},
 		{
 			Name: envLicenseKey,
 			ValueFrom: &corev1.EnvVarSource{
@@ -574,15 +708,6 @@ func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
 						Name: secretName,
 					},
 					Key: LicenseSecretKey,
-				},
-			},
-		},
-		{
-			Name: envNodeName,
-			ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "spec.nodeName",
 				},
 			},
 		},
@@ -596,23 +721,49 @@ func standardEnvVar(secretName string, clusterName string) []corev1.EnvVar {
 			},
 		},
 		{
+			Name: envOverrideHostnameShort,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "spec.nodeName",
+				},
+			},
+		},
+		{
+			Name: envOverrideHostname,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "spec.nodeName",
+				},
+			},
+		},
+		{
 			Name:  envClusterName,
 			Value: clusterName,
 		},
 		{
+			Name:  envOverrideHostRoot,
+			Value: "",
+		},
+		{
 			Name:  envPassthorughEnvironment,
 			Value: getAgentPassthroughEnvironment(),
+		},
+		{
+			Name:  envHTTPServerEnabled,
+			Value: "true",
+		},
+		{
+			Name:  envHTTPServerPort,
+			Value: envSinkHTTPPortValue,
 		},
 	}
 }
 
 func getAgentPassthroughEnvironment() string {
 	flags := []string{
-		"KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT", "CLUSTER_NAME", "CADVISOR_PORT",
-		"NRK8S_NODE_NAME", "KUBE_STATE_METRICS_URL", "KUBE_STATE_METRICS_POD_LABEL", "TIMEOUT", "ETCD_TLS_SECRET_NAME",
-		"ETCD_TLS_SECRET_NAMESPACE", "API_SERVER_SECURE_PORT", "KUBE_STATE_METRICS_SCHEME", "KUBE_STATE_METRICS_PORT",
-		"SCHEDULER_ENDPOINT_URL", "ETCD_ENDPOINT_URL", "CONTROLLER_MANAGER_ENDPOINT_URL", "API_SERVER_ENDPOINT_URL",
-		"DISABLE_KUBE_STATE_METRICS", "DISCOVERY_CACHE_TTL",
+		"CLUSTER_NAME",
 	}
 
 	return strings.Join(flags, ",")

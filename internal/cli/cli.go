@@ -41,10 +41,10 @@ func Options(path string) (*operator.Options, error) {
 		return nil, fmt.Errorf("parsing configuration file content: %w", err)
 	}
 
-	options.InfraAgentInjection.License = os.Getenv(EnvLicenseKey)
+	options.KubernetesIntegrationInjection.License = os.Getenv(EnvLicenseKey)
 
-	if options.InfraAgentInjection.ClusterName == "" {
-		options.InfraAgentInjection.ClusterName = os.Getenv(EnvClusterName)
+	if options.KubernetesIntegrationInjection.ClusterName == "" {
+		options.KubernetesIntegrationInjection.ClusterName = os.Getenv(EnvClusterName)
 	}
 
 	return options, nil

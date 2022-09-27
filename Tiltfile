@@ -7,7 +7,7 @@ project_name = 'newrelic-infra-operator'
 settings = {
   'kind_cluster_name': 'kind',
   'live_reload': True,
-  'chart_path': '../helm-charts-newrelic/charts/%s/' % project_name,
+  'chart_path': './charts/%s/' % project_name,
 }
 
 settings.update(read_json('tilt_option.json', default={}))

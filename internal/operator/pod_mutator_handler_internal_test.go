@@ -6,6 +6,7 @@ package operator
 import (
 	"context"
 	"fmt"
+	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"net/http"
 	"testing"
 
@@ -46,7 +47,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 
 		handler := newHandler(t)
 
-		handler.mutators = []podMutator{
+		handler.mutators = []agent.Mutator{
 			&mockMutator{
 				mutateF: func(_ context.Context, pod *corev1.Pod, _ webhook.RequestOptions) error {
 					pod.Labels = map[string]string{"foo": "bar"}
@@ -75,7 +76,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 		handler := newHandler(t)
 		handler.ignoreMutationErrors = true
 
-		handler.mutators = []podMutator{
+		handler.mutators = []agent.Mutator{
 			&mockMutator{
 				mutateF: func(_ context.Context, pod *corev1.Pod, _ webhook.RequestOptions) error {
 					return fmt.Errorf("test error")
@@ -119,7 +120,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 		t.Run("one_of_the_mutators_returns_error", func(t *testing.T) {
 			handler := newHandler(t)
 
-			handler.mutators = []podMutator{
+			handler.mutators = []agent.Mutator{
 				&mockMutator{
 					mutateF: func(_ context.Context, _ *corev1.Pod, _ webhook.RequestOptions) error {
 						return nil

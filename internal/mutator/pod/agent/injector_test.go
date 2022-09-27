@@ -213,7 +213,7 @@ func Test_Mutate(t *testing.T) {
 			t.Parallel()
 
 			if len(p.Spec.Containers) != 2 {
-				t.Fatalf("expected extra container to be added, got %v", cmp.Diff(getEmptyPod(), p))
+				t.Fatalf("expected extra agentContainer to be added, got %v", cmp.Diff(getEmptyPod(), p))
 			}
 		})
 
@@ -566,7 +566,7 @@ func Test_Mutate(t *testing.T) {
 			t.Parallel()
 
 			if len(p.Spec.Containers) != 2 {
-				t.Fatalf("expected extra container to be added, got %v", cmp.Diff(getEmptyPod(), p))
+				t.Fatalf("expected extra agentContainer to be added, got %v", cmp.Diff(getEmptyPod(), p))
 			}
 		})
 
@@ -885,7 +885,7 @@ func Test_Mutate(t *testing.T) {
 					t.Fatalf("mutating Pod: %v", err)
 				}
 
-				expectedContainers := 2
+				expectedContainers := 3
 
 				if len(p.Spec.Containers) != expectedContainers {
 					t.Fatalf("expected %d containers, got %d: %v", expectedContainers, len(p.Spec.Containers), p.Spec.Containers)
@@ -1232,7 +1232,7 @@ func Test_Mutation_hash(t *testing.T) {
 		Namespace: testNamespace,
 	}
 
-	// This also tests that all configurable knobs are included included into container as we hash
+	// This also tests that all configurable knobs are included included into agentContainer as we hash
 	// entire sidecar configuration.
 	t.Run("changes_when", func(t *testing.T) {
 		t.Parallel()
@@ -1346,7 +1346,7 @@ func Test_Mutation_hash(t *testing.T) {
 
 		p2 := getEmptyPod()
 		p2.Labels["newLabel"] = "newValue"
-		p2.Spec.Containers = append(p2.Spec.Containers, corev1.Container{Name: "test-container"})
+		p2.Spec.Containers = append(p2.Spec.Containers, corev1.Container{Name: "test-agentContainer"})
 
 		if err := i.Mutate(ctx, p2, req); err != nil {
 			t.Fatalf("mutating second pod: %v", err)
@@ -1372,7 +1372,7 @@ func infraContainer(t *testing.T, pod *corev1.Pod) corev1.Container {
 		}
 	}
 
-	t.Fatalf("infra container %q not found", agent.AgentSidecarName)
+	t.Fatalf("infra agentContainer %q not found", agent.AgentSidecarName)
 
 	return corev1.Container{}
 }

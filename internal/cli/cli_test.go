@@ -41,15 +41,15 @@ func Test_Options(t *testing.T) {
 			expectedName := "computeType"
 			expectedDefaultValue := "serverless"
 
-			if options.InfraAgentInjection.AgentConfig.CustomAttributes == nil {
+			if options.KubernetesIntegrationInjection.AgentConfig.CustomAttributes == nil {
 				t.Fatalf("expected agent config to not be empty")
 			}
 
-			if l := len(options.InfraAgentInjection.AgentConfig.CustomAttributes); l != 1 {
+			if l := len(options.KubernetesIntegrationInjection.AgentConfig.CustomAttributes); l != 1 {
 				t.Fatalf("didn't find 1 customAttributes %d", l)
 			}
 
-			ca := options.InfraAgentInjection.AgentConfig.CustomAttributes[0]
+			ca := options.KubernetesIntegrationInjection.AgentConfig.CustomAttributes[0]
 			if ca.Name != expectedName {
 				t.Fatalf("expected name %q, got %q", expectedName, ca.Name)
 			}
@@ -73,7 +73,7 @@ func Test_Options(t *testing.T) {
 				t.Fatalf("getting options: %v", err)
 			}
 
-			if licensekey := options.InfraAgentInjection.License; licensekey != expectedLicenseKey {
+			if licensekey := options.KubernetesIntegrationInjection.License; licensekey != expectedLicenseKey {
 				t.Fatalf("expected license key %q, got %q", expectedLicenseKey, licensekey)
 			}
 		})
@@ -95,7 +95,7 @@ infraAgentInjection:
 				t.Fatalf("getting options: %v", err)
 			}
 
-			if clusterName := options.InfraAgentInjection.ClusterName; clusterName != expectedClusterName {
+			if clusterName := options.KubernetesIntegrationInjection.ClusterName; clusterName != expectedClusterName {
 				t.Fatalf("expected cluster name %q, got %q", expectedClusterName, clusterName)
 			}
 		})
@@ -112,7 +112,7 @@ infraAgentInjection:
 				t.Fatalf("getting options: %v", err)
 			}
 
-			if clusterName := options.InfraAgentInjection.ClusterName; clusterName != expectedClusterName {
+			if clusterName := options.KubernetesIntegrationInjection.ClusterName; clusterName != expectedClusterName {
 				t.Fatalf("expected cluster name %q, got %q", expectedClusterName, clusterName)
 			}
 		})

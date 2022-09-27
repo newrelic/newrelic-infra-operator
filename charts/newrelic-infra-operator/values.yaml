@@ -135,8 +135,8 @@ config:
       # -- Image of the infrastructure agent to be injected.
       # @default -- See `values.yaml`
       image:
-        repository: newrelic/infrastructure-k8s
-        tag: 2.13.2-unprivileged
+        repository: newrelic/infrastructure-bundle
+        tag: 2.8.28
         pullPolicy: IfNotPresent
 
       # -- configSelectors is the way to configure resource requirements and extra envVars of the injected sidecar container.
@@ -151,58 +151,42 @@ config:
             memory: 50M
             cpu: 100m
         extraEnvVars:  # extraEnvVars to pass to the injected sidecar.
-          DISABLE_KUBE_STATE_METRICS: "true"
         # NRIA_VERBOSE: "1"
-        labelSelector:
-          matchExpressions:
-          - key: "app.kubernetes.io/name"
-            operator: NotIn
-            values: ["kube-state-metrics"]
-          - key: "app"
-            operator: NotIn
-            values: ["kube-state-metrics"]
-          - key: "k8s-app"
-            operator: NotIn
-            values: ["kube-state-metrics"]
 
-      - resourceRequirements:
-          limits:
-            memory: 300M
-            cpu: 300m
-          requests:
-            memory: 150M
-            cpu: 150m
-        labelSelector:
-          matchLabels:
-            k8s-app: kube-state-metrics
-      # extraEnvVars:
-      #   NRIA_VERBOSE: "1"
+    # -- kubeletConfig contains the configuration for the container agent injected
+    # @default -- See `values.yaml`
+    kubeletConfig:
 
-      - resourceRequirements:
-          limits:
-            memory: 300M
-            cpu: 300m
-          requests:
-            memory: 150M
-            cpu: 150m
-        labelSelector:
-          matchLabels:
-            app: kube-state-metrics
-      # extraEnvVars:
-      #   NRIA_VERBOSE: "1"
+      # -- Image of the infrastructure agent to be injected.
+      # @default -- See `values.yaml`
+      image:
+        repository: newrelic/nri-kubernetes
+        tag: 3.4.2
+        pullPolicy: IfNotPresent
 
-      - resourceRequirements:
-          limits:
-            memory: 300M
-            cpu: 300m
-          requests:
-            memory: 150M
-            cpu: 150m
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: kube-state-metrics
-      # extraEnvVars:
-      #   NRIA_VERBOSE: "1"
+      scraperConfigToInject: |-
+        verbose: true
+        interval: 10s
+        kubelet:
+          # -- Timeout for the kubelet APIs contacted by the integration
+          timeout: 10s
+          # -- Number of retries after timeout expired
+          retries: 3
+          enabled: true
+
+      # -- configSelectors is the way to configure resource requirements and extra envVars of the injected sidecar container.
+      # When mutating it will be applied the first configuration having the labelSelector matching with the mutating pod.
+      # @default -- See `values.yaml`
+      configSelectors:
+        - resourceRequirements:  # resourceRequirements to apply to the injected sidecar.
+            limits:
+              memory: 100M
+              cpu: 200m
+            requests:
+              memory: 50M
+              cpu: 100m
+          extraEnvVars:  # extraEnvVars to pass to the injected sidecar.
+          # NRI_KUBERNETES_VERBOSE: "true"
 
       # pod Security Context of the sidecar injected.
       # Notice that ReadOnlyRootFilesystem and AllowPrivilegeEscalation enforced respectively to true and to false.

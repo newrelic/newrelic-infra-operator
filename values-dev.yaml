@@ -7,75 +7,14 @@ restartPolicy: Never
 
 # Temporary extra values, required by newrelic-infra-operator chart.
 cluster: testing
-licenseKey: stub
+licenseKey: TEST
 
 config:
   infraAgentInjection:
     policies:
-    - {}
-    agentConfig:
-      image:
-        repository: newrelic/infrastructure-k8s
-        tag: 2.4.0-unprivileged
-        pullPolicy: IfNotPresent
-      customAttributes:
-        - name: computeType
-          defaultValue: serverless
-        - name: fargateProfile
-          # To allow inclusion on non-fargate clusters for testing.
-          defaultValue: unknown
-          fromLabel: eks.amazonaws.com/fargate-profile
-      configSelectors:
-        - labelSelector:
-            matchLabels:
-              no-resources: true
-        - resourceRequirements:
-            limits:
-              memory: 100M
-              cpu: 200m
-            requests:
-              memory: 50M
-              cpu: 100m
-          ExtraEnvVars:
-            DISABLE_KUBE_STATE_METRICS: "true"
-          labelSelector:
-            matchExpressions:
-              - key: "app.kubernetes.io/name"
-                operator: NotIn
-                values: ["kube-state-metrics"]
-              - key: "app"
-                operator: NotIn
-                values: ["kube-state-metrics"]
-              - key: "k8s-app"
-                operator: NotIn
-                values: ["kube-state-metrics"]
-        - resourceRequirements:
-            limits:
-              memory: 300M
-              cpu: 300m
-            requests:
-              memory: 150M
-              cpu: 150m
-          labelSelector:
-            matchLabels:
-              k8s-app : kube-state-metrics
-        - resourceRequirements:
-            limits:
-              memory: 300M
-              cpu: 300m
-            requests:
-              memory: 150M
-              cpu: 150m
-          labelSelector:
-            matchLabels:
-              app : kube-state-metrics
-        - resourceRequirements:
-            limits:
-              memory: 300M
-              cpu: 300m
-            requests:
-              memory: 150M
-              cpu: 150m
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: kube-state-metrics
+      - {}
+
+
+global:
+  podLabels:
+    "infra-operator.newrelic.com/disable-injection": "true"

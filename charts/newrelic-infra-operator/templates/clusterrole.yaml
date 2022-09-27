@@ -14,7 +14,13 @@ rules:
   {{/* resourceNames used above do not support "create" verb. */ -}}
   - apiGroups: [""]
     resources:
+      - "configmaps"
+    verbs: ["get", "update", "patch"]
+    resourceNames: [ "newrelic-kubelet-scraper-config" ]
+  - apiGroups: [""]
+    resources:
       - "secrets"
+      - "configmaps"
     verbs: ["create"]
   {{/* "list" and "watch" are required for controller-runtime caching. */ -}}
   - apiGroups: ["rbac.authorization.k8s.io"]

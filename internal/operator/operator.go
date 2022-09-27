@@ -37,7 +37,7 @@ type Options struct {
 	Logger                 *logrus.Logger `json:"-"`
 	IgnoreMutationErrors   bool           `json:"ignoreMutationErrors"`
 
-	InfraAgentInjection agent.InjectorConfig `json:"infraAgentInjection"`
+	KubernetesIntegrationInjection agent.InjectorConfig `json:"infraAgentInjection"`
 }
 
 // Run starts operator main loop. At the moment it only runs TLS webhook server and healthcheck web server.
@@ -75,7 +75,7 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	agentInjector, err := options.InfraAgentInjection.New(mgr.GetClient(), noCacheClient, options.Logger)
+	agentInjector, err := options.KubernetesIntegrationInjection.New(mgr.GetClient(), noCacheClient, options.Logger)
 	if err != nil {
 		return fmt.Errorf("creating injector: %w", err)
 	}

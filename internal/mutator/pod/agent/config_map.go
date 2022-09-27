@@ -1,6 +1,5 @@
-// Copyright 2022 New Relic Corporation. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
+// // Copyright 2022 New Relic Corporation. All rights reserved.
+// // SPDX-License-Identifier: Apache-2.0
 package agent
 
 import (
@@ -37,7 +36,7 @@ func (i *injector) ensureConfigMapExistence(ctx context.Context, namespace strin
 		return fmt.Errorf("getting cm in the cluster %s/%s: %w", namespace, kubeletCMName, err)
 	}
 
-	if !reflect.DeepEqual(cm.BinaryData, i.kubeletConfig) {
+	if !reflect.DeepEqual(cm.BinaryData, i.config.KubeletConfig.ScraperConfig) {
 		return i.updateConfigMap(ctx, cm)
 	}
 
@@ -45,33 +44,32 @@ func (i *injector) ensureConfigMapExistence(ctx context.Context, namespace strin
 }
 
 func (i *injector) createConfigMap(ctx context.Context, namespace string) error {
-	s := &corev1.Secret{
+	s := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      i.licenseSecretName,
+			Name:      kubeletCMName,
 			Namespace: namespace,
 			Labels: map[string]string{
 				OperatorCreatedLabel: OperatorCreatedLabelValue,
 			},
 		},
-		Data: map[string][]byte{
-			LicenseSecretKey: i.license,
+		Data: map[string]string{
+			"nri-kubernetes.yml": i.config.KubeletConfig.ScraperConfig,
 		},
-		Type: corev1.SecretTypeOpaque,
 	}
 
 	if err := i.noCacheClient.Create(ctx, s, &client.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("creating secret %s/%s: %w", s.Namespace, s.Name, err)
+		return fmt.Errorf("creating configMap %s/%s: %w", s.Namespace, s.Name, err)
 	}
 
 	return nil
 }
 
 func (i *injector) updateConfigMap(ctx context.Context, s *corev1.ConfigMap) error {
-	// When we update we should not add the label since likely the user or a different newrelic installation created
-	// such secret.
-	s.BinaryData = i.kubeletConfig
+	s.Data = map[string]string{
+		"nri-kubernetes.yml": i.config.KubeletConfig.ScraperConfig,
+	}
 	if err := i.noCacheClient.Update(ctx, s, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("updating secret: %w", err)
+		return fmt.Errorf("updating config map: %w", err)
 	}
 
 	return nil

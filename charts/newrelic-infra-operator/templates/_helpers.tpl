@@ -79,6 +79,10 @@ Returns Infra-agent rules
 - apiGroups: [""]
   resources:
     - "nodes"
+  verbs: ["watch"]
+- apiGroups: [""]
+  resources:
+    - "nodes"
     - "nodes/metrics"
     - "nodes/stats"
     - "nodes/proxy"
