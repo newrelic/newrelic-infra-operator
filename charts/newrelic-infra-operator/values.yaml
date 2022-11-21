@@ -43,7 +43,7 @@ admissionWebhooksPatchJob:
   volumes: []
   # - name: tmp
   #   emptyDir: {}
-  
+
 rbac:
   # rbac.pspEnabled -- Whether the chart should create Pod Security Policy objects.
   pspEnabled: false
