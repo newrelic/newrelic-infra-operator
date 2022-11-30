@@ -618,13 +618,14 @@ func getAgentPassthroughEnvironment() string {
 	return strings.Join(flags, ",")
 }
 
+//nolint:gosec
 func (c configHash) calculate() (string, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {
 		return "", fmt.Errorf("marshalling input: %w", err)
 	}
 
-	h := sha1.New()
+	h := sha1.New() // nosemgrep
 	h.Write(b)
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
