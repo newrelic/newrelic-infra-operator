@@ -7,8 +7,8 @@ sources:
   - https://github.com/newrelic/newrelic-infra-operator
   - https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator
 
-version: 1.0.11
-appVersion: 0.7.0
+version: 2.0.0
+appVersion: 0.8.0
 
 dependencies:
   - name: common-library
