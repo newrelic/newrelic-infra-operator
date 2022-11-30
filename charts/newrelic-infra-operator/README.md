@@ -94,6 +94,7 @@ Options that can be defined globally include `affinity`, `nodeSelector`, `tolera
 | podAnnotations | object | `{}` | Annotations to add to the pod. |
 | podSecurityContext | object | `{"fsGroup":1001,"runAsGroup":1001,"runAsUser":1001}` | Sets security context (at pod level). Can be configured also with `global.podSecurityContext` |
 | priorityClassName | string | `""` | Sets pod's priorityClassName. Can be configured also with `global.priorityClassName` |
+| rbac.pspEnabled | bool | `false` | Whether the chart should create Pod Security Policy objects. |
 | replicas | int | `1` |  |
 | resources | object | `{"limits":{"memory":"80M"},"requests":{"cpu":"100m","memory":"30M"}}` | Resources available for this pod |
 | serviceAccount | object | See `values.yaml` | Settings controlling ServiceAccount creation |
