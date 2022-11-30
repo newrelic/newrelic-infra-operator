@@ -5,8 +5,9 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 
 	"sigs.k8s.io/yaml"
@@ -32,8 +33,8 @@ const (
 func Options(path string) (*operator.Options, error) {
 	options := &operator.Options{}
 
-	optionsBytes, err := ioutil.ReadFile(path)
-	if err != nil && !os.IsNotExist(err) {
+	optionsBytes, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("reading configuration file %q: %w", path, err)
 	}
 

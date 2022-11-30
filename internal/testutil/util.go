@@ -24,7 +24,7 @@ func ContextWithDeadline(t *testing.T) context.Context {
 		return context.Background()
 	}
 
-	ctx, cancel := context.WithDeadline(context.Background(), deadline.Truncate(timeoutGracePeriod))
+	ctx, cancel := context.WithDeadline(context.Background(), deadline.Truncate(timeoutGracePeriod)) // nosemgrep
 
 	t.Cleanup(cancel)
 
