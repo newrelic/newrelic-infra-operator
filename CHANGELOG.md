@@ -1,27 +1,39 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0]
+
+### Changed
+
+* Bump dependencies
+* Update Kubernetes image registry (#264)
 
 ## [0.8.0]
 
 ### Changed
+
 * bump go version and dependencies (#229)
 
 ## [0.7.0]
+
 ### Changed
-- Bumped dependencies
+
+* Bumped dependencies
 
 ## [0.6.0]
 
 ### Changed
-- Bumped dependencies
+
+* Bumped dependencies
 
 ## [0.5.0]
 
 ### Changed
+
 Adds Kubernetes 1.22 dependencies updates and some cleanups.
 
 ## [0.4.0]
@@ -58,7 +70,7 @@ already monitored by the infrastructure DaemonSet.
 
 It is also possible to configure `resourceRequirements` and `extraEnvVars` based on the labels of the mutating Pod.
 
-The current configuration increases the resource requirements for sidecar injected on `KSM` instances. Moreover, 
+The current configuration increases the resource requirements for sidecar injected on `KSM` instances. Moreover,
 injectes disable the `DISABLE_KUBE_STATE_METRICS` environment variable for Pods not running on `KSM` instances
 to decrease the load on the API server.
 
@@ -77,18 +89,17 @@ Alternatively, we could cache entire configuration struct, however, that
 would give a lot of false positives, as in any configuration change, all
 pods would have to be re-created.
 
-
 ## [0.2.0]
 
 ### Changed
 
-- Moving CustomAttributes in the agentConfig
+* Moving CustomAttributes in the agentConfig
 
 ## [0.1.0]
 
 ### Added
 
-- Initial release
+* Initial release
 
 [0.1.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.1.0
 [0.2.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.2.0
