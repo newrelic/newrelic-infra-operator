@@ -7,7 +7,7 @@ sources:
   - https://github.com/newrelic/newrelic-infra-operator
   - https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator
 
-version: 2.1.2
+version: 2.1.3
 appVersion: 0.9.0
 
 dependencies:
