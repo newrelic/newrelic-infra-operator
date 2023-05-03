@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0]
+
+### Changed
+* Bump chart version by @htroisi in https://github.com/newrelic/newrelic-infra-operator/pull/267
+* Update Renovate configs by @htroisi in https://github.com/newrelic/newrelic-infra-operator/pull/268
+* chore(deps): update helm release common-library to v1.1.1 by @renovate in https://github.com/newrelic/newrelic-infra-operator/pull/269
+* Bump infrastructure-k8s version from 2.13.5 to 2.13.6 by @htroisi in https://github.com/newrelic/newrelic-infra-operator/pull/271
+* chore(deps): bump helm/chart-testing-action from 2.3.1 to 2.4.0 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/270
+* Bump chart version by @htroisi in https://github.com/newrelic/newrelic-infra-operator/pull/272
+* chore(deps): bump alpine from 3.17.2 to 3.17.3 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/274
+* chore(deps): bump sigs.k8s.io/controller-runtime from 0.14.5 to 0.14.6 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/275
+* Fix helm unittest by @htroisi in https://github.com/newrelic/newrelic-infra-operator/pull/282
+* chore(deps): bump aquasecurity/trivy-action from 0.9.2 to 0.10.0 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/280
+* chore(deps): bump actions/github-script from 6.4.0 to 6.4.1 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/276
+* chore(deps): bump k8s.io/apimachinery from 0.26.3 to 0.27.1 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/279
+* chore(deps): update newrelic/infrastructure-k8s docker tag to v2.13.7 by @renovate in https://github.com/newrelic/newrelic-infra-operator/pull/281
+
 ## [0.9.0]
 
 ### Changed
