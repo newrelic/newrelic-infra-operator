@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1]
+
+## What's Changed
+* Bump app and chart versions by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/284
+* chore(deps): bump newrelic/infrastructure-k8s from 2.13.6-unprivileged to 2.13.7-unprivileged by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/285
+* Update Helm unit test reference by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/286
+* chore(deps): bump github.com/sirupsen/logrus from 1.9.0 to 1.9.2 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/288
+* chore(deps): bump k8s.io/apimachinery from 0.27.1 to 0.27.2 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/290
+* chore(deps): bump alpine from 3.17.3 to 3.18.0 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/287
+
+**Full Changelog**: https://github.com/newrelic/newrelic-infra-operator/compare/v0.10.0...v0.10.1
+
 ## [0.10.0]
 
 ### Changed
