@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/google/go-cmp v0.5.9
-	github.com/sirupsen/logrus v1.9.2
+	github.com/sirupsen/logrus v1.9.3
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.26.3
