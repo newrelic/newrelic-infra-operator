@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2]
+
+## What's Changed
+* Update CHANGELOG.md by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/292
+* Bump versions by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/293
+* chore(deps): bump aquasecurity/trivy-action from 0.10.0 to 0.11.0 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/294
+* chore(deps): bump github.com/sirupsen/logrus from 1.9.2 to 1.9.3 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/295
+* chore(deps): update newrelic/infrastructure-k8s docker tag to v2.13.10 by @renovate in https://github.com/newrelic/newrelic-infra-operator/pull/296
+* chore(deps): bump alpine from 3.18.0 to 3.18.2 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/299
+* chore(deps): bump k8s.io/apimachinery from 0.27.2 to 0.27.3 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/301
+* chore(deps): bump aquasecurity/trivy-action from 0.11.0 to 0.11.2 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/297
+* Upgrade Go Version by @xqi-nr in https://github.com/newrelic/newrelic-infra-operator/pull/302
+
+## New Contributors
+* @xqi-nr made their first contribution in https://github.com/newrelic/newrelic-infra-operator/pull/302
+
+**Full Changelog**: https://github.com/newrelic/newrelic-infra-operator/compare/v0.10.1...v0.10.2
+
 ## [0.10.1]
 
 ## What's Changed
