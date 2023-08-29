@@ -6,10 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### bugfix
+- Fix bug reported in [NR-153839](https://issues.newrelic.com/browse/NR-153839) by @juanjjaramillo in [#319](https://github.com/newrelic/newrelic-infra-operator/pull/319)
 
 ## [0.10.2]
 
-## What's Changed
+### What's Changed
 * Update CHANGELOG.md by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/292
 * Bump versions by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/293
 * chore(deps): bump aquasecurity/trivy-action from 0.10.0 to 0.11.0 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/294
@@ -20,14 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * chore(deps): bump aquasecurity/trivy-action from 0.11.0 to 0.11.2 by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/297
 * Upgrade Go Version by @xqi-nr in https://github.com/newrelic/newrelic-infra-operator/pull/302
 
-## New Contributors
+### New Contributors
 * @xqi-nr made their first contribution in https://github.com/newrelic/newrelic-infra-operator/pull/302
 
 **Full Changelog**: https://github.com/newrelic/newrelic-infra-operator/compare/v0.10.1...v0.10.2
 
 ## [0.10.1]
 
-## What's Changed
+### What's Changed
 * Bump app and chart versions by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/284
 * chore(deps): bump newrelic/infrastructure-k8s from 2.13.6-unprivileged to 2.13.7-unprivileged by @dependabot in https://github.com/newrelic/newrelic-infra-operator/pull/285
 * Update Helm unit test reference by @juanjjaramillo in https://github.com/newrelic/newrelic-infra-operator/pull/286
@@ -150,8 +152,8 @@ pods would have to be re-created.
 
 * Initial release
 
-[0.1.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.1.0
+<!-- [0.1.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.1.0
 [0.2.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.2.0
 [0.3.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.3.0
 [0.4.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.4.0
-[0.5.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.5.0
+[0.5.0]: https://github.com/newrelic/newrelic-infra-operator/releases/tag/v0.5.0 -->
