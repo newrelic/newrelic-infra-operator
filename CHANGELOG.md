@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### bugfix
 - Fix bug reported in [NR-153839](https://issues.newrelic.com/browse/NR-153839) by @juanjjaramillo in [#319](https://github.com/newrelic/newrelic-infra-operator/pull/319)
-### tests update
+### enhancement
 - Update k8s versions in CI by @xqi-nr in https://github.com/newrelic/newrelic-infra-operator/pull/323
 
 ## [0.10.2]
