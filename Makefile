@@ -28,6 +28,9 @@ build: BINARY_NAME := $(if $(GOARCH),$(BINARY_NAME)-$(GOARCH),$(BINARY_NAME))
 build: ## Compiles operator binary.
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO_CMD) build -o $(BINARY_NAME) -v -buildmode=exe -ldflags $(LD_FLAGS) .
 
+.PHONY: compile
+compile: build
+
 .PHONY: build-test
 build-test: ## Compiles unit tests.
 	$(GO_TEST) -run=nonexistent -tags integration,e2e $(GO_PACKAGES)
