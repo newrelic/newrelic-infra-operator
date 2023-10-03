@@ -6,12 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-### bugfix
-- Fix bug reported in [NR-153839](https://issues.newrelic.com/browse/NR-153839) by @juanjjaramillo in [#319](https://github.com/newrelic/newrelic-infra-operator/pull/319)
-### enhancement
+
+## v0.11.1 - 2023-10-03
+
+### 🐞 Bug fixes
 - Update k8s versions in CI by @xqi-nr in [#323](https://github.com/newrelic/newrelic-infra-operator/pull/323)
 - Refactor `changelog` workflow to use reusable workflow by @juanjjaramillo in [#339](https://github.com/newrelic/newrelic-infra-operator/pull/339)
 - Enable automatic release by @juanjjaramillo in [#341](https://github.com/newrelic/newrelic-infra-operator/pull/341)
+
+### ⛓️ Dependencies
+- Updated alpine to v3.18.4
 
 ## [0.10.2]
 
