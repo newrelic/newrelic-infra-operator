@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### enhancement
 - Update k8s versions in CI by @xqi-nr in [#323](https://github.com/newrelic/newrelic-infra-operator/pull/323)
 - Refactor `changelog` workflow to use reusable workflow by @juanjjaramillo in [#339](https://github.com/newrelic/newrelic-infra-operator/pull/339)
+- Enable automatic release by @juanjjaramillo in [#341](https://github.com/newrelic/newrelic-infra-operator/pull/341)
 
 ## [0.10.2]
 

@@ -10,3 +10,4 @@
 **/charts/*.tgz
 
 /.idea/*
+CHANGELOG.partial.md
