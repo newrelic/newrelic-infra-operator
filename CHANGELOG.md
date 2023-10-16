@@ -7,9 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## v0.11.2 - 2023-10-16
-
-### 🐞 Bug fixes
+### bugfix
 - Address CVE-2023-3978, CVE-2023-44487 and CVE-2023-39325 by juanjjaramillo in [#354](https://github.com/newrelic/newrelic-infra-operator/pull/354)
 
 ## v0.11.1 - 2023-10-03
