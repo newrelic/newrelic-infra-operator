@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### enhancement
 - Remove 1.23 support by @svetlanabrennan in [#364](https://github.com/newrelic/newrelic-infra-operator/pull/364)
-- Add k8s 1.28.0-rc.1 support by @svetlanabrennan
+- Add k8s 1.28.0-rc.1 support by @svetlanabrennan in [#366](https://github.com/newrelic/newrelic-infra-operator/pull/366)
 
 ## v0.11.3 - 2023-10-23
 
