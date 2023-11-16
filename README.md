@@ -131,10 +131,12 @@ Now, when you make changes to the code, the operator binary will be built locall
 
 #### Testing
 
+##### Unit testing
 In order to run unit tests run:
 ```sh
 make test
 ```
+##### Integration and test-e2e testing
 In order to run integration and test-e2e tests run:
 
 ```sh
@@ -149,6 +151,7 @@ Both installing the `newrelic-infra-operator` chart or spinning up the environme
 It is also possible to run such tests against any cluster you have access to by setting the environment variable
 `TEST_KUBECONFIG=/your/kube/config/path`. 
 
+##### E2E testing
 In order to run E2E tests, read the [E2E README](./e2e/README.md) for more details regarding running E2E tests.
 
 ## Support
