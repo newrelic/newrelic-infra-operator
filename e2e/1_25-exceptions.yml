@@ -1,0 +1,2 @@
+# This metrics are not present on 1.25
+except_metrics: []

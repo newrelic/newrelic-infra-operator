@@ -149,6 +149,9 @@ Both installing the `newrelic-infra-operator` chart or spinning up the environme
 It is also possible to run such tests against any cluster you have access to by setting the environment variable
 `TEST_KUBECONFIG=/your/kube/config/path`. 
 
+E2E Testing (Metric NRQL queries):
+Read the [E2E README](./e2e/README.md) for more details regarding running E2E tests to check for NRQL Metric queries.
+
 ## Support
 
 Should you need assistance with New Relic products, you are in good hands with several support diagnostic tools and support channels.
