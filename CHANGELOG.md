@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.13.0 - 2023-11-13
 
+### enhancement
+- Create E2E resources Helm chart by @juanjjaramillo in [#377](https://github.com/newrelic/newrelic-infra-operator/pull/377)
+
 ### 🚀 Enhancements
 - Replace k8s v1.28.0-rc.1 with k8s 1.28.3 support by @svetlanabrennan in [#372](https://github.com/newrelic/newrelic-infra-operator/pull/372)
 
