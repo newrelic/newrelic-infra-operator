@@ -1,0 +1,12 @@
+image:
+  repository: e2e/newrelic-infra-operator
+  tag: e2e
+  pullPolicy: Never
+
+config:
+  infraAgentInjection:
+    policies:
+    - podSelector:
+        matchExpressions:
+        - key: "eks.amazonaws.com/fargate-profile"
+          operator: Exists
