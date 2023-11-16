@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Create E2E resources Helm chart by @juanjjaramillo in [#377](https://github.com/newrelic/newrelic-infra-operator/pull/377)
+
 ## v0.13.0 - 2023-11-13
 
 ### 🚀 Enhancements

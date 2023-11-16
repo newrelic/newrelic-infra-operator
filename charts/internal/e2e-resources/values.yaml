@@ -1,0 +1,13 @@
+# -- Deploy a dummy deployment
+deployment:
+  enabled: true
+
+# -- Deploy in demo mode.
+# Make entities consume non-negligible resources so metrics can be easily observed in the dashboards.
+# This setting only applies to resources that would negatively impact testing times if enabled by default
+demo:
+  enabled: false
+
+# -- Variables for filesystem testing
+fileSystemTest:
+  fileName: 'pi.txt'
