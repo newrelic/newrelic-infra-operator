@@ -1,0 +1,80 @@
+name: E2E over minikube
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - renovate/**
+
+jobs:
+  e2eTests:
+    name: Run E2E Tests
+    # Do not run e2e tests if PR has skip-e2e label
+    if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e') }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Latest patch version can be found in https://kubernetes.io/releases/patch-releases/
+        # Some versions might not be available yet in https://storage.googleapis.com/kubernetes-release/release/v1.X.Y/bin/linux/amd64/kubelet
+        k8sVersion: [ "v1.28.3", "v1.27.5", "v1.26.8","v1.25.13", "v1.24.17"]
+        cri: [ containerd ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Setup Minikube
+        uses: manusa/actions-setup-minikube@3856c6fa039819f1c8e7e248b1fc5a8564e354c9 # v2.9.0
+        with:
+          minikube version: v1.32.0
+          kubernetes version: ${{ matrix.k8sVersion }}
+          driver: docker
+          start args: "--container-runtime=${{ matrix.cri }}"
+
+      - name: Compile, build and load Images
+        run: |
+          GOOS=linux GOARCH=amd64 make compile # Set GOOS and GOARCH explicitly since Dockerfile expects them in the binary name
+          docker build --tag e2e/newrelic-infra-operator:e2e .
+          minikube image load e2e/newrelic-infra-operator:e2e
+
+      - name: Setup Helm
+        run: |
+          helm repo add newrelic-infra-operator https://newrelic.github.io/newrelic-infra-operator
+          helm repo update
+          
+      - name: Select metrics exception file
+        id: exceptions-version
+        run: |
+          MINOR=$(echo "${{ matrix.k8sVersion }}"|sed -e 's_v\([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\)_\2_')
+
+          echo $MINOR
+
+          if [ "$MINOR" -eq 24 ]; then
+            echo "exceptions=1_24" >> $GITHUB_OUTPUT
+          elif [ "$MINOR" -eq 25 ]; then
+            echo "exceptions=1_25" >> $GITHUB_OUTPUT
+          elif [ "$MINOR" -eq 26 ]; then
+            echo "exceptions=1_26" >> $GITHUB_OUTPUT
+          elif [ "$MINOR" -eq 27 ]; then
+            echo "exceptions=1_27" >> $GITHUB_OUTPUT
+          elif [ "$MINOR" -eq 28 ]; then
+            echo "exceptions=1_28" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run E2E test
+        uses: newrelic/newrelic-integration-e2e-action@a97ced80a4841c8c6261d1f9dca6706b1d89acb1 # v1.11.0
+        env:
+          EXCEPTIONS_SOURCE_FILE: ${{ steps.exceptions-version.outputs.exceptions }}-exceptions.yml
+        with:
+          retry_seconds: 60
+          retry_attempts: 5
+          agent_enabled: false
+          spec_path: e2e/test-specs.yml
+          account_id: ${{ secrets.K8S_AGENTS_E2E_ACCOUNT_ID }}
+          api_key: ${{ secrets.K8S_AGENTS_E2E_API_KEY }}
+          license_key: ${{ secrets.K8S_AGENTS_E2E_LICENSE_KEY }}

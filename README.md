@@ -135,22 +135,21 @@ In order to run unit tests run:
 ```sh
 make test
 ```
-In order to run unit tests run:
+In order to run integration and test-e2e tests run:
 
 ```sh
 make test-integration
 make test-e2e
 ```
 
-Notice that in order to run both integration tests and E2e, you will need a working environment available with the
+Notice that in order to run both integration and test-e2e tests, you will need a working environment available with the
 `newrelic-infra-operator` running. 
 Both installing the `newrelic-infra-operator` chart or spinning up the environment with `make tilt-up` are possible options.
 
 It is also possible to run such tests against any cluster you have access to by setting the environment variable
 `TEST_KUBECONFIG=/your/kube/config/path`. 
 
-E2E Testing (Metric NRQL queries):
-Read the [E2E README](./e2e/README.md) for more details regarding running E2E tests to check for NRQL Metric queries.
+In order to run E2E tests, read the [E2E README](./e2e/README.md) for more details regarding running E2E tests.
 
 ## Support
 

@@ -118,7 +118,7 @@ jobs:
         run: make ci
 
   integration:
-    name: Integration and e2e
+    name: Run integration and test-e2e tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -165,7 +165,7 @@ jobs:
           --values ./values-dev.yaml \
           --set image.repository=localhost:5000/newrelic-infra-operator
 
-      - name: Run e2e tests
+      - name: Run test-e2e tests
         run: make test-e2e
 
   static-analysis:
