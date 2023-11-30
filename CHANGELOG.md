@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Update reusable workflow dependency by @juanjjaramillo in [#383](https://github.com/newrelic/newrelic-infra-operator/pull/383)
+
 ## v0.14.0 - 2023-11-20
 
 ### 🚀 Enhancements
