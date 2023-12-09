@@ -6,8 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-### enhancement
+
+## v0.16.0 - 2023-12-09
+
+### 🚀 Enhancements
 - Trigger release creation by @juanjjaramillo [#390](https://github.com/newrelic/newrelic-infra-operator/pull/390)
+
+### ⛓️ Dependencies
+- Updated alpine to v3.19.0
+- Updated go to v1.21.5
 
 ## v0.15.0 - 2023-12-06
 
