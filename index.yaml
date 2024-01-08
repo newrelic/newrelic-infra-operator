@@ -2,6 +2,45 @@ apiVersion: v1
 entries:
   newrelic-infra-operator:
   - apiVersion: v2
+    appVersion: 0.16.1
+    created: "2024-01-08T23:35:14.105755739Z"
+    dependencies:
+    - name: common-library
+      repository: https://helm-charts.newrelic.com
+      version: 1.1.1
+    description: A Helm chart to deploy the New Relic Infrastructure Kubernetes Operator.
+    digest: 1c3783b7e3825211258ac93a10beccbf116a4b91e1ff15af836777c495b872a2
+    home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
+    icon: https://newrelic.com/themes/custom/curio/assets/mediakit/new_relic_logo_vertical.svg
+    keywords:
+    - infrastructure
+    - newrelic
+    - monitoring
+    maintainers:
+    - name: alvarocabanas
+      url: https://github.com/alvarocabanas
+    - name: carlossscastro
+      url: https://github.com/carlossscastro
+    - name: sigilioso
+      url: https://github.com/sigilioso
+    - name: gsanchezgavier
+      url: https://github.com/gsanchezgavier
+    - name: kang-makes
+      url: https://github.com/kang-makes
+    - name: marcsanmi
+      url: https://github.com/marcsanmi
+    - name: paologallinaharbur
+      url: https://github.com/paologallinaharbur
+    - name: roobre
+      url: https://github.com/roobre
+    name: newrelic-infra-operator
+    sources:
+    - https://github.com/newrelic/newrelic-infra-operator
+    - https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator
+    urls:
+    - https://github.com/newrelic/newrelic-infra-operator/releases/download/newrelic-infra-operator-2.8.1/newrelic-infra-operator-2.8.1.tgz
+    version: 2.8.1
+  - apiVersion: v2
     appVersion: 0.16.0
     created: "2023-12-09T05:00:50.775339444Z"
     dependencies:
@@ -1076,4 +1115,4 @@ entries:
     urls:
     - https://github.com/newrelic/newrelic-infra-operator/releases/download/newrelic-infra-operator-0.6.0/newrelic-infra-operator-0.6.0.tgz
     version: 0.6.0
-generated: "2023-12-09T05:00:50.775568163Z"
+generated: "2024-01-08T23:35:14.10601975Z"
