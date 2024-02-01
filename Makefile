@@ -1,8 +1,11 @@
+BIN_DIR = ./bin
+TEST_COVERAGE_DIR := $(BIN_DIR)/test-coverage
+
 # Use ?= for variable assignment so they can be overwritten with environment variables.
 GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
-GO_TEST ?= $(GO_CMD) test -covermode=atomic -run $(GO_TESTS)
+GO_TEST ?= $(GO_CMD) test -count=1 -coverprofile=$(TEST_COVERAGE_DIR)/coverage.out -covermode=count -run $(GO_TESTS)
 
 GOOS ?=
 GOARCH ?=
@@ -37,6 +40,7 @@ build-test: ## Compiles unit tests.
 
 .PHONY: test
 test: ## Runs all unit tests.
+	@mkdir -p $(TEST_COVERAGE_DIR)
 	$(GO_TEST) $(GO_PACKAGES)
 
 .PHONY: test-integration
