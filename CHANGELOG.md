@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-### enhancement
+
+## v0.18.0 - 2024-02-26
+
+### 🚀 Enhancements
 - Add linux node selector @dbudziwojskiNR [#418](https://github.com/newrelic/newrelic-infra-operator/pull/418)
 
 ## v0.17.0 - 2024-02-05
