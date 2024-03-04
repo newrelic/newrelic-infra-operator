@@ -16,7 +16,7 @@ config:
     agentConfig:
       image:
         repository: newrelic/infrastructure-k8s
-        tag: 2.13.10-unprivileged
+        tag: 2.13.15-unprivileged
         pullPolicy: IfNotPresent
       customAttributes:
         - name: computeType
