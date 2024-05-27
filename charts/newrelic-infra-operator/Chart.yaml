@@ -6,8 +6,8 @@ home: https://hub.docker.com/r/newrelic/newrelic-infra-operator
 sources:
   - https://github.com/newrelic/newrelic-infra-operator
   - https://github.com/newrelic/newrelic-infra-operator/tree/main/charts/newrelic-infra-operator
-version: 2.10.0
-appVersion: 0.18.0
+version: 2.10.1
+appVersion: 0.18.1
 dependencies:
   - name: common-library
     version: 1.1.1
