@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v0.18.1 - 2024-05-27
+
+### ⛓️ Dependencies
+- Updated k8s.io/utils digest to fe8a2dd
+- Updated alpine to v3.20.0
+
 ## v0.18.0 - 2024-02-26
 
 ### 🚀 Enhancements
