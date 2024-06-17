@@ -212,3 +212,4 @@ jobs:
           check_filenames: true
           check_hidden: true
           skip: ./.git,go.sum
+          ignore_words_list: enver,NotIn
