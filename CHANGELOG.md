@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Add 1.29 and 1.30 support and drop 1.25 and 1.24 @dbudziwojskiNR [#451](https://github.com/newrelic/newrelic-infra-operator/pull/451)
+
 ## v0.18.1 - 2024-05-27
 
 ### ⛓️ Dependencies
