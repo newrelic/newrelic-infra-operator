@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v0.19.1 - 2024-07-29
+
+### ⛓️ Dependencies
+- Updated alpine to v3.20.2
+- Updated k8s.io/utils digest
+
+## v0.19.0 - 2024-06-24
+
+### 🚀 Enhancements
+- Add 1.29 and 1.30 support and drop 1.25 and 1.24 @dbudziwojskiNR [#451](https://github.com/newrelic/newrelic-infra-operator/pull/451)
+
+### ⛓️ Dependencies
+- Updated alpine to v3.20.1
+
+## v0.18.1 - 2024-05-27
+
+### ⛓️ Dependencies
+- Updated k8s.io/utils digest to fe8a2dd
+- Updated alpine to v3.20.0
+
 ## v0.18.0 - 2024-02-26
 
 ### 🚀 Enhancements

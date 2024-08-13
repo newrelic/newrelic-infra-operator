@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        kubernetes-version: [ "v1.24.17", "v1.25.13", "v1.26.8", "v1.27.5", "v1.28.3"]
+        kubernetes-version: ["v1.30.0", "v1.29.5", "v1.28.3", "v1.27.5", "v1.26.8"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,10 +45,10 @@ jobs:
             fi
           done
       - name: Setup Minikube
-        uses: manusa/actions-setup-minikube@v2.10.0
+        uses: manusa/actions-setup-minikube@v2.11.0
         if: steps.list-changed.outputs.changed == 'true'
         with:
-          minikube version: v1.32.0
+          minikube version: v1.33.1
           kubernetes version: ${{ matrix.kubernetes-version }}
           github token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v5
@@ -92,14 +92,14 @@ jobs:
       # Regardless of whether `key` was found or not, it will be created at the end of the run.
       # With this mechanism, we ensure caches are cycled regularly.
       - name: Go modules cache
-        uses: actions/cache@v4.0.1
+        uses: actions/cache@v4.0.2
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v4.0.1
+        uses: actions/cache@v4.0.2
         with:
           path: ~/.cache/go-build
           key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
@@ -130,14 +130,14 @@ jobs:
           go-version-file: 'go.mod'
         id: go
       - name: Go modules cache
-        uses: actions/cache@v4.0.1
+        uses: actions/cache@v4.0.2
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v4.0.1
+        uses: actions/cache@v4.0.2
         with:
           path: ~/.cache/go-build
           key: gobuild-linux-amd64-${{ github.sha }}
@@ -154,7 +154,7 @@ jobs:
         run: make test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         with:
           fail_ci_if_error: false
         env:
@@ -194,7 +194,7 @@ jobs:
       #   with:
       #     auditOn: push
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6
         continue-on-error: ${{ github.event_name != 'pull_request' }}
         with:
           only-new-issues: true
@@ -212,3 +212,4 @@ jobs:
           check_filenames: true
           check_hidden: true
           skip: ./.git,go.sum
+          ignore_words_list: enver,NotIn
