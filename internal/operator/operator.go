@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
@@ -101,10 +102,16 @@ func Run(ctx context.Context, options Options) error {
 
 func (o *Options) toManagerOptions() manager.Options {
 	return manager.Options{
-		CertDir:                o.CertDir,
 		HealthProbeBindAddress: o.HealthProbeBindAddress,
-		Port:                   o.Port,
-		MetricsBindAddress:     o.MetricsBindAddress,
+		WebhookServer: &webhook.DefaultServer{
+			Options: webhook.Options{
+				Port:    o.Port,
+				CertDir: o.CertDir,
+			},
+		},
+		Metrics: metricsserver.Options{
+			BindAddress: o.MetricsBindAddress,
+		},
 	}
 }
 
