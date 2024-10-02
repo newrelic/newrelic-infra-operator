@@ -184,10 +184,7 @@ func newHandler(t *testing.T) *podMutatorHandler {
 		t.Fatalf("adding corev1 to scheme: %v", err)
 	}
 
-	d, err := admission.NewDecoder(scheme)
-	if err != nil {
-		t.Fatalf("creating decoder: %v", err)
-	}
+	d := admission.NewDecoder(scheme)
 
 	return &podMutatorHandler{
 		decoder: d,
