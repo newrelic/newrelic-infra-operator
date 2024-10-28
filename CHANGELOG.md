@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### enhancement
+## v0.20.0 - 2024-10-28
+
+### 🚀 Enhancements
 - Add 1.31 support and drop 1.26 @zeitlerc [#476](https://github.com/newrelic/newrelic-infra-operator/pull/476)
 
 ## v0.19.4 - 2024-10-07
