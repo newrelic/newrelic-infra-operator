@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Update net to 0.23.0 and protobuf to 1.33.0 @ramkrishankumarN [#481](https://github.com/newrelic/newrelic-infra-operator/pull/481)
+
 ## v0.20.0 - 2024-10-28
 
 ### 🚀 Enhancements
