@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### enhancement
+## v0.22.0 - 2025-03-24
+
+### 🚀 Enhancements
 - Add v1.32 support and drop support for v1.27 @kpattaswamy [#529](https://github.com/newrelic/newrelic-infra-operator/pull/529)
+
+### ⛓️ Dependencies
+- Upgraded github.com/google/go-cmp from 0.6.0 to 0.7.0 - [Changelog 🔗](https://github.com/google/go-cmp/releases/tag/v0.7.0)
 
 ## v0.21.6 - 2025-02-17
 
