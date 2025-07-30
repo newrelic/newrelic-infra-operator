@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/go-logr/logr"
 	"github.com/newrelic/newrelic-infra-operator/internal/testutil"
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
@@ -184,13 +184,10 @@ func newHandler(t *testing.T) *podMutatorHandler {
 		t.Fatalf("adding corev1 to scheme: %v", err)
 	}
 
-	d, err := admission.NewDecoder(scheme)
-	if err != nil {
-		t.Fatalf("creating decoder: %v", err)
-	}
+	d := admission.NewDecoder(scheme)
 
 	return &podMutatorHandler{
 		decoder: d,
-		logger:  logrus.New(),
+		logger:  logr.Logger{},
 	}
 }
