@@ -29,10 +29,7 @@ const (
 
 // Options holds the configuration for an operator.
 type Options struct {
-	CertDir                string         `json:"certDir"`
 	HealthProbeBindAddress string         `json:"healthProbeBindAddress"`
-	MetricsBindAddress     string         `json:"metricsBindAddress"`
-	Port                   int            `json:"port"`
 	RestConfig             *rest.Config   `json:"-"`
 	Logger                 *logrus.Logger `json:"-"`
 	IgnoreMutationErrors   bool           `json:"ignoreMutationErrors"`
@@ -101,10 +98,7 @@ func Run(ctx context.Context, options Options) error {
 
 func (o *Options) toManagerOptions() manager.Options {
 	return manager.Options{
-		CertDir:                o.CertDir,
 		HealthProbeBindAddress: o.HealthProbeBindAddress,
-		Port:                   o.Port,
-		MetricsBindAddress:     o.MetricsBindAddress,
 	}
 }
 

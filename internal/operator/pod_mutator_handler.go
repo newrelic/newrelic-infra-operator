@@ -20,7 +20,7 @@ type podMutator interface {
 }
 
 type podMutatorHandler struct {
-	decoder              *admission.Decoder
+	decoder              admission.Decoder
 	mutators             []podMutator
 	ignoreMutationErrors bool
 	logger               *logrus.Logger
@@ -46,7 +46,7 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 		if err := m.Mutate(ctx, pod, requestOptions); err != nil {
 			if a.ignoreMutationErrors {
 				a.logger.Warnf("Pod %s/%s mutation failed: %v", pod.Name, req.Namespace, err)
-
+				// Return the original unmodified pod without mutation
 				return admission.PatchResponseFromRaw(req.Object.Raw, req.Object.Raw)
 			}
 
@@ -63,8 +63,7 @@ func (a *podMutatorHandler) Handle(ctx context.Context, req admission.Request) a
 }
 
 // InjectDecoder injects the decoder and is useful to respect the DecoderInjector interface.
-func (a *podMutatorHandler) InjectDecoder(d *admission.Decoder) error {
+func (a *podMutatorHandler) InjectDecoder(d admission.Decoder) error {
 	a.decoder = d
-
 	return nil
 }
