@@ -8,10 +8,11 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -140,7 +141,12 @@ type Injector interface {
 }
 
 // New function is the constructor for the injector struct.
-func (config InjectorConfig) New(client, noCacheClient client.Client, logger *logrus.Logger) (Injector, error) {
+func (config InjectorConfig) New(client, noCacheClient client.Client, logger logr.Logger) (Injector, error) {
+
+	if !logger.Enabled() {
+		return nil, errors.New("logger is not initialized")
+	}
+
 	config.AgentConfig.CustomAttributes = append(config.AgentConfig.CustomAttributes, CustomAttribute{
 		Name:         clusterNameAttribute,
 		DefaultValue: config.ClusterName,
@@ -148,10 +154,6 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 
 	if err := config.validate(); err != nil {
 		return nil, fmt.Errorf("validating configuration: %w", err)
-	}
-
-	if logger == nil {
-		return nil, fmt.Errorf("no logger given")
 	}
 
 	licenseSecretName := fmt.Sprintf("%s%s", config.ResourcePrefix, LicenseSecretSuffix)
@@ -172,7 +174,7 @@ func (config InjectorConfig) New(client, noCacheClient client.Client, logger *lo
 		return nil, fmt.Errorf("calculating config hash: %w", err)
 	}
 
-	logger.Infof("'%s' label value for Pod with no config selector: '%s'", InjectedLabel, hash)
+	logger.Info("label value for Pod with no config selector", "InjectedLabel", InjectedLabel, "hash", hash)
 
 	if err := config.buildPolicies(); err != nil {
 		return nil, fmt.Errorf("building policies: %w", err)
@@ -496,7 +498,9 @@ type configHash struct {
 	Container            corev1.Container
 }
 
-func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, logger *logrus.Logger) error {
+// The logr.Logger type is an interface.
+// In Go, interfaces are typically passed by value because they are already reference types under the hood
+func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, logger logr.Logger) error {
 	for i, r := range config.AgentConfig.ConfigSelectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 		if err != nil {
@@ -521,7 +525,8 @@ func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, l
 			return fmt.Errorf("calculating config hash: %w", err)
 		}
 
-		logger.Infof("'%s' label value for Pod with config selector %d: '%s'", InjectedLabel, i, hash)
+		logger.Info("label value for Pod with config selector", "InjectedLabel", InjectedLabel,
+			"idx", i, "hash", hash)
 
 		config.AgentConfig.ConfigSelectors[i].hash = hash
 	}
