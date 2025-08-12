@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -81,7 +80,7 @@ func Run(ctx context.Context, options Options) error {
 	admission := &webhook.Admission{
 		Handler: &podMutatorHandler{
 			ignoreMutationErrors: options.IgnoreMutationErrors,
-			logger:               ctrl.Log.WithName("entrypoint2"),
+			logger:               options.Logger,
 			mutators: []podMutator{
 				agentInjector,
 			},
