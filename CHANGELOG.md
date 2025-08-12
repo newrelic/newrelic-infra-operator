@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### dependency
+- Update golang.org/x/oauth2 to v0.27.0 @TmNguyen12 [#568](https://github.com/newrelic/newrelic-infra-operator/pull/568)
 ## v0.23.0 - 2025-08-11
 
 ### 🚀 Enhancements
