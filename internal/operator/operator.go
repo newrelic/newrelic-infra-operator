@@ -8,14 +8,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/go-logr/logr"
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 )
 
@@ -29,10 +30,10 @@ const (
 
 // Options holds the configuration for an operator.
 type Options struct {
-	HealthProbeBindAddress string         `json:"healthProbeBindAddress"`
-	RestConfig             *rest.Config   `json:"-"`
-	Logger                 *logrus.Logger `json:"-"`
-	IgnoreMutationErrors   bool           `json:"ignoreMutationErrors"`
+	HealthProbeBindAddress string       `json:"healthProbeBindAddress"`
+	RestConfig             *rest.Config `json:"-"`
+	Logger                 logr.Logger  `json:"-"`
+	IgnoreMutationErrors   bool         `json:"ignoreMutationErrors"`
 
 	InfraAgentInjection agent.InjectorConfig `json:"infraAgentInjection"`
 }
@@ -80,7 +81,7 @@ func Run(ctx context.Context, options Options) error {
 	admission := &webhook.Admission{
 		Handler: &podMutatorHandler{
 			ignoreMutationErrors: options.IgnoreMutationErrors,
-			logger:               options.Logger,
+			logger:               ctrl.Log.WithName("entrypoint2"),
 			mutators: []podMutator{
 				agentInjector,
 			},
