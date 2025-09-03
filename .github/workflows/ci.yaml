@@ -180,6 +180,8 @@ jobs:
           --set image.repository=localhost:5000/newrelic-infra-operator
 
       - name: Run test-e2e tests
+        env:
+          KUBECONFIG: ./kubeconfig
         run: make test-e2e
 
   static-analysis:
