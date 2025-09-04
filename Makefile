@@ -47,10 +47,6 @@ test: ## Runs all unit tests.
 test-integration: ## Runs all integration tests.
 	KUBECONFIG=$(TEST_KUBECONFIG) USE_EXISTING_CLUSTER=true $(GO_TEST) -tags integration $(GO_PACKAGES)
 
-.PHONY: kc
-kc:
-	KUBECONFIG=$(TEST_KUBECONFIG)
-
 .PHONY: test-e2e
 test-e2e: ## Runs all e2e tests. Expects operator to be installed on the cluster using Helm chart.
 	KUBECONFIG=$(TEST_KUBECONFIG) $(GO_TEST) -tags e2e $(GO_PACKAGES)

@@ -182,7 +182,9 @@ jobs:
       - name: Run test-e2e tests
         env:
           KUBECONFIG: ./kubeconfig
-        run: make test-e2e
+        run: |
+          sleep 10s
+          make test-e2e
 
   static-analysis:
     name: Static analysis and linting
