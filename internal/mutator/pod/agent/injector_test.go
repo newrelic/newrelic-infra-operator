@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/utils/ptr"
+
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testr"
 	"github.com/google/go-cmp/cmp"
@@ -16,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -179,7 +180,7 @@ func Test_Creating_injector(t *testing.T) {
 	})
 }
 
-//nolint:funlen,gocognit,cyclop,gocyclo
+//nolint:funlen,gocognit,cyclop,gocyclo,maintidx
 func Test_Mutate(t *testing.T) {
 	t.Parallel()
 
@@ -373,6 +374,7 @@ func Test_Mutate(t *testing.T) {
 			}
 		})
 
+		//nolint:dupl
 		t.Run("and_when_RunAsUser_is_configured_to_non_zero_value_it_gets_set_on_injected_container", func(t *testing.T) {
 			t.Parallel()
 
@@ -381,7 +383,7 @@ func Test_Mutate(t *testing.T) {
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 
-			expectedUID := pointer.Int64Ptr(1000)
+			expectedUID := ptr.To[int64](1000)
 			config.AgentConfig.PodSecurityContext.RunAsUser = *expectedUID
 
 			i, err := config.New(c, c, testr.New(t))
@@ -400,6 +402,7 @@ func Test_Mutate(t *testing.T) {
 			}
 		})
 
+		//nolint:dupl
 		t.Run("and_when_RunAsGroup_is_configured_to_non_zero_value_it_gets_set_on_injected_container", func(t *testing.T) {
 			t.Parallel()
 
@@ -408,7 +411,7 @@ func Test_Mutate(t *testing.T) {
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 
-			expectedGID := pointer.Int64Ptr(1000)
+			expectedGID := ptr.To[int64](1000)
 			config.AgentConfig.PodSecurityContext.RunAsGroup = *expectedGID
 
 			i, err := config.New(c, c, testr.New(t))
@@ -1224,7 +1227,7 @@ func Test_Mutate(t *testing.T) {
 	})
 }
 
-//nolint:funlen,gocognit,cyclop
+//nolint:funlen,gocognit,cyclop,gocyclo
 func Test_Mutation_hash(t *testing.T) {
 	t.Parallel()
 
@@ -1252,7 +1255,7 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("mutating Pod: %v", err)
 		}
 
-		baseHash, ok := basePod.ObjectMeta.Labels[agent.InjectedLabel]
+		baseHash, ok := basePod.Labels[agent.InjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}
@@ -1313,7 +1316,7 @@ func Test_Mutation_hash(t *testing.T) {
 					t.Fatalf("mutating Pod: %v", err)
 				}
 
-				newHash, ok := p.ObjectMeta.Labels[agent.InjectedLabel]
+				newHash, ok := p.Labels[agent.InjectedLabel]
 				if !ok {
 					t.Fatalf("missing injected label")
 				}
@@ -1341,7 +1344,7 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("mutating first pod: %v", err)
 		}
 
-		firstHash, ok := p.ObjectMeta.Labels[agent.InjectedLabel]
+		firstHash, ok := p.Labels[agent.InjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}
@@ -1354,7 +1357,7 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("mutating second pod: %v", err)
 		}
 
-		secondHash, ok := p2.ObjectMeta.Labels[agent.InjectedLabel]
+		secondHash, ok := p2.Labels[agent.InjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}

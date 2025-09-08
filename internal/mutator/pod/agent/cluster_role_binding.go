@@ -20,7 +20,8 @@ const (
 func (i *injector) ensureClusterRoleBindingSubject(
 	ctx context.Context,
 	serviceAccountName string,
-	serviceAccountNamespace string) error {
+	serviceAccountNamespace string,
+) error {
 	crb := &rbacv1.ClusterRoleBinding{}
 	key := client.ObjectKey{
 		Name: i.clusterRoleBindingName,
@@ -45,7 +46,8 @@ func (i *injector) updateClusterRoleBinding(
 	ctx context.Context,
 	crb *rbacv1.ClusterRoleBinding,
 	serviceAccountName string,
-	serviceAccountNamespace string) error {
+	serviceAccountNamespace string,
+) error {
 	crb.Subjects = append(crb.Subjects, rbacv1.Subject{
 		Kind:      rbacv1.ServiceAccountKind,
 		Name:      serviceAccountName,

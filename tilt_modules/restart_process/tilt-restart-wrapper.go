@@ -3,7 +3,7 @@
 //
 // This is Tilt's recommended way of restarting a process as part of a live_update:
 // if your container invokes your app via the restart wrapper (e.g. `tilt-restart-wrapper /bin/my-app`),
-// you can trigger re-excecution of you app with a live_update `run` step that makes
+// you can trigger re-execution of you app with a live_update `run` step that makes
 // a trivial change to the file watched by `entr` (e.g. `run('date > /.restart-proc')`)
 //
 // This script exists (i.e. we're wrapping `entr` in a binary instead of invoking
@@ -27,9 +27,11 @@
 // but (for a number of good reasons) this feature isn't likely to be added any
 // time soon (see https://github.com/eradman/entr/issues/33).
 
+//nolint:gochecknoglobals,gosec,nestif,noctx
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -39,8 +41,10 @@ import (
 	"syscall"
 )
 
-var watchFile = flag.String("watch_file", "/.restart-proc", "File that entr will watch for changes; changes to this file trigger `entr` to rerun the command(s) passed")
-var entrPath = flag.String("entr_path", "/entr", "Path to `entr` executable")
+var (
+	watchFile = flag.String("watch_file", "/.restart-proc", "File that entr will watch for changes; changes to this file trigger `entr` to rerun the command(s) passed")
+	entrPath  = flag.String("entr_path", "/entr", "Path to `entr` executable")
+)
 
 func main() {
 	flag.Parse()
@@ -52,7 +56,8 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		if exiterr, ok := err.(*exec.ExitError); ok {
+		var exiterr *exec.ExitError
+		if errors.As(err, &exiterr) {
 			// The program has exited with an exit code != 0
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 				if len(flag.Args()) == 0 {
@@ -61,13 +66,11 @@ func main() {
 				}
 				os.Exit(status.ExitStatus())
 			}
-		} else {
-			log.Fatalf("error running command: %v", err)
 		}
 	}
 
 	if len(flag.Args()) == 0 {
-		log.Fatal("`tilt-restart-wrapper` requires at least one positional arg "+
+		log.Fatal("`tilt-restart-wrapper` requires at least one positional arg " +
 			"(will be passed to `entr` and executed / rerun whenever `watch_file` changes)")
 	}
 }

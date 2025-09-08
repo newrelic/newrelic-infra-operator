@@ -1,6 +1,7 @@
 // Copyright 2022 New Relic Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:err113
 package operator
 
 import (
@@ -19,7 +20,7 @@ import (
 	"github.com/newrelic/newrelic-infra-operator/internal/webhook"
 )
 
-//nolint:funlen,cyclop
+//nolint:funlen,cyclop,gocyclo
 func Test_Pod_mutator_handle(t *testing.T) {
 	t.Parallel()
 
@@ -77,7 +78,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 
 		handler.mutators = []podMutator{
 			&mockMutator{
-				mutateF: func(_ context.Context, pod *corev1.Pod, _ webhook.RequestOptions) error {
+				mutateF: func(_ context.Context, _ *corev1.Pod, _ webhook.RequestOptions) error {
 					return fmt.Errorf("test error")
 				},
 			},
@@ -117,6 +118,7 @@ func Test_Pod_mutator_handle(t *testing.T) {
 		})
 
 		t.Run("one_of_the_mutators_returns_error", func(t *testing.T) {
+			t.Parallel()
 			handler := newHandler(t)
 
 			handler.mutators = []podMutator{

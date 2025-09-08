@@ -5,7 +5,7 @@ TEST_COVERAGE_DIR := $(BIN_DIR)/test-coverage
 GO_PACKAGES ?= ./...
 GO_TESTS ?= ^.*$
 GO_CMD ?= go
-GO_TEST ?= $(GO_CMD) test -count=1 -coverprofile=$(TEST_COVERAGE_DIR)/coverage.out -covermode=count -run $(GO_TESTS)
+GO_TEST ?= $(GO_CMD) test -count=1 -covermode=count -run $(GO_TESTS)
 
 GOOS ?=
 GOARCH ?=
@@ -36,20 +36,20 @@ compile: build
 
 .PHONY: build-test
 build-test: ## Compiles unit tests.
-	$(GO_TEST) -run=nonexistent -tags integration,e2e $(GO_PACKAGES)
+	$(GO_TEST) -run=nonexistent -tags integration,e2e $(GO_PACKAGES) -coverprofile=$(TEST_COVERAGE_DIR)/coverage-int.out
 
 .PHONY: test
 test: ## Runs all unit tests.
 	@mkdir -p $(TEST_COVERAGE_DIR)
-	$(GO_TEST) $(GO_PACKAGES)
+	$(GO_TEST) $(GO_PACKAGES) -coverprofile=$(TEST_COVERAGE_DIR)/coverage-unit.out
 
 .PHONY: test-integration
 test-integration: ## Runs all integration tests.
-	KUBECONFIG=$(TEST_KUBECONFIG) USE_EXISTING_CLUSTER=true $(GO_TEST) -tags integration $(GO_PACKAGES)
+	KUBECONFIG=$(TEST_KUBECONFIG) USE_EXISTING_CLUSTER=true $(GO_TEST) -tags integration $(GO_PACKAGES) -coverprofile=$(TEST_COVERAGE_DIR)/coverage-int.out
 
 .PHONY: test-e2e
 test-e2e: ## Runs all e2e tests. Expects operator to be installed on the cluster using Helm chart.
-	KUBECONFIG=$(TEST_KUBECONFIG) $(GO_TEST) -tags e2e $(GO_PACKAGES)
+	KUBECONFIG=$(TEST_KUBECONFIG) $(GO_TEST) -tags e2e $(GO_PACKAGES) -coverprofile=$(TEST_COVERAGE_DIR)/coverage-e2e.out
 
 .PHONY: ci
 ci: check-tidy build test ## Runs checks performed by CI without external dependencies required (e.g. golangci-lint).
