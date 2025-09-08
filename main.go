@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-
 	ctrl.SetLogger(zap.New())
 
 	entryLog := ctrl.Log.WithName("entrypoint")

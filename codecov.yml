@@ -1,0 +1,3 @@
+ignore:
+  - "tilt_modules"
+  - "main.go"

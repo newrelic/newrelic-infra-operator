@@ -8,11 +8,14 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/go-logr/logr"
@@ -29,7 +32,10 @@ const (
 
 // Options holds the configuration for an operator.
 type Options struct {
+	CertDir                string       `json:"certDir"`
 	HealthProbeBindAddress string       `json:"healthProbeBindAddress"`
+	MetricsBindAddress     string       `json:"metricsBindAddress"`
+	Port                   int          `json:"port"`
 	RestConfig             *rest.Config `json:"-"`
 	Logger                 logr.Logger  `json:"-"`
 	IgnoreMutationErrors   bool         `json:"ignoreMutationErrors"`
@@ -77,8 +83,9 @@ func Run(ctx context.Context, options Options) error {
 		return fmt.Errorf("creating injector: %w", err)
 	}
 
-	admission := &webhook.Admission{
+	admissionWebhook := &webhook.Admission{
 		Handler: &podMutatorHandler{
+			decoder:              admission.NewDecoder(mgr.GetScheme()),
 			ignoreMutationErrors: options.IgnoreMutationErrors,
 			logger:               options.Logger,
 			mutators: []podMutator{
@@ -87,7 +94,7 @@ func Run(ctx context.Context, options Options) error {
 		},
 	}
 
-	mgr.GetWebhookServer().Register(PodMutateEndpoint, admission)
+	mgr.GetWebhookServer().Register(PodMutateEndpoint, admissionWebhook)
 
 	if err := mgr.Start(ctx); err != nil {
 		return fmt.Errorf("running manager: %w", err)
@@ -99,6 +106,15 @@ func Run(ctx context.Context, options Options) error {
 func (o *Options) toManagerOptions() manager.Options {
 	return manager.Options{
 		HealthProbeBindAddress: o.HealthProbeBindAddress,
+		Metrics: metricsserver.Options{
+			BindAddress: o.MetricsBindAddress,
+			CertDir:     o.CertDir,
+		},
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port:    o.Port,
+			CertDir: o.CertDir,
+		}),
+		Logger: o.Logger,
 	}
 }
 

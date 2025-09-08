@@ -6,11 +6,14 @@ package agent
 
 import (
 	"context"
+	//nolint:gosec
 	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+
+	"k8s.io/utils/ptr"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -55,6 +57,8 @@ const (
 
 	clusterNameAttribute = "clusterName"
 )
+
+var errEmpty = errors.New("empty value: ")
 
 // injector holds agent injection configuration.
 type injector struct {
@@ -120,6 +124,7 @@ func (cas CustomAttributes) toString(podLabels map[string]string) (string, error
 		}
 
 		if value == "" {
+			//nolint:err113
 			return "", fmt.Errorf("value for custom attribute %q is empty", ca.Name)
 		}
 
@@ -128,7 +133,7 @@ func (cas CustomAttributes) toString(podLabels map[string]string) (string, error
 
 	casRaw, err := json.Marshal(output)
 	if err != nil {
-		return "", fmt.Errorf("marshalling attributes: %w", err)
+		return "", fmt.Errorf("marshaling attributes: %w", err)
 	}
 
 	return string(casRaw), nil
@@ -141,10 +146,12 @@ type Injector interface {
 }
 
 // New function is the constructor for the injector struct.
+//
+//nolint:ireturn
 func (config InjectorConfig) New(client, noCacheClient client.Client, logger logr.Logger) (Injector, error) {
-
 	if !logger.Enabled() {
-		return nil, errors.New("logger is not initialized")
+		//nolint:err113
+		return nil, fmt.Errorf("logger is not initialized")
 	}
 
 	config.AgentConfig.CustomAttributes = append(config.AgentConfig.CustomAttributes, CustomAttribute{
@@ -220,40 +227,43 @@ func (config *InjectorConfig) buildPolicies() error {
 	return nil
 }
 
-//nolint:cyclop
+//nolint:cyclop,gocyclo
 func (config InjectorConfig) validate() error {
 	if config.License == "" {
-		return fmt.Errorf("license key is empty")
+		return fmt.Errorf("%w: %s", errEmpty, "license key")
 	}
 
 	if config.ClusterName == "" {
-		return fmt.Errorf("cluster name is empty")
+		return fmt.Errorf("%w: %s", errEmpty, "cluster name")
 	}
 
 	if config.AgentConfig.Image.Tag == "" {
-		return fmt.Errorf("config.infraAgentInjection.agentConfig.Image.Tag is empty")
+		return fmt.Errorf("%w: %s", errEmpty, "config.infraAgentInjection.agentConfig.Image.Tag")
 	}
 
 	if config.AgentConfig.Image.Repository == "" {
-		return fmt.Errorf("config.infraAgentInjection.agentConfig.Image.Repository is empty")
+		return fmt.Errorf("%w: %s", errEmpty, "config.infraAgentInjection.agentConfig.Image.Repository")
 	}
 
 	if config.ResourcePrefix == "" {
-		return fmt.Errorf("config.infraAgentInjection.ResourcePrefix is empty")
+		return fmt.Errorf("%w: %s", errEmpty, "config.infraAgentInjection.ResourcePrefix")
 	}
 
 	customAttributeNames := map[string]struct{}{}
 
 	for i, ca := range config.AgentConfig.CustomAttributes {
 		if ca.Name == "" {
+			//nolint:err113
 			return fmt.Errorf("custom attribute %d has empty name", i)
 		}
 
 		if ca.DefaultValue == "" && ca.FromLabel == "" {
+			//nolint:err113
 			return fmt.Errorf("custom attribute %q has no value defined", ca.Name)
 		}
 
 		if _, ok := customAttributeNames[ca.Name]; ok {
+			//nolint:err113
 			return fmt.Errorf("duplicate custom attribute %q defined", ca.Name)
 		}
 
@@ -261,6 +271,7 @@ func (config InjectorConfig) validate() error {
 	}
 
 	if len(config.Policies) == 0 {
+		//nolint:err113
 		return fmt.Errorf("at least one injection policy must be configured")
 	}
 
@@ -275,8 +286,8 @@ func (config InjectorConfig) container(licenseSecretName string) corev1.Containe
 		Env:             standardEnvVar(licenseSecretName, config.ClusterName),
 		VolumeMounts:    standardVolumes(),
 		SecurityContext: &corev1.SecurityContext{
-			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+			ReadOnlyRootFilesystem:   ptr.To[bool](true),
+			AllowPrivilegeEscalation: ptr.To[bool](false),
 		},
 	}
 
@@ -367,6 +378,7 @@ func (i *injector) canInjectContainer(pod *corev1.Pod, containerToInject corev1.
 
 	// Checking if there is any overlapping with the volumes we want to mount and the volumes already present.
 	if len(duplicateVolumeNames) > 0 {
+		//nolint:err113
 		return fmt.Errorf("injecting agent would produce duplicate Pod volumes: %s",
 			strings.Join(duplicateVolumeNames, ","))
 	}
@@ -499,7 +511,7 @@ type configHash struct {
 }
 
 // The logr.Logger type is an interface.
-// In Go, interfaces are typically passed by value because they are already reference types under the hood
+// In Go, interfaces are typically passed by value because they are already reference types under the hood.
 func (config *InjectorConfig) buildConfigSelectors(container corev1.Container, logger logr.Logger) error {
 	for i, r := range config.AgentConfig.ConfigSelectors {
 		selector, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
@@ -627,7 +639,7 @@ func getAgentPassthroughEnvironment() string {
 func (c configHash) calculate() (string, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {
-		return "", fmt.Errorf("marshalling input: %w", err)
+		return "", fmt.Errorf("marshaling input: %w", err)
 	}
 
 	h := sha1.New() // nosemgrep
