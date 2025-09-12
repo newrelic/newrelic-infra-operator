@@ -8,14 +8,16 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/utils/ptr"
+
+	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/testr"
 	"github.com/google/go-cmp/cmp"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -136,7 +138,7 @@ func Test_Creating_injector(t *testing.T) {
 
 				c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
-				i, err := config.New(c, c, logrus.New())
+				i, err := config.New(c, c, testr.New(t))
 				if err == nil {
 					t.Errorf("expected error from creating injector")
 				}
@@ -153,7 +155,8 @@ func Test_Creating_injector(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
-			i, err := config.New(c, c, nil)
+			var emptyLogger logr.Logger
+			i, err := config.New(c, c, emptyLogger)
 			if err == nil {
 				t.Errorf("expected error from creating injector")
 			}
@@ -171,13 +174,13 @@ func Test_Creating_injector(t *testing.T) {
 
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
-		if _, err := config.New(c, c, logrus.New()); err != nil {
+		if _, err := config.New(c, c, testr.New(t)); err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
 	})
 }
 
-//nolint:funlen,gocognit,cyclop,gocyclo
+//nolint:funlen,gocognit,cyclop,gocyclo,maintidx
 func Test_Mutate(t *testing.T) {
 	t.Parallel()
 
@@ -200,7 +203,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -245,7 +248,7 @@ func Test_Mutate(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -371,6 +374,7 @@ func Test_Mutate(t *testing.T) {
 			}
 		})
 
+		//nolint:dupl
 		t.Run("and_when_RunAsUser_is_configured_to_non_zero_value_it_gets_set_on_injected_container", func(t *testing.T) {
 			t.Parallel()
 
@@ -379,10 +383,10 @@ func Test_Mutate(t *testing.T) {
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 
-			expectedUID := pointer.Int64Ptr(1000)
+			expectedUID := ptr.To[int64](1000)
 			config.AgentConfig.PodSecurityContext.RunAsUser = *expectedUID
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -398,6 +402,7 @@ func Test_Mutate(t *testing.T) {
 			}
 		})
 
+		//nolint:dupl
 		t.Run("and_when_RunAsGroup_is_configured_to_non_zero_value_it_gets_set_on_injected_container", func(t *testing.T) {
 			t.Parallel()
 
@@ -406,10 +411,10 @@ func Test_Mutate(t *testing.T) {
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 
-			expectedGID := pointer.Int64Ptr(1000)
+			expectedGID := ptr.To[int64](1000)
 			config.AgentConfig.PodSecurityContext.RunAsGroup = *expectedGID
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -463,7 +468,7 @@ func Test_Mutate(t *testing.T) {
 				},
 			}
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -520,7 +525,7 @@ func Test_Mutate(t *testing.T) {
 				},
 			}
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -553,7 +558,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -617,7 +622,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -634,7 +639,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -680,7 +685,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(crb).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -719,7 +724,7 @@ func Test_Mutate(t *testing.T) {
 		crb := getCRB(testResourcePrefix)
 		c := fake.NewClientBuilder().WithObjects(crb).Build()
 
-		i, err := getConfig().New(c, c, logrus.New())
+		i, err := getConfig().New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -865,7 +870,7 @@ func Test_Mutate(t *testing.T) {
 
 				c := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-				i, err := config.New(c, c, logrus.New())
+				i, err := config.New(c, c, testr.New(t))
 				if err != nil {
 					t.Fatalf("creating injector: %v", err)
 				}
@@ -1029,7 +1034,7 @@ func Test_Mutate(t *testing.T) {
 
 				c := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-				i, err := config.New(c, c, logrus.New())
+				i, err := config.New(c, c, testr.New(t))
 				if err != nil {
 					t.Fatalf("creating injector: %v", err)
 				}
@@ -1065,7 +1070,7 @@ func Test_Mutate(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -1091,7 +1096,7 @@ func Test_Mutate(t *testing.T) {
 		newLicense := "bar"
 		config.License = newLicense
 
-		i, err = config.New(c, c, logrus.New())
+		i, err = config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -1133,7 +1138,7 @@ func Test_Mutate(t *testing.T) {
 			c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 			config := getConfig()
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -1150,7 +1155,7 @@ func Test_Mutate(t *testing.T) {
 			c := fake.NewClientBuilder().Build()
 			config := getConfig()
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -1180,7 +1185,7 @@ func Test_Mutate(t *testing.T) {
 				},
 			}
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -1210,7 +1215,7 @@ func Test_Mutate(t *testing.T) {
 				},
 			}
 
-			i, err := config.New(c, c, logrus.New())
+			i, err := config.New(c, c, testr.New(t))
 			if err != nil {
 				t.Fatalf("creating injector: %v", err)
 			}
@@ -1222,7 +1227,7 @@ func Test_Mutate(t *testing.T) {
 	})
 }
 
-//nolint:funlen,gocognit,cyclop
+//nolint:funlen,gocognit,cyclop,gocyclo
 func Test_Mutation_hash(t *testing.T) {
 	t.Parallel()
 
@@ -1241,7 +1246,7 @@ func Test_Mutation_hash(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -1250,7 +1255,7 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("mutating Pod: %v", err)
 		}
 
-		baseHash, ok := basePod.ObjectMeta.Labels[agent.InjectedLabel]
+		baseHash, ok := basePod.Labels[agent.InjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}
@@ -1302,7 +1307,7 @@ func Test_Mutation_hash(t *testing.T) {
 
 				mutateConfigF(config)
 
-				i, err := config.New(c, c, logrus.New())
+				i, err := config.New(c, c, testr.New(t))
 				if err != nil {
 					t.Fatalf("creating injector: %v", err)
 				}
@@ -1311,7 +1316,7 @@ func Test_Mutation_hash(t *testing.T) {
 					t.Fatalf("mutating Pod: %v", err)
 				}
 
-				newHash, ok := p.ObjectMeta.Labels[agent.InjectedLabel]
+				newHash, ok := p.Labels[agent.InjectedLabel]
 				if !ok {
 					t.Fatalf("missing injected label")
 				}
@@ -1330,7 +1335,7 @@ func Test_Mutation_hash(t *testing.T) {
 		c := fake.NewClientBuilder().WithObjects(getCRB(testResourcePrefix)).Build()
 		config := getConfig()
 
-		i, err := config.New(c, c, logrus.New())
+		i, err := config.New(c, c, testr.New(t))
 		if err != nil {
 			t.Fatalf("creating injector: %v", err)
 		}
@@ -1339,7 +1344,7 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("mutating first pod: %v", err)
 		}
 
-		firstHash, ok := p.ObjectMeta.Labels[agent.InjectedLabel]
+		firstHash, ok := p.Labels[agent.InjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}
@@ -1352,7 +1357,7 @@ func Test_Mutation_hash(t *testing.T) {
 			t.Fatalf("mutating second pod: %v", err)
 		}
 
-		secondHash, ok := p2.ObjectMeta.Labels[agent.InjectedLabel]
+		secondHash, ok := p2.Labels[agent.InjectedLabel]
 		if !ok {
 			t.Fatalf("missing injected label")
 		}

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Update controller-runtime & k8s go client, address breaking changes @ramkrishankumarN @kondracek-nr [#581](https://github.com/newrelic/newrelic-infra-operator/pull/581)
+
 ### dependency
 - Update golang.org/x/oauth2 to v0.27.0 @TmNguyen12 [#568](https://github.com/newrelic/newrelic-infra-operator/pull/568)
 
