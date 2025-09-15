@@ -108,6 +108,5 @@ Options that can be defined globally include `affinity`, `nodeSelector`, `tolera
 * [carlossscastro](https://github.com/carlossscastro)
 * [sigilioso](https://github.com/sigilioso)
 * [gsanchezgavier](https://github.com/gsanchezgavier)
-* [kang-makes](https://github.com/kang-makes)
 * [marcsanmi](https://github.com/marcsanmi)
 * [paologallinaharbur](https://github.com/paologallinaharbur)
