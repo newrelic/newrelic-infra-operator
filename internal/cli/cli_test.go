@@ -5,7 +5,6 @@ package cli_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +22,7 @@ infraAgentInjection:
 `
 )
 
-//nolint:funlen,gocognit,cyclop
+//nolint:funlen,gocognit,cyclop,gocyclo
 func Test_Options(t *testing.T) {
 	t.Parallel()
 
@@ -100,6 +99,7 @@ infraAgentInjection:
 			}
 		})
 
+		//nolint:paralleltest
 		t.Run("sets_cluster_name_from_environment_variable_if_not_set_in_configuration", func(t *testing.T) {
 			expectedClusterName := "test-cluster"
 
@@ -178,7 +178,7 @@ func withTestConfigFile(t *testing.T, config string) string {
 
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 
-	if err := ioutil.WriteFile(configPath, []byte(config), 0o600); err != nil {
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
 		t.Fatalf("writing test config file %q: %v", configPath, err)
 	}
 

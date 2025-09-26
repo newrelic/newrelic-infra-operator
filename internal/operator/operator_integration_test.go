@@ -17,7 +17,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/big"
 	"net"
 	"net/http"
@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +33,8 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/go-logr/logr/testr"
 
 	"github.com/newrelic/newrelic-infra-operator/internal/mutator/pod/agent"
 	"github.com/newrelic/newrelic-infra-operator/internal/operator"
@@ -280,11 +281,10 @@ func Test_Running_operator(t *testing.T) {
 					t.Fatalf("got non 200 response code: %v", resp)
 				}
 
-				bodyBytes, err := ioutil.ReadAll(resp.Body)
+				bodyBytes, err := io.ReadAll(resp.Body)
 				if err != nil {
 					t.Fatalf("reading error response body: %v", err)
 				}
-
 				response := &admissionv1.AdmissionReview{}
 
 				if err := json.Unmarshal(bodyBytes, response); err != nil {
@@ -320,8 +320,7 @@ func Test_Running_operator(t *testing.T) {
 			})
 
 			options := operator.Options{
-				CertDir: dirWithCerts(t),
-				Logger:  logrus.New(),
+				Logger: testr.New(t),
 			}
 
 			if err := operator.Run(ctx, options); err == nil {
@@ -344,9 +343,8 @@ func Test_Running_operator(t *testing.T) {
 			})
 
 			options := operator.Options{
-				Logger:                 logrus.New(),
+				Logger:                 testr.New(t),
 				RestConfig:             cfg,
-				CertDir:                dirWithCerts(t),
 				HealthProbeBindAddress: "1111",
 			}
 
@@ -410,11 +408,11 @@ func testOptions(t *testing.T, cfg *rest.Config, certDir string) operator.Option
 	t.Helper()
 
 	return operator.Options{
-		Logger:                 logrus.New(),
+		Logger:                 testr.New(t),
 		RestConfig:             cfg,
-		CertDir:                certDir,
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
 		MetricsBindAddress:     fmt.Sprintf("%s:%d", testHost, randomUnprivilegedPort(t)),
+		CertDir:                certDir,
 		Port:                   randomUnprivilegedPort(t),
 		InfraAgentInjection: agent.InjectorConfig{
 			AgentConfig: agent.InfraAgentConfig{
@@ -566,12 +564,12 @@ func dirWithCertsAndCA(t *testing.T) (string, []byte) {
 	}
 
 	path := filepath.Join(dir, "tls.key")
-	if err := ioutil.WriteFile(path, key.Bytes(), 0o600); err != nil {
+	if err := os.WriteFile(path, key.Bytes(), 0o600); err != nil {
 		t.Fatalf("writing private key to %q: %v", path, err)
 	}
 
 	path = filepath.Join(dir, "tls.crt")
-	if err := ioutil.WriteFile(path, cert.Bytes(), 0o600); err != nil {
+	if err := os.WriteFile(path, cert.Bytes(), 0o600); err != nil {
 		t.Fatalf("writing certificate to %q: %v", path, err)
 	}
 
