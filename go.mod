@@ -3,7 +3,7 @@ module github.com/newrelic/newrelic-infra-operator
 go 1.25.1
 
 require (
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
 	k8s.io/api v0.33.3
 	k8s.io/apimachinery v0.33.3
