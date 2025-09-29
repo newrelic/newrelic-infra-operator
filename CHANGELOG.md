@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### enhancement
+## v0.24.0 - 2025-09-29
+
+### 🚀 Enhancements
 - Update controller-runtime & k8s go client, address breaking changes @ramkrishankumarN @kondracek-nr [#581](https://github.com/newrelic/newrelic-infra-operator/pull/581)
 
 ## v0.23.1 - 2025-09-15
