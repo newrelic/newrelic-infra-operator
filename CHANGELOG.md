@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Enhancement
-- Add support for k8s v1.34.0, remove support for v1.29.0 @TmNguyen12 []()
+- Add support for k8s v1.34.0, remove support for v1.29.5 @TmNguyen12 [#590](https://github.com/newrelic/newrelic-infra-operator/pull/590)
 
 ## v0.24.0 - 2025-09-29
 
