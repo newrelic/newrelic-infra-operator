@@ -12,3 +12,4 @@
 /.idea/*
 CHANGELOG.partial.md
 .DS_Store
+bin
