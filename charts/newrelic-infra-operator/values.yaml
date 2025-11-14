@@ -26,6 +26,7 @@ image:
 # @default -- See `values.yaml`
 admissionWebhooksPatchJob:
   image:
+    # -- Defaults to registry.k8s.io. If global.images.registry is set, it will be used instead.
     registry:  # Defaults to registry.k8s.io
     repository: ingress-nginx/kube-webhook-certgen
     tag: v1.3.0
@@ -146,6 +147,7 @@ config:
       # -- Image of the infrastructure agent to be injected.
       # @default -- See `values.yaml`
       image:
+        # -- Defaults to newrelic/infrastructure-k8s. If global.images.registry is set, it will be used instead.
         repository: newrelic/infrastructure-k8s
         tag: 2.13.15-unprivileged
         pullPolicy: IfNotPresent
