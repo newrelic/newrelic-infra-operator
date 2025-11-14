@@ -129,8 +129,28 @@ infraAgentInjection:
 {{- end -}}
 
 {{/*
+Returns the sidecar image repository, respecting global.images.registry
+*/}}
+{{- define "newrelic-infra-operator.sidecar.image" -}}
+{{- $imageRepository := .Values.config.infraAgentInjection.agentConfig.image.repository -}}
+{{- $defaultRepository := "newrelic/infrastructure-k8s" -}}
+{{- $registry := "" -}}
+{{- if .Values.global }}
+  {{- $registry = .Values.global.images.registry | default "" -}}
+{{- end -}}
+{{- if and $registry (eq $imageRepository $defaultRepository) -}}
+  {{- printf "%s/%s" $registry $defaultRepository -}}
+{{- else -}}
+  {{- $imageRepository -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Returns configmap data
 */}}
 {{- define "newrelic-infra-operator.configmap.data" -}}
-{{ toYaml (merge (include "newrelic-infra-operator.fargate-config" . | fromYaml) .Values.config) }}
+{{- $config := (merge (include "newrelic-infra-operator.fargate-config" . | fromYaml) .Values.config) -}}
+{{- $sidecarImage := include "newrelic-infra-operator.sidecar.image" . -}}
+{{- $_ := set $config.infraAgentInjection.agentConfig.image "repository" $sidecarImage -}}
+{{ toYaml $config }}
 {{- end }}
