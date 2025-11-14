@@ -154,3 +154,33 @@ Returns configmap data
 {{- $_ := set $config.infraAgentInjection.agentConfig.image "repository" $sidecarImage -}}
 {{ toYaml $config }}
 {{- end }}
+
+{{/*
+Returns the pull policy for operator image, respecting global.images.pullPolicy
+*/}}
+{{- define "newrelic-infra-operator.imagePullPolicy" -}}
+{{- $globalPullPolicy := .Values.global.images.pullPolicy | default "" -}}
+{{- $chartPullPolicy := .Values.image.pullPolicy | default "" -}}
+{{- if $globalPullPolicy -}}
+  {{- $globalPullPolicy -}}
+{{- else if $chartPullPolicy -}}
+  {{- $chartPullPolicy -}}
+{{- else -}}
+  IfNotPresent
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns the pull policy for admission webhooks patch job image, respecting global.images.pullPolicy
+*/}}
+{{- define "newrelic-infra-operator.admissionWebhooksPatchJob.imagePullPolicy" -}}
+{{- $globalPullPolicy := .Values.global.images.pullPolicy | default "" -}}
+{{- $chartPullPolicy := .Values.admissionWebhooksPatchJob.image.pullPolicy | default "" -}}
+{{- if $globalPullPolicy -}}
+  {{- $globalPullPolicy -}}
+{{- else if $chartPullPolicy -}}
+  {{- $chartPullPolicy -}}
+{{- else -}}
+  IfNotPresent
+{{- end -}}
+{{- end -}}
