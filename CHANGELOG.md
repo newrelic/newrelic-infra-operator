@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Add global.images registry, pullSecrets, and pullPolicy support @dpacheconr [#603](https://github.com/newrelic/newrelic-infra-operator/pull/603)
+
 ## v0.26.0 - 2025-10-27
 
 ### ⛓️ Dependencies
@@ -21,14 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.25.0 - 2025-10-13
 
-### dependency
-- Updated k8s.io/api, k8s.io/apimachinery, k8s.io/client-go to v0.34.1 @TmNguyen12 [#590](https://github.com/newrelic/newrelic-infra-operator/pull/590)
-
 ### 🚀 Enhancements
 - Add support for k8s v1.34.0, remove support for v1.29.5 @TmNguyen12 [#590](https://github.com/newrelic/newrelic-infra-operator/pull/590)
 
 ### ⛓️ Dependencies
 - Updated alpine to v3.22.2
+- Updated k8s.io/api, k8s.io/apimachinery, k8s.io/client-go to v0.34.1 @TmNguyen12 [#590](https://github.com/newrelic/newrelic-infra-operator/pull/590)
 
 ## v0.24.0 - 2025-09-29
 
