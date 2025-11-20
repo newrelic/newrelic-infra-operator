@@ -135,7 +135,7 @@ Returns the sidecar image repository, respecting global.images.registry
 {{- $imageRepository := .Values.config.infraAgentInjection.agentConfig.image.repository -}}
 {{- $defaultRepository := "newrelic/infrastructure-k8s" -}}
 {{- $registry := "" -}}
-{{- if .Values.global }}
+{{- if and .Values.global .Values.global.images }}
   {{- $registry = .Values.global.images.registry | default "" -}}
 {{- end -}}
 {{- if and $registry (eq $imageRepository $defaultRepository) -}}
@@ -159,7 +159,10 @@ Returns configmap data
 Returns the pull policy for operator image, respecting global.images.pullPolicy
 */}}
 {{- define "newrelic-infra-operator.imagePullPolicy" -}}
-{{- $globalPullPolicy := .Values.global.images.pullPolicy | default "" -}}
+{{- $globalPullPolicy := "" -}}
+{{- if and .Values.global .Values.global.images }}
+  {{- $globalPullPolicy = .Values.global.images.pullPolicy | default "" -}}
+{{- end -}}
 {{- $chartPullPolicy := .Values.image.pullPolicy | default "" -}}
 {{- if $globalPullPolicy -}}
   {{- $globalPullPolicy -}}
@@ -174,7 +177,10 @@ Returns the pull policy for operator image, respecting global.images.pullPolicy
 Returns the pull policy for admission webhooks patch job image, respecting global.images.pullPolicy
 */}}
 {{- define "newrelic-infra-operator.admissionWebhooksPatchJob.imagePullPolicy" -}}
-{{- $globalPullPolicy := .Values.global.images.pullPolicy | default "" -}}
+{{- $globalPullPolicy := "" -}}
+{{- if and .Values.global .Values.global.images }}
+  {{- $globalPullPolicy = .Values.global.images.pullPolicy | default "" -}}
+{{- end -}}
 {{- $chartPullPolicy := .Values.admissionWebhooksPatchJob.image.pullPolicy | default "" -}}
 {{- if $globalPullPolicy -}}
   {{- $globalPullPolicy -}}
