@@ -1,6 +1,8 @@
 suite: global value inheritance
 templates:
   - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secret.yaml
 release:
   name: my-release
   namespace: my-namespace
