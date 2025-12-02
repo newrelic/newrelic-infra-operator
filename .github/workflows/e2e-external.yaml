@@ -1,42 +1,40 @@
-name: E2E over minikube (Internal Contribution)
+name: E2E over minikube (External Contribution)
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-      - renovate/**
+  pull_request_target:
 
 permissions:
   contents: read
 
 jobs:
-  e2eTests:
-    name: Run E2E Tests (Internal Contribution)
-    # Do not run e2e tests if PR has skip-e2e label or if it's from a forked repo (external contribution)
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e') && github.event.pull_request.head.repo.full_name == 'newrelic/newrelic-infra-operator' }}
+  e2eTests-external:
+    name: Run E2E Tests (External Contribution)
+    # Do not run e2e tests if PR has skip-e2e label or if it's a non-forked repo (internal contribution)
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e') && github.event.pull_request.head.repo.full_name != 'newrelic/newrelic-infra-operator' }}
     runs-on: ubuntu-latest
+    environment: E2E # Required so that approval is required to run this job since it is untrusted (forked).
     strategy:
       matrix:
         # Latest patch version can be found in https://kubernetes.io/releases/patch-releases/
         # Some versions might not be available yet in https://storage.googleapis.com/kubernetes-release/release/v1.X.Y/bin/linux/amd64/kubelet
-        k8sVersion: ["v1.34.0", "v1.33.0", "v1.32.0", "v1.31.0", "v1.30.0"]
+        k8sVersion: ["v1.32.0", "v1.31.0", "v1.30.0", "v1.29.5", "v1.28.3"]
         cri: [ containerd ]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: 'go.mod'
 
       - name: Setup Minikube
         uses: manusa/actions-setup-minikube@b589f2d61bf96695c546929c72b38563e856059d # v2.14.0
         with:
-          minikube version: v1.37.0
+          minikube version: v1.35.0
           kubernetes version: ${{ matrix.k8sVersion }}
-          github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
           start args: "--container-runtime=${{ matrix.cri }}"
 
