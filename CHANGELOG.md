@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### 🧪 Testing
+- Added comprehensive global value inheritance test suite with 35 test cases validating proper propagation and override precedence of global configuration values (cluster, images.registry, images.pullSecrets, nodeSelector, tolerations, affinity, priorityClassName, dnsConfig, hostNetwork, serviceAccount.name, podSecurityContext, licenseKey)
+
 ## v0.26.1 - 2025-11-24
 
 ### ⛓️ Dependencies
