@@ -177,7 +177,8 @@ jobs:
           helm install newrelic-infra-operator ./charts/newrelic-infra-operator \
           --dependency-update \
           --values ./values-dev.yaml \
-          --set image.repository=localhost:5000/newrelic-infra-operator
+          --set image.registry=localhost:5000 \
+          --set image.repository=newrelic-infra-operator
 
       - name: Run test-e2e tests
         env:
