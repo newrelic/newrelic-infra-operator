@@ -66,14 +66,14 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 			InitContainers: []corev1.Container{
 				{
 					Name:    "kubectl",
-					Image:   "bitnami/kubectl",
+					Image:   "docker.io/bitnami/kubectl",
 					Command: []string{"sh", "-c", strings.Join(testCommands, "\n")},
 				},
 			},
 			Containers: []corev1.Container{
 				{
 					Name:  "nginx",
-					Image: "nginx",
+					Image: "docker.io/nginx",
 				},
 			},
 		},
@@ -185,7 +185,7 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 				Containers: []corev1.Container{
 					{
 						Name:    "nginx",
-						Image:   "nginx",
+						Image:   "docker.io/nginx",
 						Command: []string{"tail", "-f", "/dev/null"},
 					},
 				},
@@ -227,7 +227,7 @@ func Test_Infra_agent_injection_webhook(t *testing.T) {
 				Containers: []corev1.Container{
 					{
 						Name:    "nginx",
-						Image:   "nginx",
+						Image:   "docker.io/nginx",
 						Command: []string{"tail", "-f", "/dev/null"},
 					},
 				},
