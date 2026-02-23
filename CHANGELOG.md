@@ -10,6 +10,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### enhancement
 - Add global.images registry, pullSecrets, and pullPolicy support @dpacheconr [#603](https://github.com/newrelic/newrelic-infra-operator/pull/603)
 
+## v0.26.5 - 2026-02-02
+
+### ⛓️ Dependencies
+- Updated go to v1.25.6
+- Updated k8s.io/utils digest
+- Updated kubernetes packages to v0.35.0
+- Updated alpine to v3.23.3
+
+## v0.26.4 - 2025-12-29
+
+### ⛓️ Dependencies
+- Updated k8s.io/utils digest
+
+## v0.26.3 - 2025-12-22
+
+### ⛓️ Dependencies
+- Updated go to v1.25.5
+- Updated kubernetes packages to v0.34.3
+- Updated alpine to v3.23.2
+
+## v0.26.2 - 2025-12-08
+
+### ⛓️ Dependencies
+- Updated alpine to v3.23.0
+
+## v0.26.1 - 2025-11-24
+
+### ⛓️ Dependencies
+- Updated go to v1.25.4
+- Updated sigs.k8s.io/controller-runtime to v0.22.4
+- Updated kubernetes packages to v0.34.2
+
 ## v0.26.0 - 2025-10-27
 
 ### ⛓️ Dependencies
