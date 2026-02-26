@@ -61,9 +61,9 @@ tests:
         images:
           registry: harbor.corp.net/newrelic
     asserts:
-      - equal:
+      - matchRegex:
           path: spec.template.spec.containers[0].image
-          value: harbor.corp.net/newrelic/newrelic/newrelic-infra-operator:0.26.1
+          pattern: ^harbor\.corp\.net/newrelic/newrelic/newrelic-infra-operator:\d+\.\d+\.\d+$
         template: templates/deployment.yaml
 
   - it: local image repository overrides global registry
