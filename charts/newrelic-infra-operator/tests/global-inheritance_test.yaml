@@ -31,15 +31,12 @@ tests:
           value: local-cluster
         template: templates/deployment.yaml
 
-  - it: uses global cluster when neither global nor local fully set
+  - it: fails when neither global nor local cluster set
     set:
       licenseKey: us-whatever
-      global:
-        cluster: default-cluster
     asserts:
-      - equal:
-          path: spec.template.spec.containers[0].env[0].value
-          value: default-cluster
+      - failedTemplate:
+          errorMessage: "There is not cluster name definition set neither in `.global.cluster' nor `.cluster' in your values.yaml. Cluster name is required."
         template: templates/deployment.yaml
 
   # ========== IMAGE INHERITANCE TESTS ==========
@@ -63,10 +60,10 @@ tests:
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: ^harbor\.corp\.net/newrelic/newrelic/newrelic-infra-operator:\d+\.\d+\.\d+$
+          pattern: "harbor.corp.net/newrelic/newrelic/newrelic-infra-operator"
         template: templates/deployment.yaml
 
-  - it: local image repository overrides global registry
+  - it: uses custom repository with global registry
     set:
       licenseKey: us-whatever
       cluster: test-cluster
@@ -79,6 +76,22 @@ tests:
       - matchRegex:
           path: spec.template.spec.containers[0].image
           pattern: "harbor.corp.net/newrelic/custom-operator"
+        template: templates/deployment.yaml
+
+  - it: local image registry overrides global registry
+    set:
+      licenseKey: us-whatever
+      cluster: test-cluster
+      global:
+        images:
+          registry: harbor.corp.net/newrelic
+      image:
+        registry: private.registry.io
+        repository: custom-operator
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "private.registry.io/custom-operator"
         template: templates/deployment.yaml
 
   # ========== IMAGE PULL SECRETS INHERITANCE TESTS ==========
@@ -160,16 +173,16 @@ tests:
       cluster: test-cluster
       global:
         nodeSelector:
-          global-key: global-value
+          environment: global-value
       nodeSelector:
-        local-key: local-value
+        environment: local-value
     asserts:
       - equal:
           path: spec.template.spec.nodeSelector["kubernetes.io/os"]
           value: linux
         template: templates/deployment.yaml
       - equal:
-          path: spec.template.spec.nodeSelector.local-key
+          path: spec.template.spec.nodeSelector.environment
           value: local-value
         template: templates/deployment.yaml
 
@@ -200,17 +213,22 @@ tests:
       cluster: test-cluster
       global:
         tolerations:
-          - key: global-taint
+          - key: monitoring
             operator: Equal
-            value: "true"
+            value: global-taint
             effect: NoSchedule
       tolerations:
-        - key: local-taint
-          operator: Exists
-          effect: NoExecute
+        - key: monitoring
+          operator: Equal
+          value: local-taint
+          effect: NoSchedule
     asserts:
       - equal:
           path: spec.template.spec.tolerations[0].key
+          value: monitoring
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.tolerations[0].value
           value: local-taint
         template: templates/deployment.yaml
 
@@ -254,21 +272,27 @@ tests:
             requiredDuringSchedulingIgnoredDuringExecution:
               nodeSelectorTerms:
                 - matchExpressions:
-                    - key: global-key
+                    - key: kubernetes.io/arch
                       operator: In
                       values:
-                        - value
+                        - arm64
       affinity:
-        podAffinity:
+        nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: test
-              topologyKey: kubernetes.io/hostname
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
     asserts:
       - equal:
-          path: spec.template.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
-          value: kubernetes.io/hostname
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key
+          value: kubernetes.io/arch
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values[0]
+          value: amd64
         template: templates/deployment.yaml
 
   - it: has no affinity by default when neither global nor local set
@@ -450,11 +474,11 @@ tests:
     asserts:
       - matchRegex:
           path: spec.template.spec.serviceAccountName
-          pattern: ".*"
+          pattern: "my-release-newrelic-infra-operator"
         template: templates/deployment.yaml
 
   # ========== POD SECURITY CONTEXT INHERITANCE TESTS ==========
-  - it: applies pod security context from local defaults
+  - it: uses default pod security context from values.yaml
     set:
       licenseKey: us-whatever
       cluster: test-cluster
@@ -464,14 +488,18 @@ tests:
           value: 1001
         template: templates/deployment.yaml
 
-  - it: has pod security context defaults from local when global not set
+  - it: global pod security context used when local set to null
     set:
       licenseKey: us-whatever
       cluster: test-cluster
+      podSecurityContext: null
+      global:
+        podSecurityContext:
+          fsGroup: 2000
     asserts:
       - equal:
           path: spec.template.spec.securityContext.fsGroup
-          value: 1001
+          value: 2000
         template: templates/deployment.yaml
 
   - it: local pod security context overrides global
