@@ -22,7 +22,7 @@ jobs:
       matrix:
         kubernetes-version: ["v1.34.0", "v1.33.0", "v1.32.0", "v1.31.0", "v1.30.0"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: helm/chart-testing-action@v2.8.0
@@ -49,10 +49,10 @@ jobs:
             fi
           done
       - name: Setup Minikube
-        uses: manusa/actions-setup-minikube@v2.14.0
+        uses: manusa/actions-setup-minikube@v2.15.0
         if: steps.list-changed.outputs.changed == 'true'
         with:
-          minikube version: v1.37.0
+          minikube version: v1.38.1
           kubernetes version: ${{ matrix.kubernetes-version }}
           github token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v6
@@ -86,7 +86,7 @@ jobs:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
@@ -96,14 +96,14 @@ jobs:
       # Regardless of whether `key` was found or not, it will be created at the end of the run.
       # With this mechanism, we ensure caches are cycled regularly.
       - name: Go modules cache
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.3
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.3
         with:
           path: ~/.cache/go-build
           key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
@@ -127,21 +127,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
         id: go
       - name: Go modules cache
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.3
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.3
         with:
           path: ~/.cache/go-build
           key: gobuild-linux-amd64-${{ github.sha }}
@@ -161,7 +161,7 @@ jobs:
         run: make test-integration
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           fail_ci_if_error: false
         env:
@@ -177,7 +177,8 @@ jobs:
           helm install newrelic-infra-operator ./charts/newrelic-infra-operator \
           --dependency-update \
           --values ./values-dev.yaml \
-          --set image.repository=localhost:5000/newrelic-infra-operator
+          --set image.registry=localhost:5000 \
+          --set image.repository=newrelic-infra-operator
 
       - name: Run test-e2e tests
         env:
@@ -190,7 +191,7 @@ jobs:
     name: Static analysis and linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
@@ -213,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Codespell test
         uses: codespell-project/actions-codespell@master
         with:

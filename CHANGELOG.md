@@ -7,8 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### 🧪 Testing
-- Added comprehensive global value inheritance test suite with 35 test cases validating proper propagation and override precedence of global configuration values (cluster, images.registry, images.pullSecrets, nodeSelector, tolerations, affinity, priorityClassName, dnsConfig, hostNetwork, serviceAccount.name, podSecurityContext, licenseKey)
+### bugfix
+- Added comprehensive global value inheritance test suite with 35 test cases validating proper propagation and override precedence of global configuration values @dpacheconr (#613)[https://github.com/newrelic/newrelic-infra-operator/pull/613]
+
+## v0.26.5 - 2026-02-02
+
+### ⛓️ Dependencies
+- Updated go to v1.25.6
+- Updated k8s.io/utils digest
+- Updated kubernetes packages to v0.35.0
+- Updated alpine to v3.23.3
+
+## v0.26.4 - 2025-12-29
+
+### ⛓️ Dependencies
+- Updated k8s.io/utils digest
+
+## v0.26.3 - 2025-12-22
+
+### ⛓️ Dependencies
+- Updated go to v1.25.5
+- Updated kubernetes packages to v0.34.3
+- Updated alpine to v3.23.2
+
+## v0.26.2 - 2025-12-08
+
+### ⛓️ Dependencies
+- Updated alpine to v3.23.0
 
 ## v0.26.1 - 2025-11-24
 
