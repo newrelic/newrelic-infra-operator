@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### bugfix
-- Added comprehensive global value inheritance test suite with 35 test cases validating proper propagation and override precedence of global configuration values @dpacheconr (#613)[https://github.com/newrelic/newrelic-infra-operator/pull/613]
+## v0.26.6 - 2026-03-02
+
+### 🐞 Bug fixes
+- Added comprehensive global value inheritance test suite with 35 test cases validating proper propagation and override precedence of global configuration values @dpacheconr (#613)[[https://github.com/newrelic/newrelic-infra-operator/pull/613](https://github.com/newrelic/newrelic-infra-operator/pull/613)\]
 
 ## v0.26.5 - 2026-02-02
 
