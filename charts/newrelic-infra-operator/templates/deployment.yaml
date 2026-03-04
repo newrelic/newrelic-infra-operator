@@ -90,3 +90,4 @@ spec:
       {{- if include "newrelic.common.hostNetwork" . }}
       dnsPolicy: ClusterFirstWithHostNet
       {{- end }}
+
