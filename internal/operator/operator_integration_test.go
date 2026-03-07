@@ -122,7 +122,7 @@ func Test_Running_operator(t *testing.T) {
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				t.Fatalf("got %q response code, expected %q: %v", resp.StatusCode, http.StatusOK, resp)
+				t.Fatalf("got %d response code, expected %d: %v", resp.StatusCode, http.StatusOK, resp)
 			}
 
 			return true
