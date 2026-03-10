@@ -138,8 +138,8 @@ Returns the sidecar image repository, respecting global.images.registry
 {{- if and .Values.global .Values.global.images }}
   {{- $registry = .Values.global.images.registry | default "" -}}
 {{- end -}}
-{{- if and $registry (eq $imageRepository $defaultRepository) -}}
-  {{- printf "%s/%s" $registry $defaultRepository -}}
+{{- if $registry -}}
+  {{- printf "%s/%s" $registry $imageRepository -}}
 {{- else -}}
   {{- $imageRepository -}}
 {{- end -}}
@@ -164,10 +164,10 @@ Returns the pull policy for operator image, respecting global.images.pullPolicy
   {{- $globalPullPolicy = .Values.global.images.pullPolicy | default "" -}}
 {{- end -}}
 {{- $chartPullPolicy := .Values.image.pullPolicy | default "" -}}
-{{- if $globalPullPolicy -}}
-  {{- $globalPullPolicy -}}
-{{- else if $chartPullPolicy -}}
+{{- if $chartPullPolicy -}}
   {{- $chartPullPolicy -}}
+{{- else if $globalPullPolicy -}}
+  {{- $globalPullPolicy -}}
 {{- else -}}
   IfNotPresent
 {{- end -}}
@@ -182,10 +182,10 @@ Returns the pull policy for admission webhooks patch job image, respecting globa
   {{- $globalPullPolicy = .Values.global.images.pullPolicy | default "" -}}
 {{- end -}}
 {{- $chartPullPolicy := .Values.admissionWebhooksPatchJob.image.pullPolicy | default "" -}}
-{{- if $globalPullPolicy -}}
-  {{- $globalPullPolicy -}}
-{{- else if $chartPullPolicy -}}
+{{- if $chartPullPolicy -}}
   {{- $chartPullPolicy -}}
+{{- else if $globalPullPolicy -}}
+  {{- $globalPullPolicy -}}
 {{- else -}}
   IfNotPresent
 {{- end -}}
