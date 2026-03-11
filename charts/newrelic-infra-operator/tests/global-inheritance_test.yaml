@@ -41,7 +41,7 @@ tests:
 
   # ========== IMAGE INHERITANCE TESTS ==========
   - it: uses default image when no registry override
-    set:
+    set: &base
       licenseKey: us-whatever
       cluster: test-cluster
     asserts:
@@ -52,8 +52,7 @@ tests:
 
   - it: uses global.images.registry for operator image
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         images:
           registry: harbor.corp.net/newrelic
@@ -65,8 +64,7 @@ tests:
 
   - it: uses custom repository with global registry
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         images:
           registry: harbor.corp.net/newrelic
@@ -80,8 +78,7 @@ tests:
 
   - it: local image registry overrides global registry
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         images:
           registry: harbor.corp.net/newrelic
@@ -97,8 +94,7 @@ tests:
   # ========== IMAGE PULL SECRETS INHERITANCE TESTS ==========
   - it: sets imagePullSecrets from global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         images:
           pullSecrets:
@@ -111,8 +107,7 @@ tests:
 
   - it: merges global and local imagePullSecrets (global then local)
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         images:
           pullSecrets:
@@ -132,8 +127,7 @@ tests:
 
   - it: has no imagePullSecrets by default when neither global nor local set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - isNull:
           path: spec.template.spec.imagePullSecrets
@@ -142,8 +136,7 @@ tests:
   # ========== NODE SELECTOR INHERITANCE TESTS ==========
   - it: includes linux os selector by default
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - equal:
           path: spec.template.spec.nodeSelector["kubernetes.io/os"]
@@ -152,8 +145,7 @@ tests:
 
   - it: adds global nodeSelector to linux selector
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         nodeSelector:
           monitoring: "true"
@@ -169,8 +161,7 @@ tests:
 
   - it: local nodeSelector overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         nodeSelector:
           environment: global-value
@@ -189,8 +180,7 @@ tests:
   # ========== TOLERATIONS INHERITANCE TESTS ==========
   - it: sets tolerations from global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         tolerations:
           - key: monitoring
@@ -209,8 +199,7 @@ tests:
 
   - it: local tolerations override global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         tolerations:
           - key: monitoring
@@ -234,8 +223,7 @@ tests:
 
   - it: has no tolerations by default when neither global nor local set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - isNull:
           path: spec.template.spec.tolerations
@@ -244,8 +232,7 @@ tests:
   # ========== AFFINITY INHERITANCE TESTS ==========
   - it: sets affinity from global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         affinity:
           nodeAffinity:
@@ -264,8 +251,7 @@ tests:
 
   - it: local affinity overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         affinity:
           nodeAffinity:
@@ -297,8 +283,7 @@ tests:
 
   - it: has no affinity by default when neither global nor local set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - isNull:
           path: spec.template.spec.affinity
@@ -307,8 +292,7 @@ tests:
   # ========== PRIORITY CLASS INHERITANCE TESTS ==========
   - it: sets priorityClassName from global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         priorityClassName: high-priority
     asserts:
@@ -319,8 +303,7 @@ tests:
 
   - it: local priorityClassName overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         priorityClassName: global-priority
       priorityClassName: local-priority
@@ -332,8 +315,7 @@ tests:
 
   - it: has no priorityClassName by default when neither global nor local set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - isNull:
           path: spec.template.spec.priorityClassName
@@ -342,8 +324,7 @@ tests:
   # ========== DNS CONFIG INHERITANCE TESTS ==========
   - it: sets dnsConfig from global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         dnsConfig:
           options:
@@ -357,8 +338,7 @@ tests:
 
   - it: local dnsConfig overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         dnsConfig:
           options:
@@ -376,8 +356,7 @@ tests:
 
   - it: has no dnsConfig by default when neither global nor local set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - isNull:
           path: spec.template.spec.dnsConfig
@@ -386,8 +365,7 @@ tests:
   # ========== HOST NETWORK INHERITANCE TESTS ==========
   - it: default hostNetwork is false
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - equal:
           path: spec.template.spec.hostNetwork
@@ -396,8 +374,7 @@ tests:
 
   - it: sets hostNetwork from local when true
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       hostNetwork: true
     asserts:
       - equal:
@@ -411,8 +388,7 @@ tests:
 
   - it: sets hostNetwork from global when local not set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         hostNetwork: true
     asserts:
@@ -427,8 +403,7 @@ tests:
 
   - it: local hostNetwork overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         hostNetwork: true
       hostNetwork: false
@@ -441,8 +416,7 @@ tests:
   # ========== SERVICE ACCOUNT INHERITANCE TESTS ==========
   - it: uses service account name from global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         serviceAccount:
           name: custom-sa
@@ -454,8 +428,7 @@ tests:
 
   - it: local service account name overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         serviceAccount:
           name: global-sa
@@ -469,8 +442,7 @@ tests:
 
   - it: has default service account name when neither global nor local set
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - matchRegex:
           path: spec.template.spec.serviceAccountName
@@ -480,8 +452,7 @@ tests:
   # ========== POD SECURITY CONTEXT INHERITANCE TESTS ==========
   - it: uses default pod security context from values.yaml
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
     asserts:
       - equal:
           path: spec.template.spec.securityContext.fsGroup
@@ -490,8 +461,7 @@ tests:
 
   - it: global pod security context used when local set to null
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       podSecurityContext: null
       global:
         podSecurityContext:
@@ -504,8 +474,7 @@ tests:
 
   - it: local pod security context overrides global
     set:
-      licenseKey: us-whatever
-      cluster: test-cluster
+      <<: *base
       global:
         podSecurityContext:
           fsGroup: 2000
