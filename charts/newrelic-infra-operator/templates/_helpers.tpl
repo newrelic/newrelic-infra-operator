@@ -133,13 +133,15 @@ Returns the sidecar image repository, respecting global.images.registry
 */}}
 {{- define "newrelic-infra-operator.sidecar.image" -}}
 {{- $imageRepository := .Values.config.infraAgentInjection.agentConfig.image.repository -}}
-{{- $defaultRepository := "newrelic/infrastructure-k8s" -}}
-{{- $registry := "" -}}
+{{- $globalRegistry := "" -}}
 {{- if and .Values.global .Values.global.images }}
-  {{- $registry = .Values.global.images.registry | default "" -}}
+  {{- $globalRegistry = .Values.global.images.registry | default "" -}}
 {{- end -}}
-{{- if $registry -}}
-  {{- printf "%s/%s" $registry $imageRepository -}}
+{{- $chartRegistry := .Values.config.infraAgentInjection.agentConfig.image.registry | default "" -}}
+{{- if $chartRegistry -}}
+  {{- printf "%s/%s" $chartRegistry $imageRepository -}}
+{{- else if $globalRegistry -}}
+  {{- printf "%s/%s" $globalRegistry $imageRepository -}}
 {{- else -}}
   {{- $imageRepository -}}
 {{- end -}}
@@ -149,11 +151,31 @@ Returns the sidecar image repository, respecting global.images.registry
 Returns configmap data
 */}}
 {{- define "newrelic-infra-operator.configmap.data" -}}
-{{- $config := (merge (include "newrelic-infra-operator.fargate-config" . | fromYaml) .Values.config) -}}
+{{- $config := (merge (include "newrelic-infra-operator.fargate-config" . | fromYaml) (deepCopy .Values.config)) -}}
 {{- $sidecarImage := include "newrelic-infra-operator.sidecar.image" . -}}
 {{- $_ := set $config.infraAgentInjection.agentConfig.image "repository" $sidecarImage -}}
+{{- $sidecarPullPolicy := include "newrelic-infra-operator.sidecar.imagePullPolicy" . -}}
+{{- $_ := set $config.infraAgentInjection.agentConfig.image "pullPolicy" $sidecarPullPolicy -}}
 {{ toYaml $config }}
 {{- end }}
+
+{{/*
+Returns the pull policy for sidecar image, respecting global.images.pullPolicy
+*/}}
+{{- define "newrelic-infra-operator.sidecar.imagePullPolicy" -}}
+{{- $globalPullPolicy := "" -}}
+{{- if and .Values.global .Values.global.images }}
+  {{- $globalPullPolicy = .Values.global.images.pullPolicy | default "" -}}
+{{- end -}}
+{{- $chartPullPolicy := .Values.config.infraAgentInjection.agentConfig.image.pullPolicy | default "" -}}
+{{- if $chartPullPolicy -}}
+  {{- $chartPullPolicy -}}
+{{- else if $globalPullPolicy -}}
+  {{- $globalPullPolicy -}}
+{{- else -}}
+  IfNotPresent
+{{- end -}}
+{{- end -}}
 
 {{/*
 Returns the pull policy for operator image, respecting global.images.pullPolicy
