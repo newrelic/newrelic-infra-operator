@@ -26,14 +26,14 @@ spec:
       securityContext:
         {{- . | nindent 8 }}
       {{- end }}
-      {{- with include "newrelic.common.images.renderPullSecrets" ( dict "pullSecrets" ( list .Values.image.pullSecrets ) "context" .) }}
+      {{- with include "newrelic.common.images.renderPullSecrets" ( dict "pullSecrets" (list .Values.image.pullSecrets) "context" .) }}
       imagePullSecrets:
         {{- . | nindent 8 }}
       {{- end }}
       containers:
       - name: {{ include "newrelic.common.naming.name" . }}
         image: {{ include "newrelic.common.images.image" ( dict "imageRoot" .Values.image "context" .) }}
-        imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+        imagePullPolicy: {{ include "newrelic-infra-operator.imagePullPolicy" . }}
         {{- with include "newrelic.common.securityContext.container" . }}
         securityContext:
           {{- . | nindent 10 }}
