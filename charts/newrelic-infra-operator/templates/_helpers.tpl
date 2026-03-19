@@ -156,6 +156,7 @@ Returns configmap data
 {{- $_ := set $config.infraAgentInjection.agentConfig.image "repository" $sidecarImage -}}
 {{- $sidecarPullPolicy := include "newrelic-infra-operator.sidecar.imagePullPolicy" . -}}
 {{- $_ := set $config.infraAgentInjection.agentConfig.image "pullPolicy" $sidecarPullPolicy -}}
+{{- $_ := unset $config.infraAgentInjection.agentConfig.image "registry" -}}
 {{ toYaml $config }}
 {{- end }}
 
