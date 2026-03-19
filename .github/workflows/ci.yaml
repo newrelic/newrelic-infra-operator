@@ -96,14 +96,14 @@ jobs:
       # Regardless of whether `key` was found or not, it will be created at the end of the run.
       # With this mechanism, we ensure caches are cycled regularly.
       - name: Go modules cache
-        uses: actions/cache@v5.0.3
+        uses: actions/cache@v5.0.4
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v5.0.3
+        uses: actions/cache@v5.0.4
         with:
           path: ~/.cache/go-build
           key: gobuild-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.sha }}
@@ -134,14 +134,14 @@ jobs:
           go-version-file: 'go.mod'
         id: go
       - name: Go modules cache
-        uses: actions/cache@v5.0.3
+        uses: actions/cache@v5.0.4
         with:
           path: ~/go/pkg/mod
           key: gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             gomod-
       - name: Build cache
-        uses: actions/cache@v5.0.3
+        uses: actions/cache@v5.0.4
         with:
           path: ~/.cache/go-build
           key: gobuild-linux-amd64-${{ github.sha }}
@@ -161,7 +161,7 @@ jobs:
         run: make test-integration
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         with:
           fail_ci_if_error: false
         env:
