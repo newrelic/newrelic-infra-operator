@@ -69,6 +69,7 @@ Options that can be defined globally include `affinity`, `nodeSelector`, `tolera
 |-----|------|---------|-------------|
 | admissionWebhooksPatchJob | object | See `values.yaml` | Image used to create certificates and inject them to the admission webhook |
 | admissionWebhooksPatchJob.image.pullSecrets | list | `[]` | The secrets that are needed to pull images from a custom registry. |
+| admissionWebhooksPatchJob.image.registry | string | `nil` | Registry override for the admission webhook patch job image. Takes precedence over global.images.registry. Defaults to registry.k8s.io when not set. |
 | admissionWebhooksPatchJob.volumeMounts | list | `[]` | Volume mounts to add to the job, you might want to mount tmp if Pod Security Policies. Enforce a read-only root. |
 | admissionWebhooksPatchJob.volumes | list | `[]` | Volumes to add to the job container. |
 | affinity | object | `{}` | Sets pod/node affinities. Can be configured also with `global.affinity` |
@@ -80,6 +81,7 @@ Options that can be defined globally include `affinity`, `nodeSelector`, `tolera
 | config.infraAgentInjection.agentConfig | object | See `values.yaml` | agentConfig contains the configuration for the container agent injected |
 | config.infraAgentInjection.agentConfig.configSelectors | list | See `values.yaml` | configSelectors is the way to configure resource requirements and extra envVars of the injected sidecar container. When mutating it will be applied the first configuration having the labelSelector matching with the mutating pod. |
 | config.infraAgentInjection.agentConfig.image | object | See `values.yaml` | Image of the infrastructure agent to be injected. |
+| config.infraAgentInjection.agentConfig.image.registry | string | `nil` | Registry override for the sidecar image. Takes precedence over global.images.registry. |
 | containerSecurityContext | object | `{}` | Sets security context (at container level). Can be configured also with `global.containerSecurityContext` |
 | customSecretLicenseKey | string | `""` | In case you don't want to have the license key in you values, this allows you to point to which secret key is the license key located. Can be configured also with `global.customSecretLicenseKey` |
 | customSecretName | string | `""` | In case you don't want to have the license key in you values, this allows you to point to a user created secret to get the key from there. Can be configured also with `global.customSecretName` |
@@ -88,6 +90,7 @@ Options that can be defined globally include `affinity`, `nodeSelector`, `tolera
 | hostNetwork | bool | `false` | Sets pod's hostNetwork. Can be configured also with `global.hostNetwork` |
 | image | object | See `values.yaml` | Image for the New Relic Infrastructure Operator |
 | image.pullSecrets | list | `[]` | The secrets that are needed to pull images from a custom registry. |
+| image.registry | string | `nil` | Registry override for the operator image. Takes precedence over global.images.registry. |
 | licenseKey | string | `""` | This set this license key to use. Can be configured also with `global.licenseKey` |
 | nameOverride | string | `""` | Override the name of the chart |
 | nodeSelector | object | `{}` | Sets pod's node selector. Can be configured also with `global.nodeSelector` |
