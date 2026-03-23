@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### enhancement
+## v0.27.0 - 2026-03-23
+
+### 🚀 Enhancements
 - Add global.images registry, pullSecrets, and pullPolicy support @dpacheconr [#603](https://github.com/newrelic/newrelic-infra-operator/pull/603)
 
 ## v0.26.7 - 2026-03-09
