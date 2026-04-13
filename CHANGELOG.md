@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v0.27.1 - 2026-04-13
+
+### ⛓️ Dependencies
+- Updated kubernetes monorepo to v0.35.3
+- Updated k8s.io/utils digest
+
 ## v0.27.0 - 2026-03-23
 
 ### 🚀 Enhancements
