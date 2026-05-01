@@ -10,7 +10,7 @@ version: 2.19.2
 appVersion: 0.27.2
 dependencies:
   - name: common-library
-    version: 1.4.0
+    version: 2.0.1
     repository: "https://helm-charts.newrelic.com"
 maintainers:
   - name: alvarocabanas
