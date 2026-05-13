@@ -8,5 +8,9 @@ except_metrics: [
   "k8s.pod.requestedCpuCoresUtilization",
   "k8s.pod.cpuCoresUtilization",
   "k8s.pod.requestedMemoryUtilization",
-  "k8s.pod.memoryUtilization"
+  "k8s.pod.memoryUtilization",
+  # infrastructure-k8s:2.13.15 (sidecar) predates nri-kubernetes v4.1.0 — pod-level usage metrics were never emitted by this image
+  "k8s.pod.cpuUsedCores",
+  "k8s.pod.memoryUsedBytes",
+  "k8s.pod.memoryWorkingSetBytes"
 ]
