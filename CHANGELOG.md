@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### dependency
-- Updating Common Lib Fix @philip-r-beckwith (#691)[https://github.com/newrelic/newrelic-infra-operator/pull/691]
+- Updating Common library to 2.3.1 @philip-r-beckwith (#691)[https://github.com/newrelic/newrelic-infra-operator/pull/691]
 
 ## v0.27.2 - 2026-04-20
 
