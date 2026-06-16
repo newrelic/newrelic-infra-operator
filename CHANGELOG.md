@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v0.27.3 - 2026-06-11
+
 ### dependency
-- Updating Common library to 2.3.1 @philip-r-beckwith (#691)[https://github.com/newrelic/newrelic-infra-operator/pull/691]
+- Updating Common library to 2.3.1 @philip-r-beckwith (#691)[[https://github.com/newrelic/newrelic-infra-operator/pull/691](https://github.com/newrelic/newrelic-infra-operator/pull/691)\]
+
+### ⛓️ Dependencies
+- Updated kubernetes monorepo to v0.36.1
+- Updated alpine to v3.24.0
 
 ## v0.27.2 - 2026-04-20
 
