@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### dependency
-- Update golang.org/x/net to v0.56.0 @dbudziwojski [#](https://github.com/newrelic/nri-kube-events/pull/)
+- Update golang.org/x/net to v0.56.0 @dbudziwojski [#703](https://github.com/newrelic/newrelic-infra-operator/pull/703)
 
 ## v0.27.4 - 2026-06-22
 
