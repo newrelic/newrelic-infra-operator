@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v0.27.5 - 2026-06-29
+
 ### dependency
 - Update golang.org/x/net to v0.56.0 @dbudziwojski [#703](https://github.com/newrelic/newrelic-infra-operator/pull/703)
+
+### ⛓️ Dependencies
+- Updated k8s.io/utils digest to a95e086
 
 ## v0.27.4 - 2026-06-22
 
