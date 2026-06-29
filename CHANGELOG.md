@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### enhancement
+- Support Kubernetes 1.35 @jamescripter [#706](https://github.com/newrelic/newrelic-infra-operator/pull/706)
+
 ## v0.27.5 - 2026-06-29
 
 ### dependency
