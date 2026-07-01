@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### breaking
+## v1.0.0 - 2026-07-01
+
+### ⚠️️ Breaking changes ⚠️
 - v3 Fargate support. You may need to update your image repo and tag to point to the new sidecar images. @danielstokes [#707](https://github.com/newrelic/newrelic-infra-operator/pull/707)
 
 ## v0.27.5 - 2026-06-29
