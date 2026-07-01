@@ -13,18 +13,18 @@ dependencies:
     version: 2.3.3
     repository: "https://helm-charts.newrelic.com"
 maintainers:
-  - name: alvarocabanas
-    url: https://github.com/alvarocabanas
-  - name: carlossscastro
-    url: https://github.com/carlossscastro
-  - name: sigilioso
-    url: https://github.com/sigilioso
-  - name: gsanchezgavier
-    url: https://github.com/gsanchezgavier
-  - name: marcsanmi
-    url: https://github.com/marcsanmi
-  - name: paologallinaharbur
-    url: https://github.com/paologallinaharbur
+  - name: danielstokes
+    url: https://github.com/danielstokes
+  - name: dbudziwojskiNR
+    url: https://github.com/dbudziwojskiNR
+  - name: jamescripter
+    url: https://github.com/jamescripter
+  - name: NRhzhao
+    url: https://github.com/NRhzhao
+  - name: Philip-R-Beckwith
+    url: https://github.com/Philip-R-Beckwith
+  - name: TmNguyen12
+    url: https://github.com/TmNguyen12
 keywords:
   - infrastructure
   - newrelic
