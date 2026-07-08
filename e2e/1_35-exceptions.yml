@@ -1,15 +1,2 @@
 # This metrics are not present on 1.35
-except_metrics: [
-  # infrastructure-k8s:2.13.15 (sidecar) predates nri-kubernetes v4.1.0 — pod-level resource metrics were never emitted by this image
-  "k8s.pod.cpuRequestedCores",
-  "k8s.pod.cpuLimitCores",
-  "k8s.pod.memoryRequestedBytes",
-  "k8s.pod.memoryLimitBytes",
-  "k8s.pod.requestedCpuCoresUtilization",
-  "k8s.pod.cpuCoresUtilization",
-  "k8s.pod.requestedMemoryUtilization",
-  "k8s.pod.memoryUtilization",
-  "k8s.pod.cpuUsedCores",
-  "k8s.pod.memoryUsedBytes",
-  "k8s.pod.memoryWorkingSetBytes"
-]
+except_metrics: []
