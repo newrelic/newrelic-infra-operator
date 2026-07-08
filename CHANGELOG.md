@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### enhancement
-- Support Kubernetes 1.35 @jamescripter [#706](https://github.com/newrelic/newrelic-infra-operator/pull/706)
+- Add support for Kubernetes 1.35, remove support for 1.30 @jamescripter [#706](https://github.com/newrelic/newrelic-infra-operator/pull/706)
 
 ## v1.0.0 - 2026-07-01
 
