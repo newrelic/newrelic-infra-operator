@@ -21,6 +21,13 @@ spec:
         app: deployment
         eks.amazonaws.com/fargate-profile: {{ .Release.Name }}-fargate
     spec:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 20Mi
+        limits:
+          cpu: 100m
+          memory: 40Mi
       containers:
         - name: compute-pi-digits
           image: perl:5.34.0
