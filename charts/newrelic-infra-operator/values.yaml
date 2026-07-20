@@ -152,7 +152,7 @@ config:
         # -- Registry override for the sidecar image. Takes precedence over global.images.registry.
         registry:
         repository: newrelic/nri-kubernetes
-        tag: 4.4.0-sidecar
+        tag: 4.4.1-sidecar
         pullPolicy:
 
       # -- configSelectors is the way to configure resource requirements and extra envVars of the injected sidecar container.
