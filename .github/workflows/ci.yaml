@@ -55,7 +55,7 @@ jobs:
           minikube version: v1.38.1
           kubernetes version: ${{ matrix.kubernetes-version }}
           github token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         if: steps.list-changed.outputs.changed == 'true'
         with:
           go-version-file: 'go.mod'
@@ -87,7 +87,7 @@ jobs:
       GOARCH: ${{ matrix.goarch }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
 
@@ -129,7 +129,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v7
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
         id: go
@@ -192,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
       - uses: newrelic/newrelic-infra-checkers@v1
