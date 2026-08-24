@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.1.2 - 2026-08-24
+
+### ⛓️ Dependencies
+- Updated kubernetes monorepo to v0.36.4
+- Updated github.com/go-logr/logr to v1.4.4 - [Changelog 🔗](https://github.com/go-logr/logr/releases/tag/v1.4.4)
+
 ## v1.1.1 - 2026-07-20
 
 ### ⛓️ Dependencies
