@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.1.2 - 2026-08-31
+
 ### dependency
 - Updated go to v1.26.6 @dbudziwojski [#725](https://github.com/newrelic/newrelic-infra-operator/pull/725)
 
