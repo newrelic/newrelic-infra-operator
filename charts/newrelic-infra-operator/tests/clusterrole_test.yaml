@@ -33,3 +33,32 @@ tests:
               - "nodes/stats"
               - "nodes/proxy"
             verbs: ["get", "list"]
+
+  - it: operator ClusterRole holds the watch permission it grants to injected agents
+    documentIndex: 0
+    set:
+      cluster: test-cluster
+      licenseKey: use-whatever
+    asserts:
+      - equal:
+          path: metadata.name
+          value: my-release-newrelic-infra-operator
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources:
+              - "nodes"
+              - "pods"
+              - "services"
+              - "namespaces"
+            verbs: ["get", "list", "watch"]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources:
+              - "nodes/metrics"
+              - "nodes/stats"
+              - "nodes/proxy"
+            verbs: ["get", "list"]
