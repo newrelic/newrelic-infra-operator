@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### 🐞 Bug fixes
+- Grant `watch` on `nodes`, `pods`, `services` and `namespaces` in the injected infra-agent ClusterRole so the sidecar's informer works on EKS Fargate, matching the permissions the DaemonSet already has
+
 ## v1.2.0 - 2026-09-21
 
 ### 🚀 Enhancements
