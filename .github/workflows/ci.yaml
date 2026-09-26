@@ -55,6 +55,7 @@ jobs:
           minikube version: v1.39.0
           kubernetes version: ${{ matrix.kubernetes-version }}
           github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
       - uses: actions/setup-go@v7
         if: steps.list-changed.outputs.changed == 'true'
         with:
