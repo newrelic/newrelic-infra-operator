@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### bugfix
+- Stop setting an empty `caBundle` on the MutatingWebhookConfiguration so `helm upgrade` with Helm 4 server-side apply no longer conflicts with the certgen patch job @TmNguyen12 [#743](https://github.com/newrelic/newrelic-infra-operator/pull/743)
+
 ## v1.2.0 - 2026-09-21
 
 ### 🚀 Enhancements
