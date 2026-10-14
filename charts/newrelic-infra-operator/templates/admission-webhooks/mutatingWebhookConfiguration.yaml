@@ -16,9 +16,6 @@ webhooks:
       name: {{ include "newrelic.common.naming.fullname" . }}
       namespace: {{ .Release.Namespace }}
       path: "/mutate-v1-pod"
-{{- if not .Values.certManager.enabled }}
-    caBundle: ""
-{{- end }}
   rules:
   - operations: ["CREATE"]
     apiGroups: [""]
