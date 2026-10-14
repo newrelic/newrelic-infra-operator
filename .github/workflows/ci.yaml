@@ -26,6 +26,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: helm/chart-testing-action@v2.9.0
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.3.0
 
       - name: Lint charts
         run: ct --config .github/ct.yaml lint --debug
@@ -40,7 +43,7 @@ jobs:
       - name: Run helm unit tests
         if: steps.list-changed.outputs.changed == 'true'
         run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest
+          helm plugin install https://github.com/helm-unittest/helm-unittest --version=0.8.2 --verify=false
           for chart in $(ct --config .github/ct.yaml list-changed); do
             if [ -d "$chart/tests/" ]; then
               helm unittest $chart
