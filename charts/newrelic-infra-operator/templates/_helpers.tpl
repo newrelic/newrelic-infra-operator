@@ -78,14 +78,17 @@ Returns Infra-agent rules
 {{- define "newrelic-infra-operator.infra-agent-monitoring-rules" -}}
 - apiGroups: [""]
   resources:
-    - "nodes"
     - "nodes/metrics"
     - "nodes/stats"
     - "nodes/proxy"
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources:
+    - "nodes"
     - "pods"
     - "services"
     - "namespaces"
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "watch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 {{- end -}}
