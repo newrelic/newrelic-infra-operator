@@ -20,13 +20,17 @@ The ClusterRoleBinding grants the following permissions to the Pod being injecte
 ```yaml
 - apiGroups: [""]
   resources:
-    - "nodes"
     - "nodes/metrics"
     - "nodes/stats"
     - "nodes/proxy"
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources:
+    - "nodes"
     - "pods"
     - "services"
-      verbs: ["get", "list"]
+    - "namespaces"
+  verbs: ["get", "list", "watch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 ```
