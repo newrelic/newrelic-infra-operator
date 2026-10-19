@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### bugfix
+## v1.2.1 - 2026-10-19
+
+### 🐞 Bug fixes
 - Grant `watch` on `nodes`, `pods`, `services` and `namespaces` in the injected infra-agent ClusterRole so the sidecar's informer works on EKS Fargate, matching the permissions the DaemonSet already has @TmNguyen12 [#738](https://github.com/newrelic/newrelic-infra-operator/pull/738)
 - Stop setting an empty `caBundle` on the MutatingWebhookConfiguration so `helm upgrade` with Helm 4 server-side apply no longer conflicts with the certgen patch job @TmNguyen12 [#743](https://github.com/newrelic/newrelic-infra-operator/pull/743)
+
+### ⛓️ Dependencies
+- Updated go module directive to v1.27.2
 
 ## v1.2.0 - 2026-09-21
 
