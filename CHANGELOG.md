@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### dependency
+- Update golang.org/x/net to v0.61.0 @dbudziwojski [#747](https://github.com/newrelic/newrelic-infra-operator/pull/747)
+
 ## v1.2.1 - 2026-10-19
 
 ### 🐞 Bug fixes
