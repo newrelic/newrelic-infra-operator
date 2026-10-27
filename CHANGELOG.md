@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### bugfix
+- Set `protocol: TCP` on the Service port so Helm 4 server-side apply no longer rejects it on install @TmNguyen12 [#755](https://github.com/newrelic/newrelic-infra-operator/pull/755)
+
 ## v1.2.2 - 2026-10-26
 
 ### dependency
