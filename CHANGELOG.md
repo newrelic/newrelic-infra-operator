@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### bugfix
+## v1.2.3 - 2026-10-27
+
+### 🐞 Bug fixes
 - Set `protocol: TCP` on the Service port so Helm 4 server-side apply no longer rejects it on install @TmNguyen12 [#755](https://github.com/newrelic/newrelic-infra-operator/pull/755)
+
+### ⛓️ Dependencies
+- Updated go module directive to v1.27.3
+- Updated alpine to v3.24.3
 
 ## v1.2.2 - 2026-10-26
 
